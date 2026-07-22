@@ -15,13 +15,13 @@
 **KeyFixer** is a privacy-first, fully offline tool that instantly fixes text typed with the wrong keyboard layout. Have you ever forgotten to switch your keyboard language and typed an entire sentence as gibberish? KeyFixer fixes it instantly.
 
 ### The Problem
-You intend to type **"الحمد لله"** (Arabic), but you forget to switch from English, so you end up typing **"hgpl ggi"**. 
+You intend to type **"سورية حرة"** (Arabic), but you forget to switch from English, so you end up typing **"smnd] pn]"**. 
 Or you intend to type **"hello"** (English), but you are in Arabic mode, so you type **"اثممخ"**.
 
 ### What KeyFixer Does
 KeyFixer translates the physical keystrokes back to their intended characters based on the physical position on a QWERTY keyboard.
 
-- `hgpl ggi` → `الحمد لله`
+- `smnd] pn]` → `سورية حرة`
 - `اثممخ` → `hello`
 
 ### Features
@@ -59,13 +59,13 @@ See the [docs/](docs/) directory for detailed architecture, testing, and privacy
 **KeyFixer** هو أداة مجانية مفتوحة المصدر، تعمل بشكل محلي بالكامل لمعالجة وتصحيح النصوص التي تمت كتابتها بلغة لوحة المفاتيح الخاطئة.
 
 ### المشكلة
-تود كتابة **"الحمد لله"** ولكنك تنسى تغيير لغة لوحة المفاتيح من الإنجليزية، فتكتب **"hgpl ggi"**. 
+تود كتابة **"سورية حرة"** ولكنك تنسى تغيير لغة لوحة المفاتيح من الإنجليزية، فتكتب **"smnd] pn]"**. 
 أو تود كتابة **"hello"** وتكون لوحة المفاتيح باللغة العربية فتكتب **"اثممخ"**.
 
 ### ماذا يفعل KeyFixer؟
 يقوم KeyFixer بتحويل النص بناءً على موقع المفاتيح الفيزيائية على لوحة المفاتيح (QWERTY) لاستعادة النص الأصلي المقصود.
 
-- `hgpl ggi` → `الحمد لله`
+- `smnd] pn]` → `سورية حرة`
 - `اثممخ` → `hello`
 
 ### المميزات

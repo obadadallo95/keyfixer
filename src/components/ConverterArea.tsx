@@ -26,8 +26,8 @@ interface ConverterAreaProps {
 export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   const t = translations[lang].converter;
 
-  const [inputText, setInputText] = useState<string>('smnd] pn]');
-  const [outputText, setOutputText] = useState<string>('سورية حرة');
+  const [inputText, setInputText] = useState<string>('');
+  const [outputText, setOutputText] = useState<string>('');
   const [conversionMode, setConversionMode] = useState<'auto' | 'en2ar' | 'ar2en'>('auto');
   const [keyboardPlatform, setKeyboardPlatform] = useState<KeyboardPlatform>('mac');
   const [copied, setCopied] = useState<boolean>(false);
@@ -206,7 +206,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
         {/* Input Textarea */}
         <div className="flex flex-col rounded-2xl sm:rounded-3xl bg-white/5 border border-white/10 overflow-hidden focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/50 transition-all shadow-xl flex-1 min-h-0">
           <div className="flex items-center justify-between px-4 py-2 sm:px-6 sm:py-4 border-b border-white/10 bg-black/20 shrink-0">
-            <h2 className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">Input</h2>
+            <h2 className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">{t.inputLabel}</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
@@ -239,7 +239,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
         <div className="flex flex-col rounded-2xl sm:rounded-3xl bg-amber-500/5 border border-amber-500/20 overflow-hidden shadow-xl flex-1 min-h-0">
           <div className="flex items-center justify-between px-4 py-2 sm:px-6 sm:py-4 border-b border-amber-500/10 bg-black/20 shrink-0">
             <div className="flex items-center gap-2 sm:gap-3">
-              <h2 className="text-xs sm:text-sm font-medium text-amber-500 uppercase tracking-wider">Output</h2>
+              <h2 className="text-xs sm:text-sm font-medium text-amber-500 uppercase tracking-wider">{t.outputLabel}</h2>
               {stats.changedCount > 0 && (
                 <span className="px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-amber-500/20 text-amber-500 uppercase tracking-wider">
                   {stats.changedCount} {t.fixed}

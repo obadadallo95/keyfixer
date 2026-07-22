@@ -10,6 +10,8 @@ export const translations = {
     converter: {
       inputPlaceholder: 'Paste or type mistyped QWERTY or Arabic text here (e.g. "smnd] pn]")...',
       outputPlaceholder: 'Converted text will appear here automatically...',
+      inputLabel: 'Input',
+      outputLabel: 'Output',
       autoMode: 'Auto-Detect',
       enToArMode: 'QWERTY → Arabic',
       arToEnMode: 'Arabic → QWERTY',
@@ -36,6 +38,8 @@ export const translations = {
     converter: {
       inputPlaceholder: 'الصق أو اكتب النص المصحح هنا (مثال: "smnd] pn]")...',
       outputPlaceholder: 'سيظهر النص المصحح هنا تلقائياً...',
+      inputLabel: 'النص المدخل',
+      outputLabel: 'النتيجة',
       autoMode: 'كشف تلقائي',
       enToArMode: 'إنجليزية → عربي',
       arToEnMode: 'عربي → إنجليزية',
