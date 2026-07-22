@@ -1,6 +1,6 @@
 # KeyFixer System Architecture
 
-KeyFixer is structured as a modular TypeScript monorepo-style application that decouples core layout translation logic from UI and platform-specific integrations (Web App & Chrome Extension).
+KeyFixer is structured as a modular TypeScript monorepo-style application that decouples core layout conversion logic from UI and platform-specific integrations (Web App & Chrome Extension).
 
 ## Architectural Overview
 
@@ -28,7 +28,8 @@ KeyFixer is structured as a modular TypeScript monorepo-style application that d
   - Calculates character frequency density in the input string to choose `en2ar` vs `ar2en`.
 
 - **Conversion Logic (`keyboardLayoutConverter.ts`)**:
-  - Pure function `convertKeyboardLayout(text, options)` that transforms text, counts modified characters, and returns structured stats in `0ms`.
+  - Pure function `convertKeyboardLayout(text, options)` that transforms text, counts modified characters, and performs synchronous local conversion with negligible latency for normal text inputs.
+
 
 ## 2. Web Application (`src/`)
 

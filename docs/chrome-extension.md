@@ -26,8 +26,9 @@ The extension consists of three components:
 ## Permissions Rationale
 
 - `contextMenus`: Required to add right-click options for selected text.
-- `storage`: Required to save user preferences (platform layout and mode).
-- `clipboardWrite`: Required to copy converted text to clipboard when inline replacement is unavailable or when requested.
+- `storage`: Required to save user layout and mode preferences locally.
+- `clipboardWrite`: Required to copy converted text to clipboard when inline replacement is requested or fallback is needed.
+- `content_scripts` (`<all_urls>`): The content script runs on web pages (`<all_urls>`) solely to enable instant text selection replacement inside active input fields upon an explicit context menu action by the user. It never reads, stores, logs, or transmits page content.
 
 ## Building & Loading Unpacked
 
@@ -35,3 +36,4 @@ The extension consists of three components:
 npm run build:extension
 ```
 Load the `extension/dist/` directory in `chrome://extensions/` under Developer Mode.
+
