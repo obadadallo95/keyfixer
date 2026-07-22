@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { UILanguage } from './types';
 import { ConverterArea } from './components/ConverterArea';
 import { DeveloperCredit } from './components/DeveloperCredit';
-import { openFloatingKeyFixerWindow } from './components/FloatingKeyFixer';
+import { openFloatingKeyFixerWindow, isDocumentPipSupported } from './components/FloatingKeyFixer';
 import { translations } from './i18n/translations';
 import { Globe, AppWindow } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -17,10 +17,12 @@ export default function App() {
     const saved = localStorage.getItem('keyfixer_lang');
     return (saved === 'ar' || saved === 'en') ? saved : 'en';
   });
+  const [pipSupported, setPipSupported] = useState<boolean>(false);
 
-  // Enforce dark mode and document direction
+  // Enforce dark mode, document direction, and PiP support check
   useEffect(() => {
     document.documentElement.classList.add('dark');
+    setPipSupported(isDocumentPipSupported());
   }, []);
 
   useEffect(() => {
@@ -48,16 +50,18 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => openFloatingKeyFixerWindow(lang)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-all shadow-sm group"
-            title={t.converter.openFloating}
-          >
-            <AppWindow className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-            <span className="hidden sm:inline">{t.converter.openFloating}</span>
-            <span className="sm:hidden">{lang === 'ar' ? 'عائم' : 'Floating'}</span>
-          </button>
+          {pipSupported && (
+            <button
+              type="button"
+              onClick={() => openFloatingKeyFixerWindow(lang)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-all shadow-sm group"
+              title={t.converter.openFloating}
+            >
+              <AppWindow className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">{t.converter.openFloating}</span>
+              <span className="sm:hidden">{lang === 'ar' ? 'عائم' : 'Floating'}</span>
+            </button>
+          )}
 
           <button
             dir="ltr"

@@ -337,17 +337,17 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
   );
 };
 
+// ── FEATURE DETECTION HELPER ──
+export const isDocumentPipSupported = (): boolean => {
+  return typeof window !== 'undefined' && 'documentPictureInPicture' in window;
+};
+
 // ── WINDOW MANAGER FUNCTION ──
 let activePipWindow: Window | null = null;
 let activePipRoot: ReactDOM.Root | null = null;
 
 export const openFloatingKeyFixerWindow = async (lang: UILanguage) => {
-  if (!('documentPictureInPicture' in window)) {
-    alert(
-      lang === 'ar'
-        ? 'عذراً، متصفحك لا يدعم خاصية النوافذ العائمة (Document Picture-in-Picture). يرجى استخدام متصفح Chrome أو Edge.'
-        : 'Document Picture-in-Picture is not supported by your browser. Please use Chrome or Edge.'
-    );
+  if (!isDocumentPipSupported()) {
     return;
   }
 
