@@ -35,13 +35,24 @@ KeyFixer maps physical keystrokes back to their intended characters based on sta
 - Windows Arabic 101
 - macOS Arabic layout mapping
 
-### Installation
+### 📥 Downloads (Chrome Extension)
+Download the pre-built Chrome Extension package from [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).
+
+> **Note**: KeyFixer is **NOT** published on the Chrome Web Store. The extension is distributed directly as an open-source release bundle.
+
+#### Installation Steps (Load Unpacked)
+1. Download `keyfixer-chrome-extension-v1.0.0.zip` from [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0) and extract it.
+2. Open Google Chrome and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** toggle in the top-right.
+4. Click **Load unpacked** and select the extracted folder.
+
+### Installation & Development
 
 #### Web App
 1. `npm install`
 2. `npm run dev`
 
-#### Chrome Extension
+#### Chrome Extension Build from Source
 1. `npm run build:extension`
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode".
@@ -57,6 +68,17 @@ See the [docs/](docs/) directory for detailed architecture, testing, layout mapp
 <div dir="rtl" align="right">
 
 **KeyFixer** أداة مجانية ومفتوحة المصدر، تعمل بشكل محلي بالكامل لمعالجة وتصحيح النصوص التي تمت كتابتها بلغة لوحة المفاتيح الخاطئة.
+
+### 📥 تحميل إضافة المتصفح
+قم بتحميل حزمة إضافة كروم من صفحة [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).
+
+> **تنبيه**: إضافة KeyFixer **غير** مرفوعة على متجر Chrome Web Store الرسمي. يتم توفير الإضافة كحزمة مفتوحة المصدر جاهزة للتحميل المباشر.
+
+#### خطوات التثبيت (تحميل حزمة مفكوكة)
+1. قم بتحميل الملف `keyfixer-chrome-extension-v1.0.0.zip` من [Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0) وفك الضغط عنه.
+2. افتح متصفح كروم واذهب إلى العنوان: `chrome://extensions/`.
+3. قم بتفعيل **وضع المطور (Developer mode)** في الزاوية العلوية.
+4. اضغط على **تحميل حزمة مفكوكة (Load unpacked)** واختر المجلد المفكوك.
 
 ### المشكلة
 تود كتابة **"سورية حرة"** ولكنك تنسى تغيير لغة لوحة المفاتيح من الإنجليزية، فتكتب **"smnd] pn]"**. 
@@ -79,4 +101,5 @@ See the [docs/](docs/) directory for detailed architecture, testing, layout mapp
 انظر قسم التثبيت باللغة الإنجليزية في الأعلى لتشغيل تطبيق الويب أو إضافة المتصفح، أو قم بزيارة مجلد `docs/` لمزيد من التفاصيل.
 
 </div>
+
 
