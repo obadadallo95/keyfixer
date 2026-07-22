@@ -1,6 +1,6 @@
 {
-  "name": "KeyFixer - Keyboard Layout Switcher & Translator",
-  "description": "Open-source developer utility & Chrome Extension for fixing Arabic/English keyboard layout typos (QWERTY <-> Arabic) instantly, with modular translation.",
+  "name": "KeyFixer",
+  "description": "Offline Arabic and English keyboard layout correction tool.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

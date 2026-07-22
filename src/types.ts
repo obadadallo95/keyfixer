@@ -6,7 +6,6 @@
 export type UILanguage = 'en' | 'ar';
 export type AppTheme = 'light' | 'dark' | 'system';
 export type ActiveTab = 'app' | 'extension' | 'desktop' | 'architecture' | 'developer';
-export type KeyboardPlatform = 'windows' | 'mac';
 
 export interface DeveloperProfileInfo {
   name: string;

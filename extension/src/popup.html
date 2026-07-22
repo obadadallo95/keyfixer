@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KeyFixer</title>
+  <style>
+    body {
+      width: 360px;
+      margin: 0;
+      padding: 16px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+    .badge {
+      font-size: 10px;
+      background: #1e293b;
+      padding: 4px 8px;
+      border-radius: 12px;
+      color: #94a3b8;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    select, button {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      flex: 1;
+    }
+    select:focus, button:focus {
+      border-color: #f59e0b;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 14px;
+      resize: none;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: #f59e0b;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+    .primary-btn {
+      background: #f59e0b;
+      color: #0f172a;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+    .primary-btn:hover {
+      background: #fbbf24;
+    }
+    .secondary-btn {
+      cursor: pointer;
+    }
+    .secondary-btn:hover {
+      background: #334155;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>KeyFixer</h1>
+    <span class="badge">Offline & Private</span>
+  </div>
+
+  <div class="controls">
+    <select id="mode-select">
+      <option value="auto">Auto Detect</option>
+      <option value="en2ar">English → Arabic</option>
+      <option value="ar2en">Arabic → English</option>
+    </select>
+    <select id="platform-select">
+      <option value="windows">Windows</option>
+      <option value="mac">macOS</option>
+    </select>
+  </div>
+
+  <textarea id="input-area" placeholder="Type or paste mistyped text here..."></textarea>
+  <textarea id="output-area" placeholder="Fixed text will appear here..." readonly></textarea>
+
+  <div class="actions">
+    <button id="copy-btn" class="primary-btn">Copy Fixed Text</button>
+    <button id="clear-btn" class="secondary-btn">Clear</button>
+  </div>
+
+  <div class="footer">
+    Your text is processed locally and never leaves your device.
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

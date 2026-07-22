@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UILanguage, KeyboardPlatform } from '../types';
+import { UILanguage } from '../types';
+import { KeyboardPlatform, ConversionMode } from '../core/keyboard';
 import { translations } from '../i18n/translations';
-import { fixKeyboardLayoutUseCase } from '../core/use-cases/FixKeyboardLayoutUseCase';
+import { convertKeyboardLayout } from "../core/keyboard";
 import {
   Copy,
   Check,
@@ -81,7 +82,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   };
 
   useEffect(() => {
-    const result = fixKeyboardLayoutUseCase.execute(inputText, {
+    const result = convertKeyboardLayout(inputText, {
       mode: conversionMode,
       platform: keyboardPlatform,
     });

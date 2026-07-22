@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "KeyFixer - Arabic English Keyboard Fixer",
+  "version": "1.0.0",
+  "description": "Instantly fix text typed with the wrong Arabic or English keyboard layout. Private, fast, and fully offline.",
+  "author": "Obada Dallo (عبادة دللو)",
+  "homepage_url": "https://obadadallo.web.app/",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

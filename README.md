@@ -2,139 +2,80 @@
   <img src="public/logo.svg" alt="KeyFixer Logo" width="300" />
 </p>
 
-# ⌨️ KeyFixer - Multi-Platform Keyboard Layout Switcher & AI Translator
+# ⌨️ KeyFixer - Multi-Platform Keyboard Layout Switcher
 
 <p dir="auto" align="center">
-  <img src="https://img.shields.io/badge/KeyFixer-v1.0.0-0284c7?style=for-the-badge&logo=typescript&logoColor=white" alt="Version">
-  <img src="https://img.shields.io/badge/Architecture-Clean%20Architecture-059669?style=for-the-badge&logo=clean-code&logoColor=white" alt="Clean Architecture">
-  <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Chrome%20Ext%20%7C%20Python%20Desktop-7c3aed?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Multi Platform">
-  <img src="https://img.shields.io/badge/License-MIT-e11d48?style=for-the-badge" alt="License">
+  <a href="#english">English</a> | <a href="#arabic">العربية</a>
 </p>
 
 ---
 
-## 🌟 Problem Statement & Vision
+<h2 id="english">🇬🇧 English</h2>
 
-Arabic/English typists frequently type text in Arabic while their system keyboard layout is mistakenly set to English QWERTY, resulting in gibberish like:
+**KeyFixer** is a privacy-first, fully offline tool that instantly fixes text typed with the wrong keyboard layout. Have you ever forgotten to switch your keyboard language and typed an entire sentence as gibberish? KeyFixer fixes it instantly.
 
-> **"lhpl hggi"** instead of **"الحمد لله"**
-> or vice versa:
-> **"اثممخ"** instead of **"hello"**
+### The Problem
+You intend to type **"الحمد لله"** (Arabic), but you forget to switch from English, so you end up typing **"hgpl ggi"**. 
+Or you intend to type **"hello"** (English), but you are in Arabic mode, so you type **"اثممخ"**.
 
-**KeyFixer** solves this problem instantly with zero-latency, offline physical key mapping. Additionally, it features an independent, modular Translation Engine service (Arabic <-> English) built with **Clean Architecture**, fully decoupled from physical layout mapping logic.
+### What KeyFixer Does
+KeyFixer translates the physical keystrokes back to their intended characters based on the physical position on a QWERTY keyboard.
 
----
+- `hgpl ggi` → `الحمد لله`
+- `اثممخ` → `hello`
 
-## 📐 Clean Architecture Blueprint
+### Features
+- **Fully Offline & Private**: Text never leaves your device. No analytics, no API calls, no data collection.
+- **Auto Detect**: Automatically determines whether to fix from English to Arabic or Arabic to English based on character frequency.
+- **Chrome Extension**: Available as a lightweight Manifest V3 Chrome Extension with a clean popup and a context menu for instant in-page fixing.
+- **Platform Specific Layouts**: Accurate mappings for both **Windows (Arabic 101)** and **macOS Standard Arabic** layouts.
+- **Web App**: A modern, responsive React/Vite web application that serves as a demo and a standalone tool.
 
-The codebase strictly enforces Clean Architecture boundaries:
+### Supported Platforms
+- Windows Arabic 101
+- macOS Arabic
 
-```
-                  ┌──────────────────────────────────────────────┐
-                  │              PRESENTATION LAYER              │
-                  │  Web App  │  Chrome Ext  │  Desktop Script   │
-                  └──────────────────────┬───────────────────────┘
-                                         │
-                                         ▼
-                  ┌──────────────────────────────────────────────┐
-                  │               USE CASES LAYER                │
-                  │  FixKeyboardLayoutUseCase                    │
-                  │  TranslateTextUseCase (Decoupled Interface)  │
-                  └──────────────────────┬───────────────────────┘
-                                         │
-                                         ▼
-                  ┌──────────────────────────────────────────────┐
-                  │             INFRASTRUCTURE LAYER             │
-                  │  GeminiTranslator (Express Server Proxy)     │
-                  └──────────────────────┬───────────────────────┘
-                                         │
-                                         ▼
-                  ┌──────────────────────────────────────────────┐
-                  │                 DOMAIN LAYER                 │
-                  │  KeyMap Tables  │  ITranslator Contracts     │
-                  └──────────────────────────────────────────────┘
-```
+### Installation
+
+#### Web App
+1. `npm install`
+2. `npm run dev`
+
+#### Chrome Extension
+1. `npm run build:extension`
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode".
+4. Click "Load unpacked" and select the `extension/dist` folder.
+
+### Documentation
+See the [docs/](docs/) directory for detailed architecture, testing, and privacy information.
 
 ---
 
-## 🚀 Key Features
+<h2 id="arabic" dir="rtl" align="right">🇸🇦 العربية</h2>
 
-1. **Physical Layout Switcher (`/core/use-cases/FixKeyboardLayoutUseCase.ts`)**:
-   - Bi-directional QWERTY <-> Arabic physical mapping.
-   - Covers all letters, shift-states, diacritics (Fatha, Damma, Kasra, Sukun, Shadda), punctuation, and numbers.
-   - Auto-detects input direction (LTR vs RTL).
-   - 100% Offline & 0ms latency.
+<div dir="rtl" align="right">
 
-2. **Decoupled AI Translator (`/core/use-cases/TranslateTextUseCase.ts`)**:
-   - Independent modular translation service contract (`ITranslatorService`).
-   - Powered by Gemini 3.6 Flash server-side model (`/api/translate`).
+**KeyFixer** هو أداة مجانية مفتوحة المصدر، تعمل بشكل محلي بالكامل لمعالجة وتصحيح النصوص التي تمت كتابتها بلغة لوحة المفاتيح الخاطئة.
 
-3. **Chrome Extension (Manifest V3)**:
-   - Highlight any text on any website -> Right-click -> **"Fix Keyboard Layout (KeyFixer)"**.
-   - Replaces text directly inside text inputs or displays a floating toast banner.
+### المشكلة
+تود كتابة **"الحمد لله"** ولكنك تنسى تغيير لغة لوحة المفاتيح من الإنجليزية، فتكتب **"hgpl ggi"**. 
+أو تود كتابة **"hello"** وتكون لوحة المفاتيح باللغة العربية فتكتب **"اثممخ"**.
 
-4. **Desktop Utility Script (Python)**:
-   - Standalone `keyfixer.py` using `pyperclip` and global hotkey listeners (`Ctrl+Alt+K` / `Cmd+Shift+K`).
+### ماذا يفعل KeyFixer؟
+يقوم KeyFixer بتحويل النص بناءً على موقع المفاتيح الفيزيائية على لوحة المفاتيح (QWERTY) لاستعادة النص الأصلي المقصود.
 
----
+- `hgpl ggi` → `الحمد لله`
+- `اثممخ` → `hello`
 
-## 💻 Installation & Usage
+### المميزات
+- **خصوصية تامة**: تعمل الأداة بشكل محلي بالكامل 100%. لا يتم إرسال أي بيانات خارج جهازك.
+- **التعرف التلقائي**: تحديد ذكي للغة النص المكتوب للتحويل من الإنجليزية للعربية أو العكس.
+- **إضافة جوجل كروم**: إضافة خفيفة وسريعة توفر نافذة منبثقة بسيطة، بالإضافة إلى خيارات القائمة الجانبية (Context Menu) لتصحيح النصوص فوراً داخل صفحات الويب.
+- **تعدد الأنظمة**: دعم دقيق لتوزيعة الأحرف على كل من **Windows (Arabic 101)** و **macOS**.
+- **تطبيق ويب**: واجهة حديثة وسريعة تعمل كتطبيق مستقل أو لتجربة الأداة.
 
-### 1. Web Application
-```bash
-# Clone repository
-git clone https://github.com/obadadallo95/keyfixer.git
-cd keyfixer
+### التثبيت والتطوير
+انظر قسم التثبيت باللغة الإنجليزية في الأعلى لتشغيل تطبيق الويب أو إضافة المتصفح، أو قم بزيارة مجلد `docs/` لمزيد من التفاصيل.
 
-# Install dependencies
-npm install
-
-# Start full-stack dev server (port 3000)
-npm run dev
-```
-
-### 2. Chrome Extension (Manifest V3)
-1. Navigate to `chrome://extensions` in Google Chrome.
-2. Enable **Developer mode** in the top-right corner.
-3. Click **Load unpacked** and select the `/public/chrome-extension` directory.
-4. Highlight any mistyped text on any webpage and right-click to fix!
-
-### 3. Desktop Python Hotkey Listener
-```bash
-# Install dependencies
-pip install pyperclip keyboard pynput
-
-# Run listener script
-python keyfixer.py
-```
-*Press `Ctrl+Alt+K` (or `Cmd+Shift+K` on Mac) after copying mistyped text to fix it seamlessly.*
-
----
-
-## 👨‍💻 Developer Profile & Credits
-
-KeyFixer was conceptualized, designed, and engineered by **Obada Dallo (عبادة دللو)**.
-
-<p align="center">
-  <a href="https://obadadallo.web.app/">
-    <img src="https://img.shields.io/badge/Portfolio-obadadallo.web.app-0284c7?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Portfolio">
-  </a>
-  <a href="https://www.linkedin.com/in/obada-dallo-777a47a9/">
-    <img src="https://img.shields.io/badge/LinkedIn-Obada%20Dallo-0077b5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn">
-  </a>
-  <a href="https://github.com/obadadallo95">
-    <img src="https://img.shields.io/badge/GitHub-obadadallo95-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
-  </a>
-</p>
-
-- **Name**: Obada Dallo (عبادة دللو)
-- **Role**: Senior Full-Stack Developer, System Architect & Extension Engineer
-- **Portfolio**: [https://obadadallo.web.app/](https://obadadallo.web.app/)
-- **LinkedIn**: [https://www.linkedin.com/in/obada-dallo-777a47a9/](https://www.linkedin.com/in/obada-dallo-777a47a9/)
-- **GitHub**: [https://github.com/obadadallo95](https://github.com/obadadallo95)
-
----
-
-## 📄 License
-
-This project is open-source software licensed under the [MIT License](LICENSE).
+</div>
