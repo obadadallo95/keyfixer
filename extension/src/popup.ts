@@ -9,14 +9,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
   const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 
-  // Load saved preferences
-  const prefs = await chrome.storage.local.get(['platform', 'mode', 'lastInput']);
+  // Load saved layout & mode preferences only (no text storage for 100% privacy)
+  const prefs = await chrome.storage.local.get(['platform', 'mode']);
   if (prefs.platform) platformSelect.value = prefs.platform;
   if (prefs.mode) modeSelect.value = prefs.mode;
-  if (prefs.lastInput) {
-    inputArea.value = prefs.lastInput;
-    updateOutput();
-  }
 
   function updateOutput() {
     const text = inputArea.value;
@@ -26,8 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = convertKeyboardLayout(text, { mode, platform });
     outputArea.value = result.fixedText;
     
-    // Save preferences
-    chrome.storage.local.set({ platform, mode, lastInput: text });
+    // Save user preferences (platform and mode only)
+    chrome.storage.local.set({ platform, mode });
   }
 
   inputArea.addEventListener('input', updateOutput);
@@ -47,6 +43,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputArea.value = '';
     outputArea.value = '';
     inputArea.focus();
-    chrome.storage.local.remove('lastInput');
   });
 });
+

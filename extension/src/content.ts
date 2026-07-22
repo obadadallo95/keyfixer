@@ -10,12 +10,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const start = activeElem.selectionStart || 0;
         const end = activeElem.selectionEnd || 0;
         const val = activeElem.value;
+        const newValue = val.substring(0, start) + fixed + val.substring(end);
         
-        activeElem.value = val.substring(0, start) + fixed + val.substring(end);
+        // Use native property setter for React/Vue/Angular controlled components compatibility
+        const prototype = activeElem instanceof HTMLTextAreaElement
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype;
+        const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+        
+        if (valueSetter) {
+          valueSetter.call(activeElem, newValue);
+        } else {
+          activeElem.value = newValue;
+        }
+
         activeElem.selectionStart = activeElem.selectionEnd = start + fixed.length;
         
-        // Dispatch event for React/Angular/Vue
-        activeElem.dispatchEvent(new Event('input', { bubbles: true }));
+        // Dispatch synthetic events to trigger frameworks state update
+        activeElem.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: fixed }));
         activeElem.dispatchEvent(new Event('change', { bubbles: true }));
         replaced = true;
       } else if (activeElem.isContentEditable) {
@@ -40,13 +52,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (!replaced) {
-      copyToClipboardAndToast(fixed, `KeyFixer: Could not replace text inline. Copied "${fixed}" to clipboard!`);
+      copyToClipboardAndToast(fixed, 'KeyFixer: Corrected text copied to clipboard!');
     } else {
-      showToast('KeyFixer: Replaced in field!');
+      showToast('KeyFixer: Text corrected!');
     }
   } else if (request.action === 'copyText') {
     const { fixed } = request;
-    copyToClipboardAndToast(fixed, `KeyFixer: Copied "${fixed}" to clipboard!`);
+    copyToClipboardAndToast(fixed, 'KeyFixer: Corrected text copied to clipboard!');
   }
 });
 
@@ -114,3 +126,4 @@ function showToast(message: string) {
     toast.style.opacity = '0';
   }, 3000);
 }
+

@@ -5,15 +5,24 @@
   "description": "Instantly fix text typed with the wrong Arabic or English keyboard layout. Private, fast, and fully offline.",
   "author": "Obada Dallo (عبادة دللو)",
   "homepage_url": "https://obadadallo.web.app/",
+  "icons": {
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
   "permissions": [
     "contextMenus",
-    "activeTab",
-    "scripting",
     "storage",
     "clipboardWrite"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png"
+    }
   },
   "background": {
     "service_worker": "background.js",
@@ -26,3 +35,4 @@
     }
   ]
 }
+
