@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KeyFixer Popup</title>
+  <style>
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .logo {
+      font-weight: 800;
+      font-size: 18px;
+      color: #38bdf8;
+    }
+    .tagline {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      height: 70px;
+      box-sizing: border-box;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 8px;
+      font-size: 13px;
+      resize: none;
+      margin-bottom: 8px;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    button {
+      flex: 1;
+      padding: 8px 12px;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0369a1;
+    }
+    .btn-secondary {
+      background: #334155;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    .credit {
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      margin-top: 10px;
+    }
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">⌨️ KeyFixer</div>
+  </div>
+  <div class="tagline">Arabic/English Layout Switcher by Obada Dallo</div>
+
+  <textarea id="inputText" placeholder="Paste mistyped text (e.g. lhpl hggi)..."></textarea>
+  <textarea id="outputText" readonly placeholder="Fixed text will appear here..."></textarea>
+
+  <div class="btn-group">
+    <button id="copyBtn">Copy Fixed</button>
+    <button id="clearBtn" class="btn-secondary">Clear</button>
+  </div>
+
+  <div class="credit">
+    Engineered by <a href="https://obadadallo.web.app/" target="_blank">Obada Dallo (عبادة دللو)</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
