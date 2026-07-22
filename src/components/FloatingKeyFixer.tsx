@@ -1,6 +1,6 @@
 /**
  * @file FloatingKeyFixer.tsx
- * @description Collapsible Document Picture-in-Picture floating window manager for KeyFixer.
+ * @description Adaptive Document Picture-in-Picture floating window manager for KeyFixer.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -36,6 +36,7 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
   const [mode, setMode] = useState<ConversionMode>('auto');
   const [platform, setPlatform] = useState<KeyboardPlatform>('windows');
   const [copied, setCopied] = useState(false);
+  const [, setDetectedMinSize] = useState<{ width: number; height: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const t = translations[lang].converter;
@@ -44,7 +45,7 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
   const conversionResult = convertKeyboardLayout(input, { mode, platform });
   const outputText = conversionResult.fixedText;
 
-  // Handle window resizing and CSS classes on state change
+  // Handle window resizing and adaptive size detection on collapse/expand
   useEffect(() => {
     const doc = pipWindow.document;
 
@@ -52,19 +53,33 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
       doc.body.classList.remove('pip-expanded');
       doc.body.classList.add('pip-collapsed');
 
+      console.log('Requested collapsed size: 260x56');
+
       requestAnimationFrame(() => {
         try {
           pipWindow.resizeTo(260, 56);
         } catch (err) {
           console.warn('pipWindow.resizeTo failed:', err);
         }
+
         setTimeout(() => {
-          console.log('PiP Window Size (Collapsed):', pipWindow.innerWidth, pipWindow.innerHeight);
-        }, 150);
+          const innerW = pipWindow.innerWidth;
+          const innerH = pipWindow.innerHeight;
+          const outerW = pipWindow.outerWidth;
+          const outerH = pipWindow.outerHeight;
+
+          console.log('Actual collapsed size (innerWidth x innerHeight):', innerW, innerH);
+          console.log('Actual collapsed size (outerWidth x outerHeight):', outerW, outerH);
+
+          setDetectedMinSize({ width: innerW, height: innerH });
+          console.log('Detected minimum size:', `${innerW}x${innerH}`);
+        }, 250);
       });
     } else {
       doc.body.classList.remove('pip-collapsed');
       doc.body.classList.add('pip-expanded');
+
+      console.log('Requested expanded size: 400x520');
 
       requestAnimationFrame(() => {
         try {
@@ -72,10 +87,11 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
         } catch (err) {
           console.warn('pipWindow.resizeTo failed:', err);
         }
+
         setTimeout(() => {
-          console.log('PiP Window Size (Expanded):', pipWindow.innerWidth, pipWindow.innerHeight);
+          console.log('Actual expanded size (innerWidth x innerHeight):', pipWindow.innerWidth, pipWindow.innerHeight);
           textareaRef.current?.focus();
-        }, 150);
+        }, 250);
       });
     }
   }, [isCollapsed, pipWindow]);
@@ -118,20 +134,50 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
     textareaRef.current?.focus();
   };
 
+  // ── COLLAPSED STATE (Centered Compact Pill HUD) ──
+  if (isCollapsed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-2 bg-[#050505] selection:bg-amber-500 selection:text-black">
+        <div className="w-full max-w-[260px] h-[46px] bg-slate-950 border border-amber-500/40 rounded-xl px-3 flex items-center justify-between shadow-2xl backdrop-blur-md font-sans select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <img src="/logo.svg" alt="KeyFixer Logo" className="w-3.5 h-3.5 object-contain" />
+            </div>
+            <span className="text-xs font-black tracking-tight text-white truncate">
+              KeyFixer
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(false)}
+              aria-label={lang === 'ar' ? 'توسيع النافذة' : 'Expand window'}
+              title={lang === 'ar' ? 'توسيع' : 'Expand'}
+              className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={lang === 'ar' ? 'إغلاق' : 'Close window'}
+              title={lang === 'ar' ? 'إغلاق' : 'Close'}
+              className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── EXPANDED STATE (400x520 Editor HUD) ──
   return (
-    <div
-      className={`pip-wrapper w-full bg-[#050505] text-slate-200 flex font-sans selection:bg-amber-500 selection:text-black ${
-        isCollapsed
-          ? 'pip-collapsed h-[56px] px-3 py-0 flex-row items-center justify-between overflow-hidden'
-          : 'pip-expanded h-full p-3 flex-col justify-between'
-      }`}
-    >
-      {/* Header / Compact Pill Bar */}
-      <div
-        className={`pip-header flex items-center justify-between ${
-          isCollapsed ? 'w-full h-full border-none p-0' : 'border-b border-slate-800/80 pb-2 mb-2'
-        }`}
-      >
+    <div className="pip-wrapper w-full h-full bg-[#050505] text-slate-200 flex flex-col p-3 font-sans justify-between selection:bg-amber-500 selection:text-black">
+      {/* Header Bar */}
+      <div className="pip-header flex items-center justify-between border-b border-slate-800/80 pb-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
             <img src="/logo.svg" alt="KeyFixer Logo" className="w-3.5 h-3.5 object-contain" />
@@ -143,30 +189,28 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
 
         {/* Controls */}
         <div className="flex items-center gap-1 shrink-0">
-          {!isCollapsed && (
-            <button
-              type="button"
-              onClick={() => setPlatform(p => (p === 'windows' ? 'mac' : 'windows'))}
-              className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-              title={platform === 'windows' ? t.windowsPlatform : t.macPlatform}
-            >
-              {platform === 'windows' ? (
-                <Laptop className="w-3 h-3 text-blue-400" />
-              ) : (
-                <Command className="w-3 h-3 text-amber-400" />
-              )}
-              <span>{platform === 'windows' ? 'Win' : 'Mac'}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setPlatform(p => (p === 'windows' ? 'mac' : 'windows'))}
+            className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+            title={platform === 'windows' ? t.windowsPlatform : t.macPlatform}
+          >
+            {platform === 'windows' ? (
+              <Laptop className="w-3 h-3 text-blue-400" />
+            ) : (
+              <Command className="w-3 h-3 text-amber-400" />
+            )}
+            <span>{platform === 'windows' ? 'Win' : 'Mac'}</span>
+          </button>
 
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label={isCollapsed ? (lang === 'ar' ? 'توسيع النافذة' : 'Expand window') : (lang === 'ar' ? 'طي النافذة' : 'Collapse window')}
-            title={isCollapsed ? 'Expand' : 'Collapse (Esc)'}
-            className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
+            onClick={() => setIsCollapsed(true)}
+            aria-label={lang === 'ar' ? 'طي النافذة' : 'Collapse window'}
+            title={lang === 'ar' ? 'طي (Esc)' : 'Collapse (Esc)'}
+            className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
           >
-            {isCollapsed ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+            <Minimize2 className="w-3.5 h-3.5" />
           </button>
 
           <button
@@ -174,126 +218,121 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
             onClick={onClose}
             aria-label={lang === 'ar' ? 'إغلاق' : 'Close window'}
             title={lang === 'ar' ? 'إغلاق' : 'Close'}
-            className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+            className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Editor Content - completely removed from layout when collapsed */}
-      {!isCollapsed && (
-        <>
-          {/* Mode Selector */}
-          <div className="mode-selector flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/80 mb-2">
-            <button
-              type="button"
-              onClick={() => setMode('auto')}
-              className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
-                mode === 'auto'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {t.autoMode}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('en2ar')}
-              className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
-                mode === 'en2ar'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {t.enToArMode}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('ar2en')}
-              className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
-                mode === 'ar2en'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {t.arToEnMode}
-            </button>
+      {/* Mode Selector */}
+      <div className="mode-selector flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800/80 mb-2">
+        <button
+          type="button"
+          onClick={() => setMode('auto')}
+          className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
+            mode === 'auto'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          {t.autoMode}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('en2ar')}
+          className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
+            mode === 'en2ar'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          {t.enToArMode}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('ar2en')}
+          className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
+            mode === 'ar2en'
+              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          {t.arToEnMode}
+        </button>
+      </div>
+
+      {/* Input & Output Editor Container */}
+      <div className="editor-container flex-1 flex flex-col min-h-0 gap-2">
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder={t.inputPlaceholder}
+          dir="auto"
+          className="w-full flex-1 p-2.5 bg-slate-950/80 border border-slate-800 focus:border-amber-500/60 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none resize-none font-mono"
+        />
+
+        {/* Output Box */}
+        <div className="relative min-h-[90px] p-2.5 bg-amber-500/5 border border-amber-500/20 rounded-xl flex flex-col justify-between">
+          <div
+            className="text-xs text-amber-200/90 font-sans font-medium min-h-[40px] break-words whitespace-pre-wrap"
+            dir="auto"
+          >
+            {outputText || <span className="text-slate-600 italic text-[11px]">{t.outputPlaceholder}</span>}
           </div>
 
-          {/* Input & Output Editor Container */}
-          <div className="editor-container flex-1 flex flex-col min-h-0 gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={t.inputPlaceholder}
-              dir="auto"
-              className="w-full flex-1 p-2.5 bg-slate-950/80 border border-slate-800 focus:border-amber-500/60 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none resize-none font-mono"
-            />
+          {/* Actions Bar */}
+          <div className="flex items-center justify-between border-t border-amber-500/10 pt-2 mt-1">
+            <span className="text-[10px] text-slate-500 font-mono">
+              {outputText ? `${outputText.length} ${t.chars}` : t.latency}
+            </span>
 
-            {/* Output Box */}
-            <div className="relative min-h-[90px] p-2.5 bg-amber-500/5 border border-amber-500/20 rounded-xl flex flex-col justify-between">
-              <div
-                className="text-xs text-amber-200/90 font-sans font-medium min-h-[40px] break-words whitespace-pre-wrap"
-                dir="auto"
+            <div className="flex items-center gap-1.5">
+              {input && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="p-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 rounded transition-colors flex items-center gap-1"
+                  title={t.clear}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleCopy}
+                disabled={!outputText}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+                  copied
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/40'
+                    : outputText
+                    ? 'bg-amber-500 text-black hover:bg-amber-400 font-black'
+                    : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                }`}
               >
-                {outputText || <span className="text-slate-600 italic text-[11px]">{t.outputPlaceholder}</span>}
-              </div>
-
-              {/* Actions Bar */}
-              <div className="flex items-center justify-between border-t border-amber-500/10 pt-2 mt-1">
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {outputText ? `${outputText.length} ${t.chars}` : t.latency}
-                </span>
-
-                <div className="flex items-center gap-1.5">
-                  {input && (
-                    <button
-                      type="button"
-                      onClick={handleClear}
-                      className="p-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 rounded transition-colors flex items-center gap-1"
-                      title={t.clear}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    disabled={!outputText}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
-                      copied
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/40'
-                        : outputText
-                        ? 'bg-amber-500 text-black hover:bg-amber-400 font-black'
-                        : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                    }`}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>{t.copied}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>{t.copy}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t.copied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{t.copy}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Footer */}
-          <div className="pip-footer mt-2 pt-1 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-500">
-            <span>Esc: {lang === 'ar' ? 'طي' : 'Collapse'}</span>
-            <span>Ctrl/Cmd+Enter: {t.copy}</span>
-          </div>
-        </>
-      )}
+      {/* Footer */}
+      <div className="pip-footer mt-2 pt-1 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-500">
+        <span>Esc: {lang === 'ar' ? 'طي' : 'Collapse'}</span>
+        <span>Ctrl/Cmd+Enter: {t.copy}</span>
+      </div>
     </div>
   );
 };
@@ -333,7 +372,7 @@ export const openFloatingKeyFixerWindow = async (lang: UILanguage) => {
       pipDoc.head.appendChild(node.cloneNode(true));
     });
 
-    // Inject strict collapse/expand stylesheet rules into PiP document head
+    // Inject strict adaptive collapse/expand stylesheet rules into PiP document head
     const styleEl = pipDoc.createElement('style');
     styleEl.textContent = `
       html, body {
@@ -345,23 +384,18 @@ export const openFloatingKeyFixerWindow = async (lang: UILanguage) => {
         box-sizing: border-box !important;
       }
       body.pip-collapsed {
-        height: 56px !important;
-        min-height: 0 !important;
-        max-height: 56px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: #050505 !important;
         overflow: hidden !important;
+        height: 100% !important;
+        min-height: 0 !important;
       }
       body.pip-expanded {
+        display: block !important;
         height: 100% !important;
-      }
-      .pip-collapsed .editor-container,
-      .pip-collapsed .pip-footer,
-      .pip-collapsed .mode-selector {
-        display: none !important;
-      }
-      .pip-collapsed .pip-wrapper {
-        height: 56px !important;
-        min-height: 0 !important;
-        max-height: 56px !important;
+        background-color: #050505 !important;
       }
     `;
     pipDoc.head.appendChild(styleEl);

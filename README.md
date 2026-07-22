@@ -34,8 +34,8 @@ KeyFixer maps physical keystrokes back to their intended characters based on sta
 
 ### 🖼️ Collapsible Floating Window (Picture-in-Picture)
 Click **"Open Floating KeyFixer"** on [keyfixer.vercel.app](https://keyfixer.vercel.app) to launch an always-on-top desktop overlay:
-- **Collapsed**: Shrinks to a 260×54px pill (`Esc` key to collapse).
-- **Expanded**: 380×420px compact editor with auto-focus (`Ctrl+Enter` to copy result).
+- **Collapsed**: Uses the smallest size permitted by the browser and operating system (`Esc` key to collapse).
+- **Expanded**: 400×520px compact editor with auto-focus (`Ctrl+Enter` to copy result).
 - **Browser Support**: Chrome, Edge, and Chromium desktop browsers (v116+). See [docs/floating-window.md](docs/floating-window.md) for full details.
 
 ### Supported Platforms

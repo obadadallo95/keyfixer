@@ -14,7 +14,8 @@ KeyFixer features a **Collapsible Document Picture-in-Picture (PiP) Floating Win
 
 ## ↔️ Collapse & Expand Behavior
 - **Collapsed State**:
-  - Extremely compact horizontal bar (approx. `260 × 54 px`).
+  - Uses the smallest size permitted by the browser and operating system.
+  - Centers a compact horizontal bar (approx. `260 × 46 px`) inside the available window.
   - Displays only the KeyFixer logo, title, Expand button (`Maximize`), and Close button (`X`).
   - Designed to stay silently in any screen corner without obstructing work.
 - **Expanded State**:
