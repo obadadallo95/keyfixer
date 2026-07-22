@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/logo.svg" alt="KeyFixer Logo" width="300" />
+</p>
+
 # ⌨️ KeyFixer - Multi-Platform Keyboard Layout Switcher & AI Translator
 
 <p dir="auto" align="center">
