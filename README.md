@@ -26,10 +26,17 @@ KeyFixer maps physical keystrokes back to their intended characters based on sta
 
 ### Features
 - **Fully Offline & Private**: Text never leaves your device. No analytics, no API calls, no storage of typed text.
+- **Collapsible Floating Window**: Document Picture-in-Picture window that stays on top of desktop apps, collapsing into a 260px pill when idle.
 - **Auto-Detect**: Automatically determines conversion direction based on character composition in the text.
 - **Chrome Extension**: Available as a lightweight Manifest V3 Chrome Extension with a clean popup and context menu options for in-page fixing.
 - **Platform-Specific Layouts**: Supports **Windows (Arabic 101)** and **macOS Arabic** layout mappings.
 - **Web App**: A modern, responsive React/Vite web application that serves as a demo and standalone tool.
+
+### 🖼️ Collapsible Floating Window (Picture-in-Picture)
+Click **"Open Floating KeyFixer"** on [keyfixer.vercel.app](https://keyfixer.vercel.app) to launch an always-on-top desktop overlay:
+- **Collapsed**: Shrinks to a 260×54px pill (`Esc` key to collapse).
+- **Expanded**: 380×420px compact editor with auto-focus (`Ctrl+Enter` to copy result).
+- **Browser Support**: Chrome, Edge, and Chromium desktop browsers (v116+). See [docs/floating-window.md](docs/floating-window.md) for full details.
 
 ### Supported Platforms
 - Windows Arabic 101

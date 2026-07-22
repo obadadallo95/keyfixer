@@ -26,6 +26,7 @@ export const translations = {
       fixed: 'Fixed',
       latency: '0ms Offline',
       soundEffects: 'Click Sound',
+      openFloating: 'Open Floating KeyFixer',
     },
     developer: {
       role: 'Senior Full-Stack Developer & System Architect',
@@ -54,6 +55,7 @@ export const translations = {
       fixed: 'تم تصحيحه',
       latency: '0ms تحويل أوفلاين',
       soundEffects: 'صوت الكيبورد',
+      openFloating: 'فتح KeyFixer العائم',
     },
     developer: {
       role: 'مطور متكامل ومصمم معمارية أنظمة',
