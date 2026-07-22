@@ -22,11 +22,11 @@ export interface DeveloperProfileInfo {
 export const DEVELOPER_PROFILE: DeveloperProfileInfo = {
   name: 'Obada Dallo',
   arabicName: 'عبادة دللو',
-  role: 'Senior Full-Stack Developer, System Architect & Extension Engineer',
+  role: 'AI-First Product Builder',
   portfolio: 'https://obadadallo.web.app/',
   linkedin: 'https://www.linkedin.com/in/obada-dallo-777a47a9/',
   github: 'https://github.com/obadadallo95',
-  bio: 'Passionate software engineer crafting open-source developer tools, high-performance web applications, and system utilities.',
-  location: 'Global / Remote',
+  bio: 'Passionate software engineer and product builder crafting open-source tools, high-performance web applications, and system utilities.',
+  location: 'Chemnitz, Saxony, Germany',
   avatarUrl: 'https://github.com/obadadallo95.png',
 };

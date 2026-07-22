@@ -25,7 +25,7 @@ export const DeveloperCredit: React.FC<DeveloperCreditProps> = ({ lang }) => {
         <a
           href={DEVELOPER_PROFILE.portfolio}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="me noopener noreferrer"
           className="flex items-center gap-1.5 hover:text-amber-500 transition-colors"
         >
           <Globe className="w-3.5 h-3.5" />
@@ -34,7 +34,7 @@ export const DeveloperCredit: React.FC<DeveloperCreditProps> = ({ lang }) => {
         <a
           href={DEVELOPER_PROFILE.github}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="me noopener noreferrer"
           className="flex items-center gap-1.5 hover:text-white transition-colors"
         >
           <Github className="w-3.5 h-3.5" />
@@ -43,7 +43,7 @@ export const DeveloperCredit: React.FC<DeveloperCreditProps> = ({ lang }) => {
         <a
           href={DEVELOPER_PROFILE.linkedin}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="me noopener noreferrer"
           className="flex items-center gap-1.5 hover:text-[#0A66C2] transition-colors"
         >
           <Linkedin className="w-3.5 h-3.5" />

@@ -3,13 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KeyFixer - Instant Arabic / English Keyboard Layout Switcher</title>
+    <title>KeyFixer – Arabic & English Keyboard Layout Fixer</title>
     
     <!-- Primary Meta Tags -->
-    <meta name="title" content="KeyFixer - Instant Arabic / English Keyboard Layout Switcher" />
-    <meta name="description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Private, fast, and 100% offline." />
+    <meta name="title" content="KeyFixer – Arabic & English Keyboard Layout Fixer" />
+    <meta name="description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Free, private, and fully offline." />
     <meta name="author" content="Obada Dallo" />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#050505" />
+    <link rel="canonical" href="https://keyfixer.web.app/" />
 
     <!-- Favicon Assets -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -19,21 +21,79 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://obadadallo.web.app/" />
-    <meta property="og:title" content="KeyFixer - Instant Arabic / English Keyboard Layout Switcher" />
-    <meta property="og:description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Private, fast, and 100% offline." />
-    <meta property="og:image" content="https://obadadallo.web.app/og-image.png" />
+    <meta property="og:url" content="https://keyfixer.web.app/" />
+    <meta property="og:title" content="KeyFixer – Arabic & English Keyboard Layout Fixer" />
+    <meta property="og:description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Free, private, and fully offline." />
+    <meta property="og:image" content="https://keyfixer.web.app/og-image.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://obadadallo.web.app/" />
-    <meta name="twitter:title" content="KeyFixer - Instant Arabic / English Keyboard Layout Switcher" />
-    <meta name="twitter:description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Private, fast, and 100% offline." />
-    <meta name="twitter:image" content="https://obadadallo.web.app/og-image.png" />
+    <meta name="twitter:url" content="https://keyfixer.web.app/" />
+    <meta name="twitter:title" content="KeyFixer – Arabic & English Keyboard Layout Fixer" />
+    <meta name="twitter:description" content="Fix text typed with the wrong Arabic or English keyboard layout instantly. Free, private, and fully offline." />
+    <meta name="twitter:image" content="https://keyfixer.web.app/og-image.png" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://obadadallo.web.app/#person",
+            "name": "Obada Dallo",
+            "alternateName": "عبادة دللو",
+            "url": "https://obadadallo.web.app/",
+            "image": "https://obadadallo.web.app/og-image.jpg",
+            "jobTitle": "AI-First Product Builder",
+            "sameAs": [
+              "https://obadadallo.web.app/",
+              "https://github.com/obadadallo95",
+              "https://www.linkedin.com/in/obada-dallo-777a47a9/"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://keyfixer.web.app/#website",
+            "name": "KeyFixer",
+            "url": "https://keyfixer.web.app/",
+            "publisher": {
+              "@id": "https://obadadallo.web.app/#person"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://keyfixer.web.app/#software",
+            "name": "KeyFixer",
+            "alternateName": "مصحح لوحة المفاتيح KeyFixer",
+            "description": "Fix text typed with the wrong Arabic or English keyboard layout instantly. Free, private, and fully offline.",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Windows, macOS, Chrome OS, Linux",
+            "browserRequirements": "Requires Web browser or Chrome Manifest V3 extension host",
+            "softwareVersion": "1.0.0",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "url": "https://keyfixer.web.app/",
+            "downloadUrl": "https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0",
+            "codeRepository": "https://github.com/obadadallo95/keyfixer",
+            "license": "https://github.com/obadadallo95/keyfixer/blob/main/LICENSE",
+            "author": {
+              "@id": "https://obadadallo.web.app/#person"
+            },
+            "creator": {
+              "@id": "https://obadadallo.web.app/#person"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body class="bg-[#050505]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
