@@ -384,25 +384,11 @@ export const openFloatingKeyFixerWindow = async (lang: UILanguage) => {
 
     activePipWindow = pipWindow;
 
-    // Copy styles from main document to PiP window
+    // Copy styles from main document to PiP window with zero memory overhead
     const pipDoc = pipWindow.document;
-    Array.from(document.styleSheets).forEach(styleSheet => {
-      try {
-        if (styleSheet.cssRules) {
-          const newStyleEl = pipDoc.createElement('style');
-          Array.from(styleSheet.cssRules).forEach(rule => {
-            newStyleEl.appendChild(pipDoc.createTextNode(rule.cssText));
-          });
-          pipDoc.head.appendChild(newStyleEl);
-        } else if (styleSheet.href) {
-          const newLinkEl = pipDoc.createElement('link');
-          newLinkEl.rel = 'stylesheet';
-          newLinkEl.href = styleSheet.href;
-          pipDoc.head.appendChild(newLinkEl);
-        }
-      } catch {
-        // Ignore CORS stylesheet errors
-      }
+    pipDoc.head.innerHTML = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
+      pipDoc.head.appendChild(node.cloneNode(true));
     });
 
     // Configure PiP Document
