@@ -9,6 +9,7 @@ import { ConverterArea } from './components/ConverterArea';
 import { DeveloperCredit } from './components/DeveloperCredit';
 import { translations } from './i18n/translations';
 import { Globe } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App() {
   const [lang, setLang] = useState<UILanguage>(() => {
@@ -78,6 +79,7 @@ export default function App() {
         <ConverterArea lang={lang} />
         <DeveloperCredit lang={lang} />
       </main>
+      <Analytics />
     </div>
   );
 }
