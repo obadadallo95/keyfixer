@@ -18,6 +18,8 @@ import {
   Trash2,
   Laptop,
   Command,
+  ClipboardCheck,
+  Sparkles,
 } from 'lucide-react';
 
 interface FloatingKeyFixerContentProps {
@@ -36,6 +38,7 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
   const [mode, setMode] = useState<ConversionMode>('auto');
   const [platform, setPlatform] = useState<KeyboardPlatform>('windows');
   const [copied, setCopied] = useState(false);
+  const [quickStatus, setQuickStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const t = translations[lang].converter;
@@ -44,17 +47,17 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
   const conversionResult = convertKeyboardLayout(input, { mode, platform });
   const outputText = conversionResult.fixedText;
 
-  // Handle window resizing when collapsing/expanding
+  // Handle window resizing when collapsing/expanding (Respecting Chromium minimum bounds)
   useEffect(() => {
     try {
       if (isCollapsed) {
-        pipWindow.resizeTo(260, 54);
+        pipWindow.resizeTo(300, 180);
       } else {
         pipWindow.resizeTo(380, 420);
         setTimeout(() => textareaRef.current?.focus(), 50);
       }
     } catch {
-      // Ignore if resize is blocked by browser window manager
+      // Ignore if resize is constrained by OS window manager
     }
   }, [isCollapsed, pipWindow]);
 
@@ -96,38 +99,102 @@ export const FloatingKeyFixerContent: React.FC<FloatingKeyFixerContentProps> = (
     textareaRef.current?.focus();
   };
 
-  // ── COLLAPSED STATE (Compact 260x54 Pill) ──
+  // Quick 1-Click Clipboard Fixer for Collapsed Mode
+  const handleQuickPasteAndFix = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (!clipboardText || !clipboardText.trim()) {
+        setQuickStatus(lang === 'ar' ? 'الحافظة فارغة!' : 'Clipboard is empty!');
+        setTimeout(() => setQuickStatus(null), 2000);
+        return;
+      }
+
+      const res = convertKeyboardLayout(clipboardText, { mode: 'auto', platform });
+      if (res.fixedText) {
+        await navigator.clipboard.writeText(res.fixedText);
+        setInput(clipboardText);
+        setQuickStatus(lang === 'ar' ? 'تم التصحيح والنسخ!' : 'Fixed & Copied!');
+        setTimeout(() => setQuickStatus(null), 2000);
+      }
+    } catch (err) {
+      setQuickStatus(lang === 'ar' ? 'انسخ النص أولاً' : 'Copy text first');
+      setTimeout(() => setQuickStatus(null), 2000);
+    }
+  };
+
+  // ── COLLAPSED STATE (Compact 300x180 Widget HUD) ──
   if (isCollapsed) {
     return (
-      <div className="w-full h-screen bg-[#050505] text-slate-200 flex items-center justify-between px-3 select-none border border-amber-500/30 font-sans">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
-            <img src="/logo.svg" alt="KeyFixer Logo" className="w-4 h-4 object-contain" />
+      <div className="w-full h-screen bg-[#050505] text-slate-200 flex flex-col justify-between p-3 select-none border border-amber-500/30 font-sans selection:bg-amber-500 selection:text-black">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <img src="/logo.svg" alt="KeyFixer Logo" className="w-3.5 h-3.5 object-contain" />
+            </div>
+            <span className="text-xs font-bold tracking-tight text-white truncate">
+              KeyFixer Widget
+            </span>
           </div>
-          <span className="text-xs font-bold tracking-tight text-white truncate">
-            KeyFixer
-          </span>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(false)}
+              aria-label={lang === 'ar' ? 'توسيع المحرر' : 'Expand editor'}
+              title={lang === 'ar' ? 'توسيع (Expand)' : 'Expand'}
+              className="p-1 rounded-md hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={lang === 'ar' ? 'إغلاق' : 'Close window'}
+              title={lang === 'ar' ? 'إغلاق' : 'Close'}
+              className="p-1 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Center 1-Click Action Card */}
+        <div className="flex flex-col items-center justify-center py-2 gap-2">
+          <button
+            type="button"
+            onClick={handleQuickPasteAndFix}
+            className={`w-full py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-lg ${
+              quickStatus
+                ? 'bg-green-500/20 text-green-300 border-green-500/40'
+                : 'bg-amber-500 text-black hover:bg-amber-400 border-amber-400 font-black shadow-amber-500/10'
+            }`}
+          >
+            {quickStatus ? (
+              <>
+                <ClipboardCheck className="w-4 h-4 text-green-400" />
+                <span>{quickStatus}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 fill-current" />
+                <span>{lang === 'ar' ? 'إلصق وصلّح فوراً' : 'Paste & Fix Clipboard'}</span>
+              </>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            aria-label={lang === 'ar' ? 'توسيع النافذة' : 'Expand window'}
-            title={lang === 'ar' ? 'توسيع (Expand)' : 'Expand'}
-            className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
+            className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            {lang === 'ar' ? 'توسيع المحرر الكامل' : 'Expand full editor'}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={lang === 'ar' ? 'إغلاق' : 'Close window'}
-            title={lang === 'ar' ? 'إغلاق' : 'Close'}
-            className="p-1.5 rounded-md hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+        </div>
+
+        {/* Footer Hint */}
+        <div className="text-[9px] text-slate-600 text-center font-mono border-t border-slate-900/60 pt-1">
+          {lang === 'ar' ? 'تصحيح تلقائي بنقرة واحدة' : '1-Click Automatic Fixer'}
         </div>
       </div>
     );
