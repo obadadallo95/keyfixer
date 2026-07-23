@@ -53,6 +53,8 @@ Download the latest native Apple Silicon installer from [GitHub Release v1.1.0](
 > 1. Drag `KeyFixer.app` to your **Applications** folder.
 > 2. **Right-click** (or Control-click) the app icon and select **Open**.
 > 3. Click **Open** on the confirmation dialog.
+> 4. *If you get a "KeyFixer is damaged and cannot be opened" error*, run this command in your Terminal:
+>    `xattr -cr /Applications/KeyFixer.app`
 
 #### Chrome Extension
 Download the pre-built Chrome Extension package from [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).
@@ -107,6 +109,8 @@ See the [docs/](docs/) directory for detailed architecture, testing, layout mapp
 > 1. اسحب ملف `KeyFixer.app` إلى مجلد **Applications (التطبيقات)**.
 > 2. **انقر بالزر الأيمن (Right-click)** على أيقونة التطبيق واختر **Open**.
 > 3. اضغط على زر **Open** في نافذة التأكيد التي تظهر لك.
+> 4. *إذا ظهرت لك رسالة تفيد بأن التطبيق تالف ولا يمكن فتحه*، افتح الـ Terminal ونفذ الأمر التالي:
+>    `xattr -cr /Applications/KeyFixer.app`
 
 #### إضافة متصفح كروم
 قم بتحميل حزمة إضافة كروم من صفحة [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).

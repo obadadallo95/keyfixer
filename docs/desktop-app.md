@@ -18,7 +18,11 @@ To open it:
 1. Drag the `KeyFixer.app` into your **Applications** folder.
 2. **Right-click (or Control-click)** the app icon and select **Open**.
 3. Click **Open** on the warning dialog that appears.
-4. Once done, the app is permanently whitelisted and will open instantly in the future.
+4. *If you receive a "KeyFixer is damaged and cannot be opened" warning*, open Terminal and run the following command to clear the quarantine flag:
+   ```bash
+   xattr -cr /Applications/KeyFixer.app
+   ```
+5. Once done, the app is permanently whitelisted and will open instantly in the future.
 
 ## Local Build & Commands
 
