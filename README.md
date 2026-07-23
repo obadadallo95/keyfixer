@@ -82,6 +82,11 @@ Download the pre-built Chrome Extension package from [GitHub Release v1.0.0](htt
 3. Enable "Developer mode".
 4. Click "Load unpacked" and select the `extension/dist` folder.
 
+### Support & Donation ☕
+If you find KeyFixer useful and want to support my open-source projects, feel free to buy me a coffee! Your support helps cover server costs and developer program fees (like Apple's developer license) to keep shipping natively trusted utilities.
+
+👉 **[Support Obada Dallo on Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
+
 ### Documentation
 See the [docs/](docs/) directory for detailed architecture, testing, layout mappings, privacy information, and [macOS Desktop App Setup](docs/desktop-app.md).
 
@@ -131,6 +136,11 @@ See the [docs/](docs/) directory for detailed architecture, testing, layout mapp
 - **إضافة جوجل كروم**: إضافة خفيفة وسريعة توفر نافذة منبثقة بسيطة، وقائمة جانبية (Context Menu) لتصحيح النصوص فوراً داخل صفحات الويب.
 - **تعدد الأنظمة**: دعم خرائط الأحرف لكل من **Windows (Arabic 101)** و **macOS**.
 - **تطبيق ويب**: واجهة حديثة وسريعة تعمل كتطبيق مستقل أو لتجربة الأداة.
+
+### دعم المشروع ☕
+إذا كنت تجد KeyFixer مفيداً وترغب في دعم مشاريعي مفتوحة المصدر، يمكنك المساهمة بشراء قهوة لي! دعمك يساعدني على تغطية تكاليف الخوادم والاشتراك في برامج المطورين (مثل رخصة مطوري آبل) لتقديم تطبيقات آمنة وموقعة رسمياً للجميع.
+
+👉 **[ادعم عبادة دللو على Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
 
 ### التثبيت والتطوير
 انظر قسم التثبيت باللغة الإنجليزية في الأعلى لتشغيل تطبيق الويب أو إضافة المتصفح، أو قم بزيارة مجلد `docs/` لمزيد من التفاصيل.
