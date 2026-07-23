@@ -5,6 +5,7 @@ Welcome to the KeyFixer documentation.
 ## Documents
 
 - [Architecture](./architecture.md): Overview of the offline conversion engine.
+- [macOS Desktop App](./desktop-app.md): Native Tauri macOS application setup and features.
 - [Chrome Extension](./chrome-extension.md): Extension permissions, popup, and content script.
 - [Development](./development.md): Setup, build commands, and workflow.
 - [Testing](./testing.md): Automated testing framework details.

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "KeyFixer",
+  "version": "0.1.0",
+  "identifier": "com.obadadallo.keyfixer",
+  "build": {
+    "frontendDist": "../dist-desktop",
+    "devUrl": "http://localhost:5174/index-desktop.html",
+    "beforeDevCommand": "npm run dev:desktop",
+    "beforeBuildCommand": "npm run build:desktop"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "KeyFixer",
+        "width": 900,
+        "height": 600,
+        "minWidth": 700,
+        "minHeight": 500,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "center": true,
+        "focus": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": [
+      "icons/icon.icns",
+      "icons/icon.png",
+      "icons/icon_512x512.png",
+      "icons/icon_256x256.png",
+      "icons/icon_128x128.png",
+      "icons/icon_32x32.png",
+      "icons/icon_16x16.png"
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- macOS squircle clip -->
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230"/>
+    </clipPath>
+    <!-- Subtle top highlight gradient -->
+    <linearGradient id="topSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.055"/>
+      <stop offset="40%"  stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Bottom shadow -->
+    <linearGradient id="bottomShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="60%"  stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.30"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="#0b0b0d"/>
+
+  <!-- Top sheen -->
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#topSheen)"/>
+
+  <!-- Bottom shadow vignette -->
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#bottomShade)"/>
+
+  <!-- ع  (Arabic ain) — left, bold -->
+  <text
+    x="272"
+    y="590"
+    font-family="'SF Arabic', 'Arial Unicode MS', 'Noto Sans Arabic', sans-serif"
+    font-size="380"
+    font-weight="700"
+    fill="#F59E0B"
+    text-anchor="middle"
+    dominant-baseline="auto"
+  >ع</text>
+
+  <!-- Bidirectional arrow — center -->
+  <!-- Left arrowhead -->
+  <path
+    d="M 428 512 L 462 478 M 428 512 L 462 546"
+    stroke="#FBB928"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- Horizontal shaft -->
+  <line x1="428" y1="512" x2="596" y2="512"
+    stroke="#FBB928" stroke-width="38" stroke-linecap="round"/>
+  <!-- Right arrowhead -->
+  <path
+    d="M 596 512 L 562 478 M 596 512 L 562 546"
+    stroke="#FBB928"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- A  (Latin) — right, bold -->
+  <text
+    x="760"
+    y="590"
+    font-family="'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif"
+    font-size="380"
+    font-weight="700"
+    fill="#F59E0B"
+    text-anchor="middle"
+    dominant-baseline="auto"
+  >A</text>
+</svg>

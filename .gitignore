@@ -12,3 +12,8 @@ scratch/
 .aistudio
 
 .vercel
+
+# Desktop builds
+dist-desktop/
+KeyFixer.iconset/
+src-tauri/target/

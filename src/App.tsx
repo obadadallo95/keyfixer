@@ -12,7 +12,13 @@ import { translations } from './i18n/translations';
 import { Globe, AppWindow } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 
-export default function App() {
+export default function App({
+  isDesktop = false,
+  onCollapse,
+}: {
+  isDesktop?: boolean;
+  onCollapse?: () => void;
+} = {}) {
   const [lang, setLang] = useState<UILanguage>(() => {
     const saved = localStorage.getItem('keyfixer_lang');
     return (saved === 'ar' || saved === 'en') ? saved : 'en';
@@ -33,14 +39,14 @@ export default function App() {
   const t = translations[lang];
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[#050505] text-slate-300 font-sans selection:bg-amber-500 selection:text-black relative overflow-hidden">
+    <div data-tauri-drag-region className="min-h-[100dvh] flex flex-col bg-[#050505] text-slate-300 font-sans selection:bg-amber-500 selection:text-black relative overflow-hidden">
       {/* Immersive Background Radial Ambient Glows */}
-      <div className="absolute top-0 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-amber-500/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
+      <div data-tauri-drag-region className="absolute top-0 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-amber-500/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
+      <div data-tauri-drag-region className="absolute bottom-0 right-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
 
       {/* Simple Header */}
-      <header className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <header data-tauri-drag-region className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between cursor-default">
+        <div data-tauri-drag-region className="flex items-center gap-2 sm:gap-3">
           <img src="/logo.svg" alt="KeyFixer Logo" className="h-8 sm:h-12 w-auto object-contain" />
           <div className="hidden sm:block">
             <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1">
@@ -50,7 +56,18 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          {pipSupported && (
+          {isDesktop ? (
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-all shadow-sm group"
+              title={lang === 'ar' ? 'طي' : 'Collapse'}
+            >
+              <AppWindow className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline">{lang === 'ar' ? 'طي النافذة' : 'Collapse Window'}</span>
+              <span className="sm:hidden">{lang === 'ar' ? 'طي' : 'Collapse'}</span>
+            </button>
+          ) : pipSupported && (
             <button
               type="button"
               onClick={() => openFloatingKeyFixerWindow(lang)}
