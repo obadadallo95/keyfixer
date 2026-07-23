@@ -88,6 +88,7 @@ Download the pre-built Chrome Extension package from [GitHub Release v1.0.0](htt
 If you find KeyFixer useful and want to support my open-source projects, feel free to buy me a coffee! Your support helps cover server costs and developer program fees (like Apple's developer license) to keep shipping natively trusted utilities.
 
 👉 **[Support Obada Dallo on Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
+👉 **[Sponsor Obada Dallo on GitHub Sponsors](https://github.com/sponsors/obadadallo95)**
 
 ### Documentation
 See the [docs/](docs/) directory for detailed architecture, testing, layout mappings, privacy information, and [macOS Desktop App Setup](docs/desktop-app.md).
@@ -145,6 +146,7 @@ See the [docs/](docs/) directory for detailed architecture, testing, layout mapp
 إذا كنت تجد KeyFixer مفيداً وترغب في دعم مشاريعي مفتوحة المصدر، يمكنك المساهمة بشراء قهوة لي! دعمك يساعدني على تغطية تكاليف الخوادم والاشتراك في برامج المطورين (مثل رخصة مطوري آبل) لتقديم تطبيقات آمنة وموقعة رسمياً للجميع.
 
 👉 **[ادعم عبادة دللو على Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
+👉 **[ادعم عبادة دللو عبر GitHub Sponsors](https://github.com/sponsors/obadadallo95)**
 
 ### التثبيت والتطوير
 انظر قسم التثبيت باللغة الإنجليزية في الأعلى لتشغيل تطبيق الويب أو إضافة المتصفح، أو قم بزيارة مجلد `docs/` لمزيد من التفاصيل.

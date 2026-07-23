@@ -15,6 +15,7 @@ export interface DeveloperProfileInfo {
   linkedin: string;
   github: string;
   donation: string;
+  githubSponsors: string;
   bio: string;
   location: string;
   avatarUrl: string;
@@ -28,6 +29,7 @@ export const DEVELOPER_PROFILE: DeveloperProfileInfo = {
   linkedin: 'https://www.linkedin.com/in/obada-dallo-777a47a9/',
   github: 'https://github.com/obadadallo95',
   donation: 'https://buymeacoffee.com/obadadallo',
+  githubSponsors: 'https://github.com/sponsors/obadadallo95',
   bio: 'Passionate software engineer and product builder crafting open-source tools, high-performance web applications, and system utilities.',
   location: 'Chemnitz, Saxony, Germany',
   avatarUrl: 'https://github.com/obadadallo95.png',
