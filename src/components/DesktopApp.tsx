@@ -273,8 +273,9 @@ export function DesktopApp() {
         {/* Footer Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           {/* Developer Info */}
-          <div style={{ fontSize: 11, color: T.text2, opacity: 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
-            KeyFixer v1.0.0 &bull;{' '}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
+            <span>KeyFixer v1.0.0</span>
+            <span>&bull;</span>
             <span
               onClick={() => invoke('plugin:shell|open', { path: 'https://obadadallo.web.app/' }).catch(console.error)}
               style={{ cursor: 'pointer', transition: 'color 0.2s' }}
@@ -289,6 +290,20 @@ export function DesktopApp() {
               title="Visit Portfolio"
             >
               By Obada Dallo
+            </span>
+            <span>&bull;</span>
+            <span
+              onClick={() => invoke('plugin:shell|open', { path: 'https://buymeacoffee.com/obadadallo' }).catch(console.error)}
+              style={{ cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#F59E0B';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = T.text2;
+              }}
+              title="Buy me a coffee"
+            >
+              ☕ Support
             </span>
           </div>
 
