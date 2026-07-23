@@ -6,7 +6,7 @@
 import React from 'react';
 import { UILanguage, DEVELOPER_PROFILE } from '../types';
 import { translations } from '../i18n/translations';
-import { Github, Linkedin, Globe, Code2 } from 'lucide-react';
+import { Github, Linkedin, Globe, Code2, Coffee } from 'lucide-react';
 
 interface DeveloperCreditProps {
   lang: UILanguage;
@@ -48,6 +48,15 @@ export const DeveloperCredit: React.FC<DeveloperCreditProps> = ({ lang }) => {
         >
           <Linkedin className="w-3.5 h-3.5" />
           <span>LinkedIn</span>
+        </a>
+        <a
+          href={DEVELOPER_PROFILE.donation}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-amber-500/90 hover:text-amber-400 transition-colors"
+        >
+          <Coffee className="w-3.5 h-3.5" />
+          <span>{lang === 'ar' ? 'ادعم المشروع' : 'Support'}</span>
         </a>
       </div>
     </div>

@@ -14,6 +14,7 @@ export interface DeveloperProfileInfo {
   portfolio: string;
   linkedin: string;
   github: string;
+  donation: string;
   bio: string;
   location: string;
   avatarUrl: string;
@@ -26,6 +27,7 @@ export const DEVELOPER_PROFILE: DeveloperProfileInfo = {
   portfolio: 'https://obadadallo.web.app/',
   linkedin: 'https://www.linkedin.com/in/obada-dallo-777a47a9/',
   github: 'https://github.com/obadadallo95',
+  donation: 'https://buymeacoffee.com/obadadallo',
   bio: 'Passionate software engineer and product builder crafting open-source tools, high-performance web applications, and system utilities.',
   location: 'Chemnitz, Saxony, Germany',
   avatarUrl: 'https://github.com/obadadallo95.png',
