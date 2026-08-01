@@ -32,5 +32,5 @@ export const DEVELOPER_PROFILE: DeveloperProfileInfo = {
   githubSponsors: 'https://github.com/sponsors/obadadallo95',
   bio: 'Passionate software engineer and product builder crafting open-source tools, high-performance web applications, and system utilities.',
   location: 'Chemnitz, Saxony, Germany',
-  avatarUrl: 'https://github.com/obadadallo95.png',
+  avatarUrl: '/obada_portrait.webp',
 };
