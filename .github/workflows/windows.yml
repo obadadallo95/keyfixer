@@ -29,9 +29,6 @@ jobs:
       - name: Test
         run: npm run test:run
         
-      - name: Build Desktop Web Assets
-        run: npm run build:desktop
-        
       - name: Build Windows Tauri App
         run: npm run build:windows
         

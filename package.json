@@ -9,7 +9,7 @@
     "dev:desktop": "vite --config vite.config.desktop.ts",
     "build": "tsc -b && vite build",
     "build:web": "npm run build",
-    "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && cp dist-desktop/index-desktop.html dist-desktop/index.html",
+    "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && node -e \"require('fs').copyFileSync('dist-desktop/index-desktop.html', 'dist-desktop/index.html')\"",
     "build:appstore": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
     "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json",
     "verify:appstore": "bash scripts/verify-appstore-bundle.sh",
