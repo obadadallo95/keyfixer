@@ -51,7 +51,6 @@ export default function App({
         <div data-tauri-drag-region className="flex items-center gap-3 sm:gap-4">
           <img src="/logo.svg" alt="KeyFixer Logo" className="h-8 sm:h-11 w-auto object-contain" />
           <div className="hidden sm:flex flex-col justify-center gap-0.5">
-            <h1 className="text-lg font-bold text-white leading-none tracking-tight">KeyFixer</h1>
             <p className="text-[13px] text-slate-300 font-medium leading-none">
               {t.tagline}
             </p>
