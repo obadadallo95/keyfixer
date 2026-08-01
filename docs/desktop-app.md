@@ -8,11 +8,13 @@ KeyFixer includes a native macOS desktop application built with **Tauri v2** and
 - **System Tray Icon (Menu Bar)**: Left-clicking the icon toggles window visibility, and right-clicking opens a native context menu with Show and Quit options.
 - **macOS Light & Dark Mode Support**: Auto-detects the operating system's color scheme and renders native light/dark UI elements seamlessly.
 - **Window Hide on Close**: Clicking the red close traffic light button (`x`) hides the window instead of exiting the application.
+- **Global Shortcut**: Press `⌥⌘K` from any application to show or hide KeyFixer and focus the input editor.
 - **Draggable Window Header**: Click and drag the title bar to move the window anywhere on your screen.
+- **Privacy First**: The macOS app has no analytics, advertising, tracking, or network-dependent text processing.
 
 ## Installation & Gatekeeper Workaround
 
-Since the app is open-source and not signed with a paid Apple Developer Account ($99/year), macOS Gatekeeper will block it on the first launch.
+GitHub development builds may be unsigned and can be blocked by macOS Gatekeeper. Mac App Store releases are sandboxed and signed through the Apple Developer Program.
 
 To open it:
 1. Drag the `KeyFixer.app` into your **Applications** folder.
@@ -39,8 +41,15 @@ npm run tauri dev
 npm run build:desktop
 npm run tauri build
 ```
-The output `.dmg` installer will be located in:
-`src-tauri/target/release/bundle/dmg/KeyFixer_0.1.0_aarch64.dmg` (or `x64.dmg` for Intel Macs).
+The direct-distribution `.dmg` is generated under `src-tauri/target/release/bundle/dmg/`.
+
+### Build the Mac App Store variant
+
+```bash
+npm run build:appstore
+```
+
+The App Store configuration enables App Sandbox, sets the Utility category, declares export-compliance metadata, and targets macOS 12 or later. A final signed submission also requires the paid team's Apple Distribution certificate, confirmed Team ID, and Mac App Store Connect provisioning profile.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 {
   "name": "keyfixer",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A privacy-first Arabic and English keyboard layout correction tool for the web and Chrome.",
   "type": "module",
   "scripts": {
@@ -10,6 +10,8 @@
     "build": "tsc -b && vite build",
     "build:web": "npm run build",
     "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && cp dist-desktop/index-desktop.html dist-desktop/index.html",
+    "build:appstore": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
+    "verify:appstore": "bash scripts/verify-appstore-bundle.sh",
     "build:extension": "npm run build && node extension-build.js",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-desktop extension/dist",
