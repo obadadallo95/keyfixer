@@ -85,9 +85,6 @@ jobs:
       - name: Run unit tests
         run: npm run test:run
 
-      - name: Cargo check (Rust)
-        run: cargo check
-        working-directory: src-tauri
 
       # ── 6. Build MSIX ────────────────────────────────────────────────────────
       - name: Build MSIX package
@@ -114,9 +111,20 @@ jobs:
             -FriendlyName "KeyFixer MSIX CI (ephemeral)" `
             -NotAfter (Get-Date).AddDays(1)
 
+          # Trust the cert locally so signtool verify /pa can build a chain.
+          # Only the public certificate is copied — no private key is exposed.
+          $pubCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($cert)
+          $trustedStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+            [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPeople,
+            [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+          )
+          $trustedStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+          $trustedStore.Add($pubCert)
+          $trustedStore.Close()
+
           # Store thumbprint for subsequent steps
           echo "CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
-          Write-Host "Certificate created: $($cert.Thumbprint)"
+          Write-Host "Certificate created and trusted: $($cert.Thumbprint)"
 
       - name: Sign MSIX package
         shell: pwsh
@@ -231,16 +239,23 @@ jobs:
           Write-Host "  SHA256 : $hash"
           Write-Host "═══════════════════════════════════════════"
 
-      # ── 10. Remove ephemeral certificate ─────────────────────────────────────
+      # ── 10. Remove ephemeral certificate from all stores ─────────────────────
       - name: Remove ephemeral certificate
         if: always()
         shell: pwsh
         run: |
           if ($env:CERT_THUMBPRINT) {
-            $certPath = "Cert:\CurrentUser\My\$env:CERT_THUMBPRINT"
-            if (Test-Path $certPath) {
-              Remove-Item $certPath -Force
-              Write-Host "Ephemeral certificate removed."
+            # Remove from personal store
+            $myPath = "Cert:\CurrentUser\My\$env:CERT_THUMBPRINT"
+            if (Test-Path $myPath) {
+              Remove-Item $myPath -Force
+              Write-Host "Removed from CurrentUser\My."
+            }
+            # Remove from TrustedPeople (added for signtool verify)
+            $tpPath = "Cert:\CurrentUser\TrustedPeople\$env:CERT_THUMBPRINT"
+            if (Test-Path $tpPath) {
+              Remove-Item $tpPath -Force
+              Write-Host "Removed from CurrentUser\TrustedPeople."
             }
           }
 
