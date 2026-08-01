@@ -45,6 +45,7 @@
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.28.1",
     "jsdom": "^29.1.1",
+    "puppeteer": "^24.43.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.14",
     "typescript": "~5.8.2",
