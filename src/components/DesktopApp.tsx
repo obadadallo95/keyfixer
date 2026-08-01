@@ -61,16 +61,16 @@ export function DesktopApp() {
       };
     } else {
       return {
-        bg: '#F5F5F7',
-        toolbarBg: 'rgba(255,255,255,0.85)',
+        bg: '#FDFBF7',
+        toolbarBg: 'rgba(253,251,247,0.85)',
         surface: '#FFFFFF',
-        segmentedBg: 'rgba(0,0,0,0.05)',
-        inputBg: '#FFFFFF',
-        border: 'rgba(0,0,0,0.08)',
-        text1: '#1C1C1E',
-        text2: '#636366',
+        segmentedBg: 'rgba(217,119,6,0.08)',
+        inputBg: '#FAFAF9',
+        border: 'rgba(217,119,6,0.15)',
+        text1: '#292524',
+        text2: '#78716C',
         accent: '#D97706',
-        accentDim: 'rgba(217,119,6,0.1)',
+        accentDim: 'rgba(217,119,6,0.12)',
         btnText: '#FFFFFF',
         logoInvert: 1,
       };
@@ -161,10 +161,10 @@ export function DesktopApp() {
     >
       {/* ── TOOLBAR (Drag Region & Traffic Lights Space) ── */}
       <div
-        data-tauri-drag-region
-        onMouseDown={handleStartDrag}
+        data-tauri-drag-region={platform === 'mac' ? true : undefined}
+        onMouseDown={platform === 'mac' ? handleStartDrag : undefined}
         style={{
-          height: 48,
+          height: platform === 'mac' ? 48 : 36,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -174,7 +174,7 @@ export function DesktopApp() {
           WebkitBackdropFilter: 'blur(20px)',
           flexShrink: 0,
           position: 'relative',
-          cursor: 'grab',
+          cursor: platform === 'mac' ? 'grab' : 'default',
         }}
       >
         {/* Centered Dynamic Logo */}
@@ -398,7 +398,7 @@ export function DesktopApp() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
             <span>KeyFixer v{appVersion}</span>
             <span>&bull;</span>
-            <span title="Global shortcut">⌥⌘K</span>
+            <span title="Global shortcut">{platform === 'windows' ? 'Ctrl+Alt+K' : '⌥⌘K'}</span>
             <span>&bull;</span>
             <span>By Obada Dallo</span>
             <span>&bull;</span>
