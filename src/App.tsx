@@ -10,8 +10,9 @@ import { DeveloperCredit } from './components/DeveloperCredit';
 import { DownloadSection } from './components/DownloadSection';
 import { openFloatingKeyFixerWindow, isDocumentPipSupported } from './components/FloatingKeyFixer';
 import { translations } from './i18n/translations';
-import { Globe, AppWindow } from 'lucide-react';
+import { AppWindow, Coffee } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { DEVELOPER_PROFILE } from './types';
 
 export default function App({
   isDesktop = false,
@@ -105,6 +106,19 @@ export default function App({
         <DownloadSection lang={lang} />
         <DeveloperCredit lang={lang} />
       </main>
+
+      {/* Floating Support Button */}
+      <a
+        href={DEVELOPER_PROFILE.donation}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-3 bg-amber-500 hover:bg-amber-400 text-black rounded-full shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all hover:-translate-y-1 group"
+        title={lang === 'ar' ? 'ادعم المشروع' : 'Support Project'}
+      >
+        <Coffee className="w-5 h-5 sm:w-5 sm:h-5" />
+        <span className="font-bold hidden sm:inline-block">{lang === 'ar' ? 'ادعم المشروع' : 'Support'}</span>
+      </a>
+
       <Analytics />
     </div>
   );
