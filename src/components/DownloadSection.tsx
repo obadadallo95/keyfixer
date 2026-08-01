@@ -1,6 +1,6 @@
 /**
  * @file DownloadSection.tsx
- * @description Sleek, minimal, non-intrusive download badges for macOS, Windows, and Chrome Extension.
+ * @description Sleek, minimal download section emphasizing the macOS App Store release.
  */
 
 import React from 'react';
@@ -13,7 +13,7 @@ interface DownloadSectionProps {
 
 // ─── CONFIGURE RELEASE LINKS HERE ──────────────────────────────────────────
 const DOWNLOAD_LINKS = {
-  mac:       '', // e.g. 'https://github.com/obadadallo95/keyfixer/releases/latest/download/KeyFixer.dmg'
+  mac:       '', // e.g. 'https://apps.apple.com/us/app/keyfixer/...'
   windows:   '', // e.g. 'https://github.com/obadadallo95/keyfixer/releases/latest/download/KeyFixer-Setup.exe'
   chrome:    '', // e.g. 'https://chromewebstore.google.com/detail/keyfixer/...'
 };
@@ -21,15 +21,15 @@ const DOWNLOAD_LINKS = {
 
 const i18n = {
   en: {
-    getApps: 'Apps & Extension:',
-    mac: 'macOS',
+    macLabel: 'Download on Mac App Store',
+    macSub: 'Free',
     windows: 'Windows',
-    chrome: 'Chrome Extension',
+    chrome: 'Chrome',
     comingSoon: 'Soon',
   },
   ar: {
-    getApps: 'التطبيقات والإضافة:',
-    mac: 'ماك macOS',
+    macLabel: 'تحميل من Mac App Store',
+    macSub: 'مجاني',
     windows: 'ويندوز',
     chrome: 'إضافة كروم',
     comingSoon: 'قريباً',
@@ -39,61 +39,75 @@ const i18n = {
 export const DownloadSection: React.FC<DownloadSectionProps> = ({ lang }) => {
   const t = i18n[lang];
 
-  const items = [
-    {
-      key: 'mac',
-      icon: <Apple className="w-3.5 h-3.5" />,
-      label: t.mac,
-      url: DOWNLOAD_LINKS.mac,
-    },
-    {
-      key: 'windows',
-      icon: <Monitor className="w-3.5 h-3.5" />,
-      label: t.windows,
-      url: DOWNLOAD_LINKS.windows,
-    },
-    {
-      key: 'chrome',
-      icon: <Chrome className="w-3.5 h-3.5 text-amber-400" />,
-      label: t.chrome,
-      url: DOWNLOAD_LINKS.chrome,
-    },
-  ];
-
   return (
-    <div className="w-full max-w-5xl mx-auto mt-4 pt-3 border-t border-white/[0.06] relative z-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
-      <span className="text-slate-500 font-medium flex items-center gap-1.5 me-1">
-        <Download className="w-3.5 h-3.5 text-slate-400" />
-        <span>{t.getApps}</span>
-      </span>
+    <div className="w-full max-w-6xl mx-auto mt-4 pt-6 border-t border-white/[0.06] relative z-10 flex flex-col items-center gap-4">
+      
+      {/* Primary Call to Action: macOS */}
+      <a
+        href={DOWNLOAD_LINKS.mac || '#'}
+        target={DOWNLOAD_LINKS.mac ? "_blank" : undefined}
+        rel="noopener noreferrer"
+        className={`group relative flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 shadow-xl overflow-hidden ${
+          DOWNLOAD_LINKS.mac 
+            ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20 hover:scale-105'
+            : 'bg-white/10 text-white cursor-default'
+        }`}
+      >
+        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+        <Apple className="w-6 h-6 relative z-10" />
+        <div className="flex flex-col items-start relative z-10">
+          <span className="text-sm font-bold leading-tight">{t.macLabel}</span>
+          {!DOWNLOAD_LINKS.mac ? (
+            <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{t.comingSoon}</span>
+          ) : (
+            <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{t.macSub}</span>
+          )}
+        </div>
+      </a>
 
-      {items.map((item) => {
-        const isAvailable = Boolean(item.url);
-        return isAvailable ? (
+      {/* Secondary Platforms */}
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
+        {/* Windows */}
+        {DOWNLOAD_LINKS.windows ? (
           <a
-            key={item.key}
-            href={item.url}
+            href={DOWNLOAD_LINKS.windows}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 hover:border-amber-500/40 hover:bg-amber-500/10 text-slate-300 hover:text-amber-400 font-medium transition-all shadow-sm group"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-[#0078D4]/40 hover:bg-[#0078D4]/10 text-slate-300 hover:text-[#0078D4] font-medium transition-all shadow-sm group"
           >
-            {item.icon}
-            <span>{item.label}</span>
+            <Monitor className="w-3.5 h-3.5" />
+            <span>{t.windows}</span>
             <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
           </a>
         ) : (
-          <span
-            key={item.key}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] text-slate-500 font-normal select-none"
-          >
-            {item.icon}
-            <span>{item.label}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-500/80 font-mono">
-              {t.comingSoon}
-            </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.05] text-slate-500 font-normal select-none">
+            <Monitor className="w-3.5 h-3.5" />
+            <span>{t.windows}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
           </span>
-        );
-      })}
+        )}
+
+        {/* Chrome Extension */}
+        {DOWNLOAD_LINKS.chrome ? (
+          <a
+            href={DOWNLOAD_LINKS.chrome}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-amber-500/40 hover:bg-amber-500/10 text-slate-300 hover:text-amber-400 font-medium transition-all shadow-sm group"
+          >
+            <Chrome className="w-3.5 h-3.5" />
+            <span>{t.chrome}</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </a>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.05] text-slate-500 font-normal select-none">
+            <Chrome className="w-3.5 h-3.5" />
+            <span>{t.chrome}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
+          </span>
+        )}
+      </div>
+
     </div>
   );
 };
