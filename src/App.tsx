@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { UILanguage } from './types';
 import { ConverterArea } from './components/ConverterArea';
 import { DeveloperCredit } from './components/DeveloperCredit';
+import { DownloadSection } from './components/DownloadSection';
 import { openFloatingKeyFixerWindow, isDocumentPipSupported } from './components/FloatingKeyFixer';
 import { translations } from './i18n/translations';
 import { Globe, AppWindow } from 'lucide-react';
@@ -112,6 +113,7 @@ export default function App({
       {/* Main Content */}
       <main className="flex-1 relative z-10 w-full max-w-5xl mx-auto px-2 sm:px-6 lg:px-8 pb-4 sm:py-8 flex flex-col min-h-0">
         <ConverterArea lang={lang} />
+        <DownloadSection lang={lang} />
         <DeveloperCredit lang={lang} />
       </main>
       <Analytics />
