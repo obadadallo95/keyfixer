@@ -1,0 +1,297 @@
+name: Microsoft Store MSIX
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Builds and packages KeyFixer as an MSIX for the Microsoft Store.
+#
+# What this workflow does:
+#   1. Compiles the TypeScript frontend + Tauri Windows x64 executable
+#   2. Generates required MSIX PNG assets
+#   3. Assembles the MSIX staging directory with AppxManifest.xml
+#   4. Packs the .msix with MakeAppx.exe (Windows SDK, pre-installed on runner)
+#   5. Signs the .msix with an ephemeral self-signed certificate
+#      (Subject = CN=A2B67C57-E9AA-4233-B229-7A21800FE184, matches Partner Center)
+#   6. Verifies the signature and inspects the manifest
+#   7. Uploads the signed .msix as artifact "KeyFixer-Microsoft-Store-MSIX"
+#
+# Signing:
+#   The certificate is created ephemerally in the Windows cert store during
+#   this workflow run and deleted immediately after signing. No private key
+#   material is stored in secrets or committed to the repository.
+#   Partner Center re-signs the package with a trusted Microsoft certificate
+#   before distributing it to users.
+#
+# Upload:
+#   After downloading the artifact, upload KeyFixer_1.1.1.0_x64.msix to:
+#   https://partner.microsoft.com/ → Product Management → Packages
+#   Partner Center validates the Publisher identity and applies Store signing.
+#
+# Version increment rule:
+#   Each new submission must use a strictly greater four-part version.
+#   Update the Version attribute in src-tauri/msix/AppxManifest.xml and
+#   the MSIX_FILENAME in scripts/build-msix.mjs before the next submission.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [ feat/microsoft-store-msix ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-msix:
+    name: Build MSIX Package
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
+      - name: Set up Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      # ── 3. Rust ──────────────────────────────────────────────────────────────
+      - name: Set up Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      # Cache Cargo registry and compilation artifacts
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # ── 4. Install dependencies ──────────────────────────────────────────────
+      - name: Install npm dependencies
+        run: npm ci
+
+      # ── 5. Quality gates ─────────────────────────────────────────────────────
+      - name: TypeScript typecheck (main)
+        run: npm run typecheck
+
+      - name: TypeScript typecheck (extension)
+        run: npm run typecheck:extension
+
+      - name: Run unit tests
+        run: npm run test:run
+
+
+      # ── 6. Build MSIX ────────────────────────────────────────────────────────
+      - name: Build MSIX package
+        run: npm run build:windows:msix
+        env:
+          # Ensure a clean build; no GITHUB_TOKEN leaks into tauri-cli
+          GITHUB_TOKEN: ""
+
+      # ── 7. Sign with ephemeral self-signed certificate ───────────────────────
+      #
+      # The certificate Subject matches the Partner Center Publisher identity
+      # exactly: CN=A2B67C57-E9AA-4233-B229-7A21800FE184
+      #
+      # The cert is created in the CurrentUser\My store, used only for signing,
+      # then immediately removed. No .pfx file is written to disk.
+      - name: Create ephemeral signing certificate
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate `
+            -Subject "CN=A2B67C57-E9AA-4233-B229-7A21800FE184" `
+            -Type CodeSigningCert `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3") `
+            -FriendlyName "KeyFixer MSIX CI (ephemeral)" `
+            -NotAfter (Get-Date).AddDays(1)
+
+          # Trust the cert locally so signtool verify /pa can build a chain.
+          # Only the public certificate is copied — no private key is exposed.
+          $pubCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($cert)
+          $trustedStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+            [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPeople,
+            [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+          )
+          $trustedStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+          $trustedStore.Add($pubCert)
+          $trustedStore.Close()
+
+          # Store thumbprint for subsequent steps
+          echo "CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+          Write-Host "Certificate created and trusted: $($cert.Thumbprint)"
+
+      - name: Sign MSIX package
+        shell: pwsh
+        run: |
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+
+          # Locate SignTool from the Windows SDK
+          $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $signtool = Get-ChildItem -Path $sdkBase -Recurse -Filter "signtool.exe" |
+                      Where-Object { $_.FullName -match "x64" } |
+                      Sort-Object FullName -Descending |
+                      Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $signtool) {
+            Write-Error "SignTool not found. Ensure Windows SDK is installed on runner."
+            exit 1
+          }
+
+          Write-Host "Using SignTool: $signtool"
+
+          & $signtool sign `
+            /sha1 $env:CERT_THUMBPRINT `
+            /fd   SHA256 `
+            /tr   http://timestamp.acs.microsoft.com `
+            /td   SHA256 `
+            $msix
+
+          Write-Host "Package signed successfully."
+
+      - name: Verify package signature
+        shell: pwsh
+        run: |
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+
+          # Use Get-AuthenticodeSignature to verify the signature is structurally
+          # valid and signed by the correct certificate. This works with self-signed
+          # certs without requiring a globally trusted root chain.
+          $sig = Get-AuthenticodeSignature -FilePath $msix
+          Write-Host "SignerCertificate: $($sig.SignerCertificate.Subject)"
+          Write-Host "TimeStamperCertificate: $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "Status: $($sig.Status)"
+          Write-Host "StatusMessage: $($sig.StatusMessage)"
+
+          # Confirm signed by exactly the correct Publisher identity
+          $expectedSubject = "CN=A2B67C57-E9AA-4233-B229-7A21800FE184"
+          if ($sig.SignerCertificate.Subject -ne $expectedSubject) {
+            Write-Error "Signer subject mismatch! Got: $($sig.SignerCertificate.Subject)"
+            exit 1
+          }
+
+          # Confirm thumbprint matches the cert we created
+          if ($sig.SignerCertificate.Thumbprint -ne $env:CERT_THUMBPRINT) {
+            Write-Error "Thumbprint mismatch! Expected: $env:CERT_THUMBPRINT Got: $($sig.SignerCertificate.Thumbprint)"
+            exit 1
+          }
+
+          # Accept HashMismatch only if it means "untrusted root" for a self-signed cert
+          # (UnknownError = untrusted root; Valid = trusted). Both confirm the signature exists.
+          $acceptableStatuses = @('Valid', 'UnknownError')
+          if ($sig.Status -notin $acceptableStatuses) {
+            Write-Error "Unexpected signature status: $($sig.Status) — $($sig.StatusMessage)"
+            exit 1
+          }
+
+          Write-Host ""
+          Write-Host "Signature validation passed:"
+          Write-Host "  Signer   : $($sig.SignerCertificate.Subject)"
+          Write-Host "  Thumbprint: $($sig.SignerCertificate.Thumbprint)"
+          Write-Host "  Status   : $($sig.Status)"
+
+      # ── 8. Validate manifest ─────────────────────────────────────────────────
+      - name: Validate MSIX manifest fields
+        shell: pwsh
+        run: |
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $unpackDir = "src-tauri\target\msix-inspect"
+
+          # Locate MakeAppx
+          $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $makeappx = Get-ChildItem -Path $sdkBase -Recurse -Filter "makeappx.exe" |
+                      Where-Object { $_.FullName -match "x64" } |
+                      Sort-Object FullName -Descending |
+                      Select-Object -First 1 -ExpandProperty FullName
+
+          & $makeappx unpack /p $msix /d $unpackDir /nv
+
+          $manifest = [xml](Get-Content "$unpackDir\AppxManifest.xml")
+          $ns = @{ ns = "http://schemas.microsoft.com/appx/manifest/foundation/windows10" }
+          $id = $manifest.Package.Identity
+
+          Write-Host ""
+          Write-Host "=== Manifest Validation ==="
+          Write-Host "Name      : $($id.Name)"
+          Write-Host "Publisher : $($id.Publisher)"
+          Write-Host "Version   : $($id.Version)"
+          Write-Host "Arch      : $($id.ProcessorArchitecture)"
+          Write-Host ""
+
+          $errors = 0
+          if ($id.Name -ne "ObadaDallo.KeyFixer")                                     { Write-Error "Name mismatch!";      $errors++ }
+          if ($id.Publisher -ne "CN=A2B67C57-E9AA-4233-B229-7A21800FE184")            { Write-Error "Publisher mismatch!"; $errors++ }
+          if ($id.Version -ne "1.1.1.0")                                               { Write-Error "Version mismatch!";   $errors++ }
+          if ($id.ProcessorArchitecture -ne "x64")                                     { Write-Error "Arch mismatch!";      $errors++ }
+
+          $exe = "$unpackDir\KeyFixer\keyfixer-desktop.exe"
+          if (-not (Test-Path $exe))                                                   { Write-Error "Executable not found: $exe"; $errors++ }
+          else                                                                          { Write-Host "Executable: FOUND" }
+
+          $requiredAssets = @(
+            "Assets\Square44x44Logo.png",
+            "Assets\Square150x150Logo.png",
+            "Assets\StoreLogo.png",
+            "Assets\SplashScreen.png"
+          )
+          foreach ($asset in $requiredAssets) {
+            $assetPath = "$unpackDir\$asset"
+            if (-not (Test-Path $assetPath)) { Write-Error "Asset missing: $asset"; $errors++ }
+            else                             { Write-Host "Asset OK : $asset" }
+          }
+
+          if ($errors -gt 0) {
+            Write-Error "Manifest validation failed with $errors error(s)."
+            exit 1
+          }
+          Write-Host ""
+          Write-Host "All manifest checks passed."
+
+      # ── 9. Report package info ───────────────────────────────────────────────
+      - name: Report package info
+        shell: pwsh
+        run: |
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $size = (Get-Item $msix).Length
+          $hash = (Get-FileHash $msix -Algorithm SHA256).Hash
+          Write-Host ""
+          Write-Host "═══════════════════════════════════════════"
+          Write-Host " MSIX Artifact"
+          Write-Host "  File   : KeyFixer_1.1.1.0_x64.msix"
+          Write-Host "  Size   : $([math]::Round($size/1MB,2)) MB ($size bytes)"
+          Write-Host "  SHA256 : $hash"
+          Write-Host "═══════════════════════════════════════════"
+
+      # ── 10. Remove ephemeral certificate from all stores ─────────────────────
+      - name: Remove ephemeral certificate
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:CERT_THUMBPRINT) {
+            # Remove from personal store
+            $myPath = "Cert:\CurrentUser\My\$env:CERT_THUMBPRINT"
+            if (Test-Path $myPath) {
+              Remove-Item $myPath -Force
+              Write-Host "Removed from CurrentUser\My."
+            }
+            # Remove from TrustedPeople (added for signtool verify)
+            $tpPath = "Cert:\CurrentUser\TrustedPeople\$env:CERT_THUMBPRINT"
+            if (Test-Path $tpPath) {
+              Remove-Item $tpPath -Force
+              Write-Host "Removed from CurrentUser\TrustedPeople."
+            }
+          }
+
+      # ── 11. Upload artifact ──────────────────────────────────────────────────
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyFixer-Microsoft-Store-MSIX
+          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.1.0_x64.msix
+          if-no-files-found: error
+          retention-days: 90
