@@ -50,8 +50,7 @@ export default function App({
         <div data-tauri-drag-region className="flex items-center gap-3 sm:gap-4">
           <img src="/logo.svg" alt="KeyFixer Logo" className="h-7 sm:h-10 w-auto object-contain" />
           <div className="hidden sm:block flex-col justify-center">
-            <h1 className="text-white font-bold text-sm tracking-tight leading-none mb-0.5">KeyFixer</h1>
-            <p className="text-[10px] text-slate-400 font-medium leading-none">
+            <p className="text-xs text-slate-400 font-medium leading-none">
               {t.tagline}
             </p>
           </div>
@@ -78,20 +77,20 @@ export default function App({
             title="Toggle Language"
           >
             <div
-              className={`absolute h-[28px] w-[64px] bg-gradient-to-b from-amber-500/20 to-amber-500/5 border border-amber-500/30 rounded-full transition-transform duration-300 ease-out ${
+              className={`absolute h-[32px] w-[64px] bg-amber-500 rounded-full transition-transform duration-300 ease-out shadow-md ${
                 lang === 'en' ? 'translate-x-0' : 'translate-x-[64px]'
               }`}
             />
             <div
-              className={`relative z-10 flex items-center justify-center h-[28px] w-[64px] text-[11px] font-black tracking-widest transition-colors duration-300 ${
-                lang === 'en' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-500 group-hover:text-slate-400'
+              className={`relative z-10 flex items-center justify-center h-[32px] w-[64px] text-[12px] font-bold tracking-widest transition-colors duration-300 ${
+                lang === 'en' ? 'text-black' : 'text-slate-400 group-hover:text-slate-300'
               }`}
             >
               EN
             </div>
             <div
-              className={`relative z-10 flex items-center justify-center h-[28px] w-[64px] text-[11px] font-black tracking-wider transition-colors duration-300 ${
-                lang === 'ar' ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-500 group-hover:text-slate-400'
+              className={`relative z-10 flex items-center justify-center h-[32px] w-[64px] text-[12px] font-bold tracking-wider transition-colors duration-300 ${
+                lang === 'ar' ? 'text-black' : 'text-slate-400 group-hover:text-slate-300'
               }`}
             >
               عربي

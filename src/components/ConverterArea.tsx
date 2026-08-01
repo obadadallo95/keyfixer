@@ -3,7 +3,7 @@
  * @description Dual-Textarea Converter with Windows/Mac Platform Selection. Immersive dark theme.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UILanguage } from '../types';
 import { KeyboardPlatform, ConversionMode } from '../core/keyboard';
 import { translations } from '../i18n/translations';
@@ -31,8 +31,9 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   const [conversionMode, setConversionMode] = useState<'auto' | 'en2ar' | 'ar2en'>('auto');
   const [keyboardPlatform, setKeyboardPlatform] = useState<KeyboardPlatform>('mac');
   const [copied, setCopied] = useState<boolean>(false);
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
-  const [stats, setStats] = useState({ charCount: 9, wordCount: 2, changedCount: 9 });
+  const [stats, setStats] = useState({ charCount: 0, wordCount: 0, changedCount: 0 });
   
   const audioCtxRef = React.useRef<AudioContext | null>(null);
 
@@ -81,6 +82,29 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
     }
   };
 
+  const playSwapSound = () => {
+    if (!soundEnabled) return;
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.2);
+      gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  };
+
   useEffect(() => {
     const result = convertKeyboardLayout(inputText, {
       mode: conversionMode,
@@ -106,15 +130,26 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
     if (!outputText) return;
     navigator.clipboard.writeText(outputText);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const handleClear = () => {
     setInputText('');
   };
 
-  const handleSwap = () => {
+  const handleSwap = useCallback(() => {
+    setIsSwapping(true);
+    setTimeout(() => setIsSwapping(false), 300);
     setInputText(outputText);
+    setOutputText(inputText);
+    if (soundEnabled) playSwapSound();
+  }, [inputText, outputText, soundEnabled]);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      handleCopy();
+    }
   };
 
   return (
@@ -149,6 +184,8 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             <span>{t.macPlatform}</span>
           </button>
           </div>
+
+          <div className="hidden sm:block w-px h-6 bg-white/10 mx-1 shrink-0" />
 
           {/* Mode Selection */}
           <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 w-full md:w-auto shrink-0 shadow-sm">
@@ -191,7 +228,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             title={lang === 'ar' ? 'تبديل النص والنتيجة' : 'Swap text and result'}
             className="w-16 h-16 bg-[#111] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] transition-all duration-300 hover:scale-110 group cursor-pointer"
           >
-            <ArrowRightLeft className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
+            <ArrowRightLeft className={`w-7 h-7 transition-transform duration-300 ${isSwapping ? 'rotate-180 scale-90 text-amber-500' : 'group-hover:rotate-180'}`} />
           </button>
         </div>
 
@@ -202,7 +239,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             title={lang === 'ar' ? 'تبديل النص والنتيجة' : 'Swap text and result'}
             className="w-12 h-12 bg-[#111] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all hover:scale-110 group cursor-pointer"
           >
-            <ArrowRightLeft className="w-5 h-5 rotate-90 lg:rotate-0 group-hover:rotate-[270deg] transition-transform duration-500" />
+            <ArrowRightLeft className={`w-5 h-5 transition-transform duration-300 ${isSwapping ? 'rotate-[270deg] scale-90 text-amber-500' : 'rotate-90 lg:rotate-0 group-hover:rotate-[270deg]'}`} />
           </button>
         </div>
 
@@ -232,6 +269,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
           <textarea
             value={inputText}
             onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
             placeholder={t.inputPlaceholder + (lang === 'ar' ? '\n\nمثال:\nsmnd] pn]' : '\n\nExample:\nhggi fhgufd')}
             className="w-full h-full p-4 sm:p-6 bg-transparent text-white placeholder-slate-400 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
             dir="auto"
@@ -251,6 +289,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             </div>
             <button
               onClick={handleCopy}
+              title={lang === 'ar' ? 'نسخ (Shift + Enter)' : 'Copy (Shift + Enter)'}
               className={`flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                 copied
                   ? 'bg-green-500/20 text-green-400'
@@ -258,14 +297,14 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
               }`}
             >
               {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-80" />}
-              <span className="hidden sm:inline">{copied ? (lang === 'ar' ? 'تم النسخ ✓' : 'Copied ✓') : t.copy}</span>
+              <span className="hidden sm:inline">{copied ? (lang === 'ar' ? 'تم النسخ! ✓' : 'Copied! ✓') : t.copy}</span>
             </button>
           </div>
           <textarea
             value={outputText}
             readOnly
             placeholder={t.outputPlaceholder}
-            className="w-full h-full p-4 sm:p-6 bg-transparent text-amber-50 placeholder-amber-700/60 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
+            className="w-full h-full p-4 sm:p-6 bg-transparent text-amber-50 font-medium placeholder-amber-700/60 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
             dir="auto"
           />
         </div>

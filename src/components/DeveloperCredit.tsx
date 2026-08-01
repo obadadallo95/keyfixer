@@ -73,24 +73,29 @@ export const DeveloperCredit: React.FC<DeveloperCreditProps> = ({ lang }) => {
       </div>
 
       {/* Legal links row — subtle separator */}
-      <div className="flex items-center justify-center gap-4 pt-1 border-t border-white/[0.04]">
-        <a
-          href="/privacy"
-          className="flex items-center gap-1 hover:text-slate-400 transition-colors"
-        >
-          <Shield className="w-3 h-3" />
-          <span>{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
-        </a>
-        <span className="text-slate-700">·</span>
-        <a
-          href="/terms"
-          className="flex items-center gap-1 hover:text-slate-400 transition-colors"
-        >
-          <FileText className="w-3 h-3" />
-          <span>{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</span>
-        </a>
-        <span className="text-slate-700">·</span>
-        <span className="text-slate-700">© {new Date().getFullYear()} KeyFixer</span>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pt-5 pb-2 border-t border-white/[0.04] mt-2">
+        <div className="flex items-center gap-4">
+          <a
+            href="/privacy"
+            className="flex items-center gap-1.5 hover:text-slate-300 transition-colors"
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</span>
+          </a>
+          <span className="text-slate-700">·</span>
+          <a
+            href="/terms"
+            className="flex items-center gap-1.5 hover:text-slate-300 transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</span>
+          </a>
+        </div>
+        
+        <div className="flex items-center gap-4 text-slate-600">
+          <span className="hidden sm:block text-slate-700">|</span>
+          <span>© {new Date().getFullYear()} KeyFixer</span>
+        </div>
       </div>
     </div>
   );
