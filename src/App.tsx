@@ -46,11 +46,12 @@ export default function App({
       <div data-tauri-drag-region className="absolute bottom-0 right-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/10 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
 
       {/* Simple Header */}
-      <header data-tauri-drag-region className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between cursor-default">
-        <div data-tauri-drag-region className="flex items-center gap-2 sm:gap-3">
-          <img src="/logo.svg" alt="KeyFixer Logo" className="h-8 sm:h-12 w-auto object-contain" />
-          <div className="hidden sm:block">
-            <p className="text-[10px] sm:text-xs text-slate-400 font-medium mt-1">
+      <header data-tauri-drag-region className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between cursor-default">
+        <div data-tauri-drag-region className="flex items-center gap-3 sm:gap-4">
+          <img src="/logo.svg" alt="KeyFixer Logo" className="h-7 sm:h-10 w-auto object-contain" />
+          <div className="hidden sm:block flex-col justify-center">
+            <h1 className="text-white font-bold text-sm tracking-tight leading-none mb-0.5">KeyFixer</h1>
+            <p className="text-[10px] text-slate-400 font-medium leading-none">
               {t.tagline}
             </p>
           </div>
@@ -100,7 +101,7 @@ export default function App({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 relative z-10 w-full max-w-5xl mx-auto px-2 sm:px-6 lg:px-8 pb-4 sm:py-8 flex flex-col min-h-0">
+      <main className="flex-1 relative z-10 w-full max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 pb-4 sm:py-6 flex flex-col min-h-0">
         <ConverterArea lang={lang} />
         <DownloadSection lang={lang} />
         <DeveloperCredit lang={lang} />

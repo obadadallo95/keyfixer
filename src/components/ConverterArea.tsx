@@ -118,12 +118,14 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   };
 
   return (
-    <div className="w-full h-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-6 relative z-10 flex-1 min-h-0">
+    <div className="w-full h-full max-w-6xl mx-auto flex flex-col gap-4 sm:gap-5 relative z-10 flex-1 min-h-0">
       {/* Controls Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-4 p-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl shrink-0">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shrink-0">
         
-        {/* Platform Selection */}
-        <div className="flex bg-black/40 rounded-xl p-1 w-full md:w-auto">
+        {/* Left Side: Groups */}
+        <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-x-auto no-scrollbar">
+          {/* Platform Selection */}
+          <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 w-full md:w-auto shrink-0 shadow-sm">
           <button
             onClick={() => setKeyboardPlatform('windows')}
             className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
@@ -146,10 +148,10 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             <Laptop className="w-4 h-4" />
             <span>{t.macPlatform}</span>
           </button>
-        </div>
+          </div>
 
-        {/* Mode Selection */}
-        <div className="flex bg-black/40 rounded-xl p-1 w-full md:w-auto overflow-x-auto no-scrollbar">
+          {/* Mode Selection */}
+          <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 w-full md:w-auto shrink-0 shadow-sm">
           {(['auto', 'en2ar', 'ar2en'] as const).map((mode) => (
             <button
               key={mode}
@@ -163,16 +165,17 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
               {mode === 'auto' ? t.autoMode : mode === 'en2ar' ? t.enToArMode : t.arToEnMode}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Sound Toggle */}
         <button
           onClick={() => setSoundEnabled(!soundEnabled)}
           title={t.soundEffects}
-          className={`hidden md:flex items-center justify-center p-3 rounded-xl transition-all ${
+          className={`hidden md:flex items-center justify-center p-3 rounded-xl transition-all shadow-sm ${
             soundEnabled
               ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
-              : 'bg-black/40 text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+              : 'bg-white/5 text-slate-400 hover:text-white border border-white/10'
           }`}
         >
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -185,21 +188,21 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
         <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
           <button
             onClick={handleSwap}
-            title={t.swap}
-            className="w-14 h-14 bg-[#0a0a0a] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-500 border border-white/10 shadow-2xl transition-all hover:scale-105"
+            title={lang === 'ar' ? 'تبديل النص والنتيجة' : 'Swap text and result'}
+            className="w-16 h-16 bg-[#111] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] transition-all duration-300 hover:scale-110 group cursor-pointer"
           >
-            <ArrowRightLeft className="w-6 h-6" />
+            <ArrowRightLeft className="w-7 h-7 group-hover:rotate-180 transition-transform duration-500" />
           </button>
         </div>
 
         {/* Swap Button Mobile */}
-        <div className="lg:hidden flex justify-center -my-1.5 sm:-my-3 relative z-20">
+        <div className="lg:hidden flex justify-center -my-3 sm:-my-4 relative z-20">
           <button
             onClick={handleSwap}
-            title={t.swap}
-            className="w-10 h-10 sm:w-12 sm:h-12 bg-[#0a0a0a] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-500 border border-white/10 shadow-2xl transition-all hover:scale-105"
+            title={lang === 'ar' ? 'تبديل النص والنتيجة' : 'Swap text and result'}
+            className="w-12 h-12 bg-[#111] rounded-full flex items-center justify-center text-slate-400 hover:text-amber-400 border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all hover:scale-110 group cursor-pointer"
           >
-            <ArrowRightLeft className="w-4 h-4 sm:w-5 sm:h-5 rotate-90 lg:rotate-0" />
+            <ArrowRightLeft className="w-5 h-5 rotate-90 lg:rotate-0 group-hover:rotate-[270deg] transition-transform duration-500" />
           </button>
         </div>
 
@@ -229,8 +232,8 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
           <textarea
             value={inputText}
             onChange={handleInputChange}
-            placeholder={t.inputPlaceholder}
-            className="w-full h-full p-4 sm:p-6 bg-transparent text-white placeholder-slate-600 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
+            placeholder={t.inputPlaceholder + (lang === 'ar' ? '\n\nمثال:\nsmnd] pn]' : '\n\nExample:\nhggi fhgufd')}
+            className="w-full h-full p-4 sm:p-6 bg-transparent text-white placeholder-slate-400 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
             dir="auto"
           />
         </div>
@@ -248,28 +251,28 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             </div>
             <button
               onClick={handleCopy}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
                 copied
                   ? 'bg-green-500/20 text-green-400'
-                  : 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black shadow-md hover:shadow-amber-500/25'
               }`}
             >
-              {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-              <span className="hidden sm:inline">{copied ? t.copied : t.copy}</span>
+              {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-80" />}
+              <span className="hidden sm:inline">{copied ? (lang === 'ar' ? 'تم النسخ ✓' : 'Copied ✓') : t.copy}</span>
             </button>
           </div>
           <textarea
             value={outputText}
             readOnly
             placeholder={t.outputPlaceholder}
-            className="w-full h-full p-4 sm:p-6 bg-transparent text-amber-50 placeholder-amber-900/50 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
+            className="w-full h-full p-4 sm:p-6 bg-transparent text-amber-50 placeholder-amber-700/60 resize-none outline-none text-base sm:text-xl leading-relaxed font-mono min-h-0"
             dir="auto"
           />
         </div>
       </div>
 
       {/* Simple Stats Footer */}
-      <div className="flex items-center justify-center gap-4 sm:gap-6 text-[10px] sm:text-xs text-slate-500 font-medium py-1 shrink-0">
+      <div className="flex items-center justify-center gap-4 sm:gap-6 text-[10px] sm:text-xs text-slate-500 font-medium pt-1 pb-2 shrink-0">
         <span className="flex items-center gap-1.5 sm:gap-2">
           <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
