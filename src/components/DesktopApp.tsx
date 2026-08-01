@@ -61,14 +61,14 @@ export function DesktopApp() {
       };
     } else {
       return {
-        bg: '#FDFBF7',
-        toolbarBg: 'rgba(253,251,247,0.85)',
+        bg: '#F3F1EC', // slightly deeper off-white for more contrast against white surfaces
+        toolbarBg: 'rgba(243,241,236,0.85)',
         surface: '#FFFFFF',
         segmentedBg: 'rgba(217,119,6,0.08)',
-        inputBg: '#FAFAF9',
-        border: 'rgba(217,119,6,0.15)',
-        text1: '#292524',
-        text2: '#78716C',
+        inputBg: '#FCFCFB',
+        border: 'rgba(0,0,0,0.12)', // stronger structural border
+        text1: '#1C1C1E', // standard high-contrast dark text
+        text2: '#57534E', // darker secondary text
         accent: '#D97706',
         accentDim: 'rgba(217,119,6,0.12)',
         btnText: '#FFFFFF',

@@ -10,6 +10,7 @@
     "windows": [
       {
         "label": "main",
+        "title": "KeyFixer",
         "titleBarStyle": "Visible",
         "hiddenTitle": false
       }
