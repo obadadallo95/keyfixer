@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="rescap">
+
+  <!-- ============================================================
+       Microsoft Store Identity
+       Name and Publisher MUST match Partner Center Product Identity.
+       Store ID:            9PK3G83GP41D
+       Package Family Name: ObadaDallo.KeyFixer_paysbrkxt80tg
+       ============================================================ -->
+  <Identity
+    Name="ObadaDallo.KeyFixer"
+    Publisher="CN=A2B67C57-E9AA-4233-B229-7A21800FE184"
+    Version="1.1.1.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>KeyFixer</DisplayName>
+    <PublisherDisplayName>Obada Dallo</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Fix text typed with the wrong Arabic or English keyboard layout.</Description>
+  </Properties>
+
+  <Dependencies>
+    <!--
+      MinVersion 10.0.17763.0 = Windows 10 v1809 (October 2018 Update / RS5)
+      This is the binding minimum: WebView2 Evergreen Runtime requires RS5+.
+      Tauri v2 also requires RS5+ for its WRY webview backend.
+      MaxVersionTested = Windows 11 24H2 (26100).
+    -->
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.17763.0"
+      MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="ar" />
+  </Resources>
+
+  <Applications>
+    <Application
+      Id="KeyFixer"
+      Executable="KeyFixer\keyfixer-desktop.exe"
+      EntryPoint="windows.fullTrustApplication">
+      <uap:VisualElements
+        DisplayName="KeyFixer"
+        Description="Fix text typed with the wrong Arabic or English keyboard layout."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile ShortName="KeyFixer" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#0f172a" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!--
+      runFullTrust is required for all packaged Win32 / Desktop Bridge apps
+      that use EntryPoint="windows.fullTrustApplication".
+      internetClient is NOT requested — KeyFixer is offline-first and
+      makes no network requests during normal operation.
+    -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+</Package>
