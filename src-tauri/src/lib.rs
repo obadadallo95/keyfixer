@@ -1,16 +1,40 @@
 use tauri::{
+    command,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, command,
+    AppHandle, Manager,
 };
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+
+const GLOBAL_SHORTCUT_LABEL: &str = "⌥⌘K";
+
+fn toggle_main_window(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+
+    let is_visible = window.is_visible().unwrap_or(false);
+    let is_focused = window.is_focused().unwrap_or(false);
+
+    if is_visible && is_focused {
+        let _ = window.hide();
+        return;
+    }
+
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+}
 
 /// Collapse the window to a compact pill (~260×60)
 #[command]
 async fn collapse_window(app: AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("main")
-        .ok_or("Window not found")?;
+    let window = app.get_webview_window("main").ok_or("Window not found")?;
     window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width: 260, height: 60 }))
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: 260,
+            height: 60,
+        }))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -18,10 +42,12 @@ async fn collapse_window(app: AppHandle) -> Result<(), String> {
 /// Expand the window to the full editor (~400×520)
 #[command]
 async fn expand_window(app: AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("main")
-        .ok_or("Window not found")?;
+    let window = app.get_webview_window("main").ok_or("Window not found")?;
     window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width: 400, height: 520 }))
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: 400,
+            height: 520,
+        }))
         .map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())?;
     Ok(())
@@ -46,7 +72,6 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             collapse_window,
             expand_window,
@@ -57,8 +82,42 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            let keyfixer_shortcut = Shortcut::new(
+                Some(Modifiers::ALT | Modifiers::SUPER),
+                Code::KeyK,
+            );
+            let handled_shortcut = keyfixer_shortcut;
+
+            app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |app, shortcut, event| {
+                        if shortcut == &handled_shortcut
+                            && event.state() == ShortcutState::Pressed
+                        {
+                            toggle_main_window(app);
+                        }
+                    })
+                    .build(),
+            )?;
+
+            let shortcut_registered = app
+                .global_shortcut()
+                .register(keyfixer_shortcut)
+                .is_ok();
+
+            if !shortcut_registered {
+                eprintln!(
+                    "KeyFixer could not register the global shortcut {GLOBAL_SHORTCUT_LABEL}; it may already be in use."
+                );
+            }
+
             let quit_i = MenuItem::with_id(app, "quit", "إغلاق التطبيق (Quit)", true, None::<&str>)?;
-            let show_i = MenuItem::with_id(app, "show", "إظهار KeyFixer", true, None::<&str>)?;
+            let show_label = if shortcut_registered {
+                format!("إظهار KeyFixer ({GLOBAL_SHORTCUT_LABEL})")
+            } else {
+                "إظهار KeyFixer".to_string()
+            };
+            let show_i = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
             let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-icon@2x.png"))
@@ -74,10 +133,7 @@ pub fn run() {
                         app.exit(0);
                     }
                     "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        toggle_main_window(app);
                     }
                     _ => {}
                 })
@@ -89,14 +145,7 @@ pub fn run() {
                     } = event
                     {
                         let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            if window.is_visible().unwrap_or(false) {
-                                let _ = window.hide();
-                            } else {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
-                        }
+                        toggle_main_window(app);
                     }
                 });
 
@@ -112,13 +161,12 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, event| match event {
-        tauri::RunEvent::Reopen { .. } => {
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Reopen { .. } = event {
             if let Some(window) = app_handle.get_webview_window("main") {
                 let _ = window.show();
                 let _ = window.set_focus();
             }
         }
-        _ => {}
     });
 }

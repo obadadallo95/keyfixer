@@ -6,13 +6,6 @@
   "permissions": [
     "core:default",
     "core:window:default",
-    "core:window:allow-start-dragging",
-    {
-      "identifier": "shell:allow-open",
-      "allow": [
-        { "url": "https://obadadallo.web.app/" },
-        { "url": "https://buymeacoffee.com/obadadallo" }
-      ]
-    }
+    "core:window:allow-start-dragging"
   ]
 }

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["app"],
+    "category": "Utility",
+    "copyright": "Copyright © 2024–2026 Obada Dallo. All rights reserved.",
+    "shortDescription": "Fix text typed with the wrong Arabic or English keyboard layout.",
+    "longDescription": "KeyFixer is a private, offline macOS utility that converts text typed with the wrong Arabic or English keyboard layout.",
+    "macOS": {
+      "entitlements": "./Entitlements.plist",
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "3rd Party Mac Developer Application: Obada Dallo (D84FNM2R2N)",
+      "files": {
+        "embedded.provisionprofile": "./signing/KeyFixer.provisionprofile"
+      }
+    }
+  }
+}

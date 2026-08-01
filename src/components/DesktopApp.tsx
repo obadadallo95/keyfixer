@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { convertKeyboardLayout } from '../core/keyboard';
 import { ConversionMode } from '../core/keyboard/types';
 import { translations } from '../i18n/translations';
 import { UILanguage } from '../types';
-import { Copy, Check, Trash2 } from 'lucide-react';
+import { Copy, Check, ShieldCheck, Trash2, X } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 const FONT_MONO = '"SF Mono", ui-monospace, Menlo, monospace';
+const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {
   return (
@@ -81,6 +83,34 @@ export function DesktopApp() {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ConversionMode>('auto');
   const [copied, setCopied] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
+  const [appVersion, setAppVersion] = useState('1.1.0');
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const focusInput = () => {
+      window.requestAnimationFrame(() => inputRef.current?.focus());
+    };
+
+    window.addEventListener('focus', focusInput);
+    focusInput();
+    return () => window.removeEventListener('focus', focusInput);
+  }, []);
+
+  useEffect(() => {
+    if (!showLegal) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowLegal(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [showLegal]);
 
   const isRTL = lang === 'ar';
   const t = translations[lang].converter;
@@ -146,6 +176,93 @@ export function DesktopApp() {
         {/* Centered Dynamic Logo */}
         <HeaderLogo isDark={isDark} />
       </div>
+
+      {showLegal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legal-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowLegal(false);
+          }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 32,
+            background: 'rgba(0,0,0,0.62)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <section
+            style={{
+              width: 'min(620px, 100%)',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              padding: 24,
+              borderRadius: 14,
+              border: `1px solid ${T.border}`,
+              background: T.surface,
+              boxShadow: '0 20px 70px rgba(0,0,0,0.45)',
+              userSelect: 'text',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <h2 id="legal-title" style={{ margin: 0, fontSize: 18 }}>
+                  {isRTL ? 'الخصوصية وشروط الاستخدام' : 'Privacy & Terms'}
+                </h2>
+                <p style={{ margin: '6px 0 0', color: T.text2, fontSize: 12 }}>
+                  {isRTL ? 'آخر تحديث: 1 أغسطس 2026' : 'Last updated: August 1, 2026'}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label={isRTL ? 'إغلاق' : 'Close'}
+                onClick={() => setShowLegal(false)}
+                style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: T.segmentedBg, color: T.text1, cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ marginTop: 20, fontSize: 13, lineHeight: 1.7, color: T.text1 }}>
+              <h3 style={{ marginBottom: 6 }}>{isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}</h3>
+              <p style={{ marginTop: 0 }}>
+                {isRTL
+                  ? 'يعالج KeyFixer النص بالكامل على جهازك. لا يجمع التطبيق النصوص أو يخزنها أو يرسلها إلى أي خادم، ولا يتضمن تحليلات أو إعلانات أو تتبعًا.'
+                  : 'KeyFixer processes text entirely on your device. The app does not collect, store, or transmit your text and includes no analytics, advertising, or tracking.'}
+              </p>
+              <p>
+                {isRTL
+                  ? 'يكتب التطبيق النص المصحح إلى الحافظة فقط عندما تضغط زر النسخ، ولا يقرأ محتوى الحافظة. لا يتطلب التطبيق حسابًا ولا اتصالًا بالإنترنت.'
+                  : 'The app writes corrected text to the clipboard only when you press Copy and does not read clipboard contents. No account or internet connection is required.'}
+              </p>
+
+              <h3 style={{ marginBottom: 6 }}>{isRTL ? 'شروط الاستخدام' : 'Terms of Use'}</h3>
+              <p style={{ marginTop: 0 }}>
+                {isRTL
+                  ? 'تُقدّم الأداة كما هي للمساعدة في تصحيح تخطيط لوحة المفاتيح. أنت مسؤول عن مراجعة النص الناتج قبل استخدامه. لا يجوز إساءة استخدام التطبيق أو محاولة تعطيله أو إعادة توزيعه بما يخالف ترخيصه.'
+                  : 'The utility is provided as-is to help correct keyboard-layout text. You are responsible for reviewing converted text before use. You may not misuse, disrupt, or redistribute the app contrary to its license.'}
+              </p>
+              <p style={{ marginBottom: 0, color: T.text2 }}>
+                {isRTL ? 'للدعم أو طلبات الخصوصية، تواصل معنا عبر: ' : 'For support or privacy requests, contact us at: '}
+                <a
+                  href={SUPPORT_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: T.accent, overflowWrap: 'anywhere' }}
+                >
+                  {SUPPORT_URL}
+                </a>
+              </p>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* ── MAIN CONTENT ── */}
       <div
@@ -213,6 +330,7 @@ export function DesktopApp() {
               </button>
             </div>
             <textarea
+              ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={t.inputPlaceholder}
@@ -274,37 +392,19 @@ export function DesktopApp() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           {/* Developer Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
-            <span>KeyFixer v1.0.0</span>
+            <span>KeyFixer v{appVersion}</span>
             <span>&bull;</span>
-            <span
-              onClick={() => invoke('plugin:shell|open', { path: 'https://obadadallo.web.app/' }).catch(console.error)}
-              style={{ cursor: 'pointer', transition: 'color 0.2s' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
-                e.currentTarget.style.color = T.accent;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-                e.currentTarget.style.color = T.text2;
-              }}
-              title="Visit Portfolio"
-            >
-              By Obada Dallo
-            </span>
+            <span title="Global shortcut">⌥⌘K</span>
             <span>&bull;</span>
-            <span
-              onClick={() => invoke('plugin:shell|open', { path: 'https://buymeacoffee.com/obadadallo' }).catch(console.error)}
-              style={{ cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#F59E0B';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = T.text2;
-              }}
-              title="Buy me a coffee"
+            <span>By Obada Dallo</span>
+            <span>&bull;</span>
+            <button
+              type="button"
+              onClick={() => setShowLegal(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
             >
-              ☕ Support
-            </span>
+              <ShieldCheck size={12} /> {isRTL ? 'الخصوصية والشروط' : 'Privacy & Terms'}
+            </button>
           </div>
 
           <button

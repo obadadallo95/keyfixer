@@ -2,155 +2,97 @@
   <img src="public/logo.svg" alt="KeyFixer Logo" width="300" />
 </p>
 
-# ⌨️ KeyFixer - Multi-Platform Keyboard Layout Switcher
+# KeyFixer — Arabic/English Keyboard Layout Fixer
 
-<p dir="auto" align="center">
-  <a href="#english">English</a> | <a href="#arabic">العربية</a>
+<p align="center">
+  <a href="#english">English</a> · <a href="#arabic">العربية</a>
 </p>
 
----
+KeyFixer is a privacy-first utility that instantly restores text typed with the wrong Arabic or English keyboard layout. Conversion happens entirely on the device—without accounts, cloud processing, analytics, advertising, or tracking.
 
-<h2 id="english">🇬🇧 English</h2>
+## English
 
-**KeyFixer** is a privacy-first, fully offline tool that instantly fixes text typed with the wrong keyboard layout. Have you ever forgotten to switch your keyboard language and typed an entire sentence as gibberish? KeyFixer maps the physical keystrokes back to their intended characters instantly.
+### Highlights
 
-### The Problem
-You intend to type **"سورية حرة"** (Arabic), but you forget to switch from English, so you end up typing **"smnd] pn]"**. 
-Or you intend to type **"hello"** (English), but you are in Arabic mode, so you type **"اثممخ"**.
+- Converts Arabic ↔ English text using the physical keyboard-key positions.
+- Automatically detects the required conversion direction.
+- Runs fully offline and does not collect or transmit entered text.
+- Opens or hides quickly from anywhere on macOS with `⌥⌘K`.
+- Writes corrected text to the clipboard only when the user presses **Copy**.
+- Includes macOS, web, and Chrome extension interfaces.
+- Supports macOS Arabic and Windows Arabic 101 keyboard mappings.
 
-### What KeyFixer Does
-KeyFixer maps physical keystrokes back to their intended characters based on standard QWERTY key positions.
+Example:
 
-- `smnd] pn]` → `سورية حرة`
-- `اثممخ` → `hello`
+```text
+lh h[lg hg;jhf] → ما اجمل الكتابة
+اثممخ → hello
+```
 
-### Features
-- **Fully Offline & Private**: Text never leaves your device. No analytics, no API calls, no storage of typed text.
-- **Collapsible Floating Window**: Document Picture-in-Picture window that stays on top of desktop apps, collapsing into a 260px pill when idle.
-- **Auto-Detect**: Automatically determines conversion direction based on character composition in the text.
-- **macOS Desktop App**: A native macOS menu bar app built with Tauri v2 and Rust, living in your system tray.
-- **Chrome Extension**: Available as a lightweight Manifest V3 Chrome Extension with a clean popup and context menu options for in-page fixing.
-- **Platform-Specific Layouts**: Supports **Windows (Arabic 101)** and **macOS Arabic** layout mappings.
-- **Web App**: A modern, responsive React/Vite web application that serves as a demo and standalone tool.
+### macOS app
 
-### 🖼️ macOS Native App (System Tray / Menu Bar)
-KeyFixer runs silently in your macOS menu bar as a background Accessory application:
-- **Zero Dock Clutter**: Lives entirely in the system tray, leaving your Dock clean.
-- **Toggle Visibility**: Left-click the menu bar icon to slide the window open/closed.
-- **Auto Dark & Light Mode**: Seamlessly adapts to macOS appearance settings.
-- **Hide-on-Close**: Closing the window hides it instead of terminating the app. Right-click the icon to Quit.
+The current source version is **1.1.1**. The signed Mac App Store build was submitted to Apple on August 1, 2026 and is awaiting review.
 
-### Supported Platforms
-- Windows Arabic 101
-- macOS Arabic layout mapping
+The older direct-distribution Apple Silicon build remains available from [GitHub Release v1.1.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.1.0). Gatekeeper instructions on that release apply only to the legacy direct download—not to the Mac App Store version.
 
-### 📥 Downloads
+### Development
 
-#### macOS Native App (.dmg)
-Download the latest native Apple Silicon installer from [GitHub Release v1.1.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.1.0).
+```bash
+npm install
+npm run dev              # Web app
+npm run dev:desktop      # Desktop frontend
+npm run build:web
+npm run build:desktop
+npm run build:extension
+```
 
-> 💡 **Gatekeeper Setup**: Since the app is open-source and unsigned, macOS will block its first launch. To open it:
-> 1. Drag `KeyFixer.app` to your **Applications** folder.
-> 2. **Right-click** (or Control-click) the app icon and select **Open**.
-> 3. Click **Open** on the confirmation dialog.
-> 4. *If you get a "KeyFixer is damaged and cannot be opened" error*, run this command in your Terminal:
->    `xattr -cr /Applications/KeyFixer.app`
+Building the Mac App Store package additionally requires the developer's private Apple certificates and provisioning profile; those signing assets are intentionally excluded from this repository. See [docs/mac-app-store.md](docs/mac-app-store.md).
 
-#### Chrome Extension
-Download the pre-built Chrome Extension package from [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).
+### Support and legal
 
-> **Note**: KeyFixer is **NOT** published on the Chrome Web Store. The extension is distributed directly as an open-source release bundle.
+- [Support and contact](https://obadadallo.web.app/contact/)
+- [Privacy Policy](docs/privacy.md)
+- [Terms of Use](docs/terms.md)
+- [Apple Standard EULA](https://www.apple.com/legal/internet-services/itunes/dev/stdeula/)
 
-##### Installation Steps (Load Unpacked)
-1. Download `keyfixer-chrome-extension-v1.0.0.zip` and extract it.
-2. Open Google Chrome and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** toggle in the top-right.
-4. Click **Load unpacked** and select the extracted folder.
+## <span id="arabic">العربية</span>
 
-### Installation & Development
+<div dir="rtl">
 
-#### Web App
-1. `npm install`
-2. `npm run dev`
+KeyFixer أداة لتصحيح النص المكتوب بتخطيط لوحة مفاتيح عربي أو إنجليزي غير مقصود. تتم المعالجة محليًا بالكامل على الجهاز، دون حسابات أو إرسال النص إلى خوادم أو خدمات تحليل وإعلانات وتتبع.
 
-#### macOS Desktop App (Tauri)
-1. Ensure Rust toolchain is installed (`rustup`).
-2. Run development build: `npm run dev:desktop` or `npx tauri dev`
-3. Package production build: `npm run build:desktop` or `npx tauri build`
+### أهم المزايا
 
-#### Chrome Extension Build from Source
-1. `npm run build:extension`
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode".
-4. Click "Load unpacked" and select the `extension/dist` folder.
+- تحويل فوري بين تخطيطي الكتابة العربية والإنجليزية.
+- كشف تلقائي لاتجاه التحويل المناسب.
+- عمل محلي بالكامل دون جمع النصوص أو إرسالها.
+- إظهار التطبيق أو إخفاؤه من أي مكان على macOS عبر الاختصار `⌥⌘K`.
+- نسخ النتيجة إلى الحافظة فقط عند ضغط زر **نسخ**.
+- واجهات لتطبيق macOS والويب وإضافة Chrome.
+- دعم تخطيط macOS العربي وWindows Arabic 101.
 
-### Support & Donation ☕
-If you find KeyFixer useful and want to support my open-source projects, feel free to buy me a coffee! Your support helps cover server costs and developer program fees (like Apple's developer license) to keep shipping natively trusted utilities.
+مثال:
 
-👉 **[Support Obada Dallo on Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
-👉 **[Sponsor Obada Dallo on GitHub Sponsors](https://github.com/sponsors/obadadallo95)**
+```text
+lh h[lg hg;jhf] → ما اجمل الكتابة
+اثممخ → hello
+```
 
-### Documentation
-See the [docs/](docs/) directory for detailed architecture, testing, layout mappings, privacy information, and [macOS Desktop App Setup](docs/desktop-app.md).
+### تطبيق macOS
 
----
+إصدار المصدر الحالي هو **1.1.1**. تم إرسال النسخة الموقعة إلى Mac App Store بتاريخ 1 أغسطس 2026، وهي الآن بانتظار مراجعة Apple.
 
-<h2 id="arabic" dir="rtl" align="right">🇸🇦 العربية</h2>
+تبقى النسخة المباشرة القديمة لأجهزة Apple Silicon متاحة ضمن [GitHub Release v1.1.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.1.0). تعليمات Gatekeeper الخاصة بذلك الإصدار تنطبق على التحميل المباشر القديم فقط، ولا تنطبق على نسخة Mac App Store.
 
-<div dir="rtl" align="right">
+### الدعم والمعلومات القانونية
 
-**KeyFixer** أداة مجانية ومفتوحة المصدر، تعمل بشكل محلي بالكامل لمعالجة وتصحيح النصوص التي تمت كتابتها بلغة لوحة المفاتيح الخاطئة.
-
-### 📥 روابط التحميل
-
-#### تطبيق ماك المكتبي (.dmg)
-قم بتحميل ملف التثبيت المباشر لأجهزة ماك (Apple Silicon) من صفحة الاصدارات [GitHub Release v1.1.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.1.0).
-
-> 💡 **تنبيه لنظام الحماية (Gatekeeper):** بما أن الأداة مفتوحة المصدر وغير موقّعة بحساب مطور مدفوع، سيقوم نظام ماك بحظر تشغيلها لأول مرة. لتشغيلها بأمان:
-> 1. اسحب ملف `KeyFixer.app` إلى مجلد **Applications (التطبيقات)**.
-> 2. **انقر بالزر الأيمن (Right-click)** على أيقونة التطبيق واختر **Open**.
-> 3. اضغط على زر **Open** في نافذة التأكيد التي تظهر لك.
-> 4. *إذا ظهرت لك رسالة تفيد بأن التطبيق تالف ولا يمكن فتحه*، افتح الـ Terminal ونفذ الأمر التالي:
->    `xattr -cr /Applications/KeyFixer.app`
-
-#### إضافة متصفح كروم
-قم بتحميل حزمة إضافة كروم من صفحة [GitHub Release v1.0.0](https://github.com/obadadallo95/keyfixer/releases/tag/v1.0.0).
-
-> **تنبيه**: إضافة KeyFixer **غير** مرفوعة على متجر Chrome Web Store الرسمي. يتم توفير الإضافة كحزمة مفتوحة المصدر جاهزة للتحميل المباشر.
-
-##### خطوات التثبيت (تحميل حزمة مفكوكة)
-1. قم بتحميل الملف وفك الضغط عنه.
-2. افتح متصفح كروم واذهب إلى العنوان: `chrome://extensions/`.
-3. قم بتفعيل **وضع المطور (Developer mode)** في الزاوية العلوية.
-4. اضغط على **تحميل حزمة مفكوكة (Load unpacked)** واختر المجلد المفكوك.
-
-### المشكلة
-تود كتابة **"سورية حرة"** ولكنك تنسى تغيير لغة لوحة المفاتيح من الإنجليزية، فتكتب **"smnd] pn]"**. 
-أو تود كتابة **"hello"** وتكون لوحة المفاتيح باللغة العربية فتكتب **"اثممخ"**.
-
-### ماذا يفعل KeyFixer؟
-يقوم KeyFixer بتحويل الأحرف بناءً على المواقع الفيزيائية للمفاتيح على لوحة المفاتيح (QWERTY) لاستعادة النص الأصلي المقصود.
-
-- `smnd] pn]` → `سورية حرة`
-- `اثممخ` → `hello`
-
-### المميزات
-- **خصوصية تامة**: تعمل الأداة بشكل محلي بالكامل 100%. لا يتم حفظ أو إرسال أي نص خارج جهازك.
-- **تطبيق macOS المكتبي**: يعمل بهدوء في شريط المهام العلوي (Menu Bar) دون إشغال الشريط السفلي (Dock)، ويدعم كتم الصوت وتغيير المظهر تلقائياً.
-- **كشف الاتجاه تلقائياً**: تحديد اتجاه التحويل تلقائياً اعتماداً على نوع الأحرف الموجودة في النص.
-- **إضافة جوجل كروم**: إضافة خفيفة وسريعة توفر نافذة منبثقة بسيطة، وقائمة جانبية (Context Menu) لتصحيح النصوص فوراً داخل صفحات الويب.
-- **تعدد الأنظمة**: دعم خرائط الأحرف لكل من **Windows (Arabic 101)** و **macOS**.
-- **تطبيق ويب**: واجهة حديثة وسريعة تعمل كتطبيق مستقل أو لتجربة الأداة.
-
-### دعم المشروع ☕
-إذا كنت تجد KeyFixer مفيداً وترغب في دعم مشاريعي مفتوحة المصدر، يمكنك المساهمة بشراء قهوة لي! دعمك يساعدني على تغطية تكاليف الخوادم والاشتراك في برامج المطورين (مثل رخصة مطوري آبل) لتقديم تطبيقات آمنة وموقعة رسمياً للجميع.
-
-👉 **[ادعم عبادة دللو على Buy Me a Coffee](https://buymeacoffee.com/obadadallo)**
-👉 **[ادعم عبادة دللو عبر GitHub Sponsors](https://github.com/sponsors/obadadallo95)**
-
-### التثبيت والتطوير
-انظر قسم التثبيت باللغة الإنجليزية في الأعلى لتشغيل تطبيق الويب أو إضافة المتصفح، أو قم بزيارة مجلد `docs/` لمزيد من التفاصيل.
+- [الدعم والتواصل](https://obadadallo.web.app/contact/)
+- [سياسة الخصوصية](docs/privacy.md)
+- [شروط الاستخدام](docs/terms.md)
+- [اتفاقية Apple القياسية](https://www.apple.com/legal/internet-services/itunes/dev/stdeula/)
 
 </div>
 
+## Documentation
 
+See [docs/](docs/) for architecture, testing, privacy, keyboard mappings, and macOS release documentation.

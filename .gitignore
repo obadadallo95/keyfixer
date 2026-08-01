@@ -17,3 +17,7 @@ scratch/
 dist-desktop/
 KeyFixer.iconset/
 src-tauri/target/
+
+# Local Apple signing assets (never commit)
+src-tauri/signing/
+store-assets/ar/
