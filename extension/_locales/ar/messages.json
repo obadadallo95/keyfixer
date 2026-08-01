@@ -1,0 +1,7 @@
+{
+  "extensionName": { "message": "KeyFixer – مصحح لوحة المفاتيح العربية والإنجليزية" },
+  "extensionDescription": { "message": "صحّح فوراً النص المكتوب بتخطيط لوحة مفاتيح عربية أو إنجليزية غير صحيح. خاص وسريع ويعمل دون إنترنت." },
+  "toastCorrected": { "message": "KeyFixer: تم تصحيح النص." },
+  "toastCopied": { "message": "KeyFixer: تم تصحيح النص ونسخه." },
+  "toastCopyFailed": { "message": "KeyFixer: تعذّر نسخ النص المصحح." }
+}

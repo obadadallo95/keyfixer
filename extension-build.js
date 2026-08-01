@@ -21,12 +21,17 @@ async function buildExtension() {
   });
 
   fs.copyFileSync('extension/src/popup.html', path.join(outDir, 'popup.html'));
+  fs.copyFileSync('extension/src/popup.css', path.join(outDir, 'popup.css'));
   fs.copyFileSync('extension/manifest.json', path.join(outDir, 'manifest.json'));
 
   if (fs.existsSync('extension/assets')) {
     const assetsOut = path.join(outDir, 'assets');
     fs.mkdirSync(assetsOut, { recursive: true });
     fs.cpSync('extension/assets', assetsOut, { recursive: true });
+  }
+
+  if (fs.existsSync('extension/_locales')) {
+    fs.cpSync('extension/_locales', path.join(outDir, '_locales'), { recursive: true });
   }
 
   console.log('✅ Extension built successfully in extension/dist');
@@ -36,4 +41,3 @@ buildExtension().catch((err) => {
   console.error('❌ Extension build failed:', err);
   process.exit(1);
 });
-

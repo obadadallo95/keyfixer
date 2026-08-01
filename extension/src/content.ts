@@ -1,129 +1,102 @@
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'replaceText') {
-    const { fixed } = request;
-    const activeElem = document.activeElement as HTMLElement;
+type KeyFixerWindow = Window & { __keyfixerContentReady?: boolean; __keyfixerToastTimeout?: number };
 
-    let replaced = false;
+const keyFixerWindow = window as KeyFixerWindow;
 
-    if (activeElem) {
-      if (activeElem instanceof HTMLInputElement || activeElem instanceof HTMLTextAreaElement) {
-        const start = activeElem.selectionStart || 0;
-        const end = activeElem.selectionEnd || 0;
-        const val = activeElem.value;
-        const newValue = val.substring(0, start) + fixed + val.substring(end);
-        
-        // Use native property setter for React/Vue/Angular controlled components compatibility
-        const prototype = activeElem instanceof HTMLTextAreaElement
-          ? HTMLTextAreaElement.prototype
-          : HTMLInputElement.prototype;
-        const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
-        
-        if (valueSetter) {
-          valueSetter.call(activeElem, newValue);
-        } else {
-          activeElem.value = newValue;
-        }
+if (!keyFixerWindow.__keyfixerContentReady) {
+  keyFixerWindow.__keyfixerContentReady = true;
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.action === 'replaceText') replaceSelectedText(request.fixed);
+    if (request.action === 'copyText') copyToClipboardAndToast(request.fixed, message('toastCopied'));
+  });
+}
 
-        activeElem.selectionStart = activeElem.selectionEnd = start + fixed.length;
-        
-        // Dispatch synthetic events to trigger frameworks state update
-        activeElem.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: fixed }));
-        activeElem.dispatchEvent(new Event('change', { bubbles: true }));
-        replaced = true;
-      } else if (activeElem.isContentEditable) {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(fixed));
-          // Move cursor to the end
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-          
-          activeElem.dispatchEvent(new Event('input', { bubbles: true }));
-          replaced = true;
-        } else {
-          // Fallback to execCommand for content editable if range fails
-          document.execCommand('insertText', false, fixed);
-          replaced = true;
-        }
-      }
+function replaceSelectedText(fixed: string) {
+  const activeElement = document.activeElement as HTMLElement | null;
+  let replaced = false;
+
+  if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+    const start = activeElement.selectionStart ?? 0;
+    const end = activeElement.selectionEnd ?? start;
+    const newValue = activeElement.value.substring(0, start) + fixed + activeElement.value.substring(end);
+    const prototype = activeElement instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+
+    if (valueSetter) valueSetter.call(activeElement, newValue);
+    else activeElement.value = newValue;
+
+    activeElement.selectionStart = activeElement.selectionEnd = start + fixed.length;
+    activeElement.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: fixed }));
+    activeElement.dispatchEvent(new Event('change', { bubbles: true }));
+    replaced = true;
+  } else if (activeElement?.isContentEditable) {
+    const selection = window.getSelection();
+    if (selection?.rangeCount) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(fixed));
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+      replaced = true;
     }
-
-    if (!replaced) {
-      copyToClipboardAndToast(fixed, 'KeyFixer: Corrected text copied to clipboard!');
-    } else {
-      showToast('KeyFixer: Text corrected!');
-    }
-  } else if (request.action === 'copyText') {
-    const { fixed } = request;
-    copyToClipboardAndToast(fixed, 'KeyFixer: Corrected text copied to clipboard!');
   }
-});
+
+  if (replaced) showToast(message('toastCorrected'));
+  else copyToClipboardAndToast(fixed, message('toastCopied'));
+}
+
+function message(key: 'toastCorrected' | 'toastCopied' | 'toastCopyFailed') {
+  const localized = chrome.i18n.getMessage(key);
+  return localized || {
+    toastCorrected: 'KeyFixer: Text corrected.',
+    toastCopied: 'KeyFixer: Corrected text copied.',
+    toastCopyFailed: 'KeyFixer: Could not copy the corrected text.',
+  }[key];
+}
 
 function copyToClipboardAndToast(text: string, toastMessage: string) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      showToast(toastMessage);
-    }).catch(err => {
-      console.error('KeyFixer: Could not copy text', err);
-      showToast('KeyFixer: Failed to copy to clipboard.');
-    });
-  } else {
-    // Fallback
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      showToast(toastMessage);
-    } catch (err) {
-      console.error('KeyFixer fallback copy failed', err);
-      showToast('KeyFixer: Failed to copy to clipboard.');
-    }
+  navigator.clipboard.writeText(text).then(
+    () => showToast(toastMessage),
+    () => fallbackCopy(text, toastMessage),
+  );
+}
+
+function fallbackCopy(text: string, toastMessage: string) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.cssText = 'position:fixed;left:-999999px;top:0;opacity:0;';
+  document.body.appendChild(textArea);
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    showToast(toastMessage);
+  } catch {
+    showToast(message('toastCopyFailed'));
+  } finally {
     textArea.remove();
   }
 }
 
-function showToast(message: string) {
+function showToast(text: string) {
   let toast = document.getElementById('keyfixer-toast');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'keyfixer-toast';
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: #0f172a;
-      color: #f59e0b;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      z-index: 2147483647;
-      border: 1px solid #d97706;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    `;
-    document.body.appendChild(toast);
+    toast.setAttribute('role', 'status');
+    toast.style.cssText = [
+      'position:fixed', 'right:24px', 'bottom:24px', 'z-index:2147483647',
+      'max-width:min(360px,calc(100vw - 48px))', 'padding:11px 15px',
+      'border:1px solid #6b4a13', 'border-radius:9px', 'background:#1b1c1f',
+      'color:#f7ae2b', 'box-shadow:0 12px 32px rgba(0,0,0,.34)',
+      'font:600 13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif',
+      'direction:auto', 'opacity:0', 'transition:opacity .18s ease', 'pointer-events:none',
+    ].join(';');
+    document.documentElement.appendChild(toast);
   }
-  toast.innerText = message;
-  toast.style.opacity = '1';
-  
-  // Clear any existing timeout
-  if ((window as any)._keyfixerToastTimeout) {
-    clearTimeout((window as any)._keyfixerToastTimeout);
-  }
-  
-  (window as any)._keyfixerToastTimeout = setTimeout(() => {
-    toast.style.opacity = '0';
-  }, 3000);
-}
 
+  toast.textContent = text;
+  toast.style.opacity = '1';
+  if (keyFixerWindow.__keyfixerToastTimeout) clearTimeout(keyFixerWindow.__keyfixerToastTimeout);
+  keyFixerWindow.__keyfixerToastTimeout = window.setTimeout(() => { if (toast) toast.style.opacity = '0'; }, 2600);
+}

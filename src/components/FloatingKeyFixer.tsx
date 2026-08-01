@@ -367,7 +367,7 @@ export const openFloatingKeyFixerWindow = async (lang: UILanguage) => {
 
     // Copy styles from main document to PiP window with zero memory overhead
     const pipDoc = pipWindow.document;
-    pipDoc.head.innerHTML = '';
+    pipDoc.head.replaceChildren();
     document.querySelectorAll('style, link[rel="stylesheet"]').forEach(node => {
       pipDoc.head.appendChild(node.cloneNode(true));
     });

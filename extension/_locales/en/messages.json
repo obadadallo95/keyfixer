@@ -1,0 +1,7 @@
+{
+  "extensionName": { "message": "KeyFixer – Arabic English Keyboard Fixer" },
+  "extensionDescription": { "message": "Instantly fix text typed with the wrong Arabic or English keyboard layout. Private, fast, and fully offline." },
+  "toastCorrected": { "message": "KeyFixer: Text corrected." },
+  "toastCopied": { "message": "KeyFixer: Corrected text copied." },
+  "toastCopyFailed": { "message": "KeyFixer: Could not copy the corrected text." }
+}

@@ -4,8 +4,7 @@
   "description": "Default capabilities for KeyFixer Desktop",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "core:window:default",
+    "core:app:allow-version",
     "core:window:allow-start-dragging"
   ]
 }

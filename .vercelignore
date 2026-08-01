@@ -1,0 +1,8 @@
+node_modules
+src-tauri
+extension
+dist-desktop
+KeyFixer.iconset
+assets
+.git
+.github

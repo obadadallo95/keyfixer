@@ -12,7 +12,7 @@ const content = {
   en: {
     title: 'Privacy Policy',
     subtitle: 'KeyFixer respects your privacy. Here\'s exactly what we do — and don\'t do — with your data.',
-    lastUpdated: 'Last updated: August 1, 2025',
+    lastUpdated: 'Last updated: August 1, 2026',
     backToApp: '← Back to KeyFixer',
     sections: [
       {
@@ -33,7 +33,7 @@ const content = {
       {
         icon: 'eye',
         title: 'Permissions Explained',
-        text: 'The Chrome Extension requests these permissions:\n\n• contextMenus — To add a "Fix with KeyFixer" option when you right-click selected text.\n• storage — To remember your platform and mode preferences between sessions.\n• clipboardWrite — To copy the fixed text to your clipboard when you click "Copy".\n• content_scripts (all URLs) — To enable the right-click fix feature on any webpage.\n\nNone of these permissions are used to collect or transmit any data.',
+        text: 'The Chrome Extension requests these permissions:\n\n• contextMenus — To add KeyFixer actions when you right-click selected text.\n• storage — To remember your platform, mode, and language preferences on this device.\n• clipboardWrite — To copy the fixed text when you request it.\n• activeTab and scripting — To run on the current page only after you explicitly choose a KeyFixer context-menu action.\n\nThe extension declares no host permissions and has no persistent access to every website. None of these permissions are used to collect or transmit data.',
       },
       {
         icon: 'server',
@@ -50,7 +50,7 @@ const content = {
   ar: {
     title: 'سياسة الخصوصية',
     subtitle: 'KeyFixer يحترم خصوصيتك. إليك بالضبط ما نفعله — وما لا نفعله — ببياناتك.',
-    lastUpdated: 'آخر تحديث: 1 أغسطس 2025',
+    lastUpdated: 'آخر تحديث: 1 أغسطس 2026',
     backToApp: '→ العودة إلى KeyFixer',
     sections: [
       {
@@ -71,7 +71,7 @@ const content = {
       {
         icon: 'eye',
         title: 'شرح الصلاحيات',
-        text: 'إضافة كروم تطلب هذه الصلاحيات:\n\n• contextMenus — لإضافة خيار "إصلاح مع KeyFixer" عند النقر اليميني على النص المحدد.\n• storage — لتذكر تفضيلات المنصة والوضع بين الجلسات.\n• clipboardWrite — لنسخ النص المصحح إلى الحافظة عند الضغط على "نسخ".\n• content_scripts (جميع الروابط) — لتمكين ميزة الإصلاح بالنقر اليميني على أي موقع.\n\nلا تُستخدم أي من هذه الصلاحيات لجمع أو إرسال أي بيانات.',
+        text: 'إضافة كروم تطلب هذه الصلاحيات:\n\n• contextMenus — لإضافة أوامر KeyFixer عند النقر اليميني على النص المحدد.\n• storage — لتذكر تفضيلات المنصة والوضع واللغة على هذا الجهاز.\n• clipboardWrite — لنسخ النص المصحح عندما تطلب ذلك.\n• activeTab وscripting — للعمل على الصفحة الحالية فقط بعد اختيارك الصريح لأمر KeyFixer من القائمة.\n\nلا تعلن الإضافة أي صلاحيات مواقع، ولا تملك وصولاً دائماً إلى كل المواقع. لا تُستخدم أي من هذه الصلاحيات لجمع أو إرسال بيانات.',
       },
       {
         icon: 'server',

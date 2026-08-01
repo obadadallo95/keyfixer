@@ -13,10 +13,11 @@
     "build:appstore": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
     "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json",
     "verify:appstore": "bash scripts/verify-appstore-bundle.sh",
-    "build:extension": "npm run build && node extension-build.js",
+    "build:extension": "npm run typecheck:extension && npm run build && node extension-build.js",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-desktop extension/dist",
     "typecheck": "tsc --noEmit",
+    "typecheck:extension": "tsc --project tsconfig.extension.json",
     "test": "vitest",
     "test:run": "vitest run",
     "tauri": "tauri"
