@@ -3,13 +3,16 @@ import { convertKeyboardLayout } from '../core/keyboard';
 import { ConversionMode } from '../core/keyboard/types';
 import { translations } from '../i18n/translations';
 import { UILanguage } from '../types';
-import { Copy, Check, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import './DesktopApp.css';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 const FONT_MONO = '"SF Mono", ui-monospace, Menlo, monospace';
+const FONT_WINDOWS = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
+const FONT_MONO_WINDOWS = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {
@@ -31,6 +34,11 @@ function HeaderLogo({ isDark }: { isDark: boolean }) {
 }
 
 export function DesktopApp() {
+  const platform = useMemo<'windows' | 'mac'>(() => {
+    return navigator.userAgent.includes('Windows') ? 'windows' : 'mac';
+  }, []);
+  const isWindows = platform === 'windows';
+
   const [isDark, setIsDark] = useState(() => {
     return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : true;
   });
@@ -44,6 +52,50 @@ export function DesktopApp() {
   }, []);
 
   const T = useMemo(() => {
+    if (isWindows && isDark) {
+      return {
+        bg: '#202020',
+        toolbarBg: '#202020',
+        surface: '#2B2B2B',
+        segmentedBg: '#2B2B2B',
+        inputBg: '#1C1C1C',
+        outputBg: '#252525',
+        border: '#454545',
+        text1: '#F5F5F5',
+        text2: '#B7B7B7',
+        accent: '#F59E0B',
+        accentHover: '#D98200',
+        accentDim: '#302817',
+        focus: 'rgba(245,158,11,0.3)',
+        disabledBg: '#343434',
+        disabledText: '#858585',
+        btnText: '#171717',
+        logoInvert: 0,
+      };
+    }
+
+    if (isWindows) {
+      return {
+        bg: '#F3F3F3',
+        toolbarBg: '#F3F3F3',
+        surface: '#FFFFFF',
+        segmentedBg: '#E9E9E9',
+        inputBg: '#FFFFFF',
+        outputBg: '#FAFAFA',
+        border: '#D1D1D1',
+        text1: '#1B1B1B',
+        text2: '#5D5D5D',
+        accent: '#B45309',
+        accentHover: '#92400E',
+        accentDim: '#FFF4E5',
+        focus: 'rgba(180,83,9,0.3)',
+        disabledBg: '#E5E5E5',
+        disabledText: '#8A8A8A',
+        btnText: '#FFFFFF',
+        logoInvert: 1,
+      };
+    }
+
     if (isDark) {
       return {
         bg: '#1E1E1E',
@@ -51,11 +103,16 @@ export function DesktopApp() {
         surface: '#2D2D2D',
         segmentedBg: 'rgba(0,0,0,0.25)',
         inputBg: 'rgba(0,0,0,0.2)',
+        outputBg: 'rgba(0,0,0,0.2)',
         border: 'rgba(255,255,255,0.08)',
         text1: 'rgba(255,255,255,0.92)',
         text2: 'rgba(255,255,255,0.5)',
         accent: 'rgb(245,158,11)',
+        accentHover: 'rgb(217,130,0)',
         accentDim: 'rgba(245,158,11,0.15)',
+        focus: 'rgba(245,158,11,0.3)',
+        disabledBg: '#2D2D2D',
+        disabledText: 'rgba(255,255,255,0.35)',
         btnText: '#000000',
         logoInvert: 0,
       };
@@ -66,16 +123,21 @@ export function DesktopApp() {
         surface: '#FFFFFF',
         segmentedBg: 'rgba(217,119,6,0.08)',
         inputBg: '#FCFCFB',
+        outputBg: '#FCFCFB',
         border: 'rgba(0,0,0,0.12)', // stronger structural border
         text1: '#1C1C1E', // standard high-contrast dark text
         text2: '#57534E', // darker secondary text
         accent: '#D97706',
+        accentHover: '#B85F00',
         accentDim: 'rgba(217,119,6,0.12)',
+        focus: 'rgba(217,119,6,0.3)',
+        disabledBg: '#FFFFFF',
+        disabledText: '#8A817A',
         btnText: '#FFFFFF',
         logoInvert: 1,
       };
     }
-  }, [isDark]);
+  }, [isDark, isWindows]);
 
   const [lang] = useState<UILanguage>(() => {
     return navigator.language.startsWith('ar') ? 'ar' : 'en';
@@ -125,10 +187,6 @@ export function DesktopApp() {
     }
   }, []);
 
-  const platform = useMemo<'windows' | 'mac'>(() => {
-    return navigator.userAgent.includes('Windows') ? 'windows' : 'mac';
-  }, []);
-
   const output = useMemo(
     () => convertKeyboardLayout(input, { mode, platform }).fixedText,
     [input, mode, platform]
@@ -148,6 +206,7 @@ export function DesktopApp() {
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
+      className={isWindows ? 'desktop-app--windows' : undefined}
       style={{
         width: '100vw',
         height: '100vh',
@@ -155,31 +214,41 @@ export function DesktopApp() {
         flexDirection: 'column',
         background: T.bg,
         color: T.text1,
-        fontFamily: FONT_SYS,
+        fontFamily: isWindows ? FONT_WINDOWS : FONT_SYS,
         userSelect: 'none',
-      }}
+        '--kf-accent': T.accent,
+        '--kf-accent-hover': T.accentHover,
+        '--kf-focus': T.focus,
+        '--kf-border': T.border,
+        '--kf-surface': T.surface,
+        '--kf-text': T.text1,
+        '--kf-text-secondary': T.text2,
+        '--kf-disabled-bg': T.disabledBg,
+        '--kf-disabled-text': T.disabledText,
+      } as React.CSSProperties}
     >
       {/* ── TOOLBAR (Drag Region & Traffic Lights Space) ── */}
-      <div
-        data-tauri-drag-region={platform === 'mac' ? true : undefined}
-        onMouseDown={platform === 'mac' ? handleStartDrag : undefined}
-        style={{
-          height: platform === 'mac' ? 48 : 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: `1px solid ${T.border}`,
-          background: T.toolbarBg,
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          flexShrink: 0,
-          position: 'relative',
-          cursor: platform === 'mac' ? 'grab' : 'default',
-        }}
-      >
-        {/* Centered Dynamic Logo */}
-        <HeaderLogo isDark={isDark} />
-      </div>
+      {!isWindows && (
+        <div
+          data-tauri-drag-region
+          onMouseDown={handleStartDrag}
+          style={{
+            height: 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderBottom: `1px solid ${T.border}`,
+            background: T.toolbarBg,
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            flexShrink: 0,
+            position: 'relative',
+            cursor: 'grab',
+          }}
+        >
+          <HeaderLogo isDark={isDark} />
+        </div>
+      )}
 
       {showLegal && (
         <div
@@ -196,14 +265,15 @@ export function DesktopApp() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 32,
+            padding: isWindows ? 24 : 32,
             background: 'rgba(0,0,0,0.62)',
-            backdropFilter: 'blur(8px)',
+            backdropFilter: isWindows ? 'none' : 'blur(8px)',
           }}
         >
           <section
+            className={isWindows ? 'kf-legal-dialog' : undefined}
             style={{
-              width: 'min(620px, 100%)',
+              width: isWindows ? 'min(560px, 100%)' : 'min(620px, 100%)',
               maxHeight: '80vh',
               overflowY: 'auto',
               padding: 24,
@@ -224,6 +294,7 @@ export function DesktopApp() {
                 </p>
               </div>
               <button
+                className={isWindows ? 'kf-dialog-close' : undefined}
                 type="button"
                 aria-label={isRTL ? 'إغلاق' : 'Close'}
                 onClick={() => setShowLegal(false)}
@@ -255,12 +326,14 @@ export function DesktopApp() {
               <p style={{ marginBottom: 0, color: T.text2 }}>
                 {isRTL ? 'للدعم أو طلبات الخصوصية، تواصل معنا عبر: ' : 'For support or privacy requests, contact us at: '}
                 <a
+                  className="kf-support-link"
                   href={SUPPORT_URL}
                   target="_blank"
                   rel="noreferrer"
                   style={{ color: T.accent, overflowWrap: 'anywhere' }}
                 >
-                  {SUPPORT_URL}
+                  {isWindows ? (isRTL ? 'فتح صفحة الدعم' : 'Open support page') : SUPPORT_URL}
+                  {isWindows && <ExternalLink size={12} aria-hidden="true" />}
                 </a>
               </p>
             </div>
@@ -270,14 +343,32 @@ export function DesktopApp() {
 
       {/* ── MAIN CONTENT ── */}
       <div
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 24, gap: 20 }}
+        className={isWindows ? 'kf-main-content' : undefined}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isWindows ? 20 : 24, gap: isWindows ? 16 : 20 }}
       >
+        {isWindows && (
+          <header className="kf-windows-intro">
+            <div>
+              <h1>{isRTL ? 'تصحيح تخطيط الكتابة' : 'Keyboard layout correction'}</h1>
+              <p>
+                {isRTL
+                  ? 'اكتب النص بالتخطيط الخاطئ، وسيظهر التصحيح فورًا.'
+                  : 'Enter text typed with the wrong layout and get the correction instantly.'}
+              </p>
+            </div>
+            <div className="kf-shortcut-badge" title={isRTL ? 'إظهار أو إخفاء KeyFixer' : 'Show or hide KeyFixer'}>
+              <Keyboard size={14} aria-hidden="true" />
+              <kbd>Ctrl</kbd><span>+</span><kbd>Alt</kbd><span>+</span><kbd>K</kbd>
+            </div>
+          </header>
+        )}
         
         {/* Controls Row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {isWindows && <span className="kf-controls-label">{isRTL ? 'اتجاه التحويل' : 'Conversion direction'}</span>}
           
           {/* Conversion Mode Segmented Control */}
-          <div style={{
+          <div className={isWindows ? 'kf-segmented' : undefined} style={{
             display: 'flex',
             background: T.segmentedBg,
             border: `1px solid ${T.border}`,
@@ -289,18 +380,19 @@ export function DesktopApp() {
               const active = mode === m;
               return (
                 <button
+                  className={isWindows ? `kf-segment${active ? ' kf-segment--active' : ''}` : undefined}
                   key={m}
                   onClick={() => setMode(m)}
                   style={{
                     padding: '6px 14px',
                     fontSize: 12,
                     fontWeight: active ? 600 : 500,
-                    color: active ? T.text1 : T.text2,
-                    background: active ? T.surface : 'transparent',
+                    color: active ? (isWindows ? T.btnText : T.text1) : T.text2,
+                    background: active ? (isWindows ? T.accent : T.surface) : 'transparent',
                     border: 'none',
                     borderRadius: 6,
                     cursor: 'pointer',
-                    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.05)' : 'none',
+                    boxShadow: active && !isWindows ? '0 1px 4px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.05)' : 'none',
                     transition: 'all 0.2s',
                   }}
                 >
@@ -312,15 +404,16 @@ export function DesktopApp() {
         </div>
 
         {/* Editor Split View */}
-        <div style={{ flex: 1, display: 'flex', gap: 20, minHeight: 0 }}>
+        <div className={isWindows ? 'kf-editors' : undefined} style={{ flex: 1, display: 'flex', gap: isWindows ? 14 : 20, minHeight: 0 }}>
           
           {/* INPUT AREA */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: isWindows ? 'none' : 'uppercase', letterSpacing: isWindows ? 0 : '0.05em' }}>
                 {isRTL ? 'النص الأصلي' : 'Input'}
               </span>
               <button
+                className={isWindows ? 'kf-clear-button' : undefined}
                 onClick={doClear}
                 disabled={!input}
                 style={{
@@ -334,6 +427,7 @@ export function DesktopApp() {
               </button>
             </div>
             <textarea
+              className={isWindows ? 'kf-editor' : undefined}
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -345,42 +439,43 @@ export function DesktopApp() {
                 padding: 16,
                 fontSize: 14,
                 lineHeight: 1.6,
-                fontFamily: FONT_MONO,
+                fontFamily: isWindows ? FONT_MONO_WINDOWS : FONT_MONO,
                 background: T.inputBg,
                 border: `1px solid ${T.border}`,
-                borderRadius: 10,
+                borderRadius: isWindows ? 7 : 10,
                 color: T.text1,
                 resize: 'none',
                 outline: 'none',
                 boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
                 transition: 'border-color 0.2s',
               }}
-              onFocus={e => (e.target.style.borderColor = T.accent)}
-              onBlur={e => (e.target.style.borderColor = T.border)}
+              onFocus={isWindows ? undefined : e => (e.target.style.borderColor = T.accent)}
+              onBlur={isWindows ? undefined : e => (e.target.style.borderColor = T.border)}
             />
           </div>
 
           {/* OUTPUT AREA */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: isWindows ? 'none' : 'uppercase', letterSpacing: isWindows ? 0 : '0.05em' }}>
                 {isRTL ? 'النتيجة' : 'Output'}
               </span>
-              <span style={{ fontSize: 11, color: T.text2, fontFamily: FONT_MONO }}>
+              <span style={{ fontSize: 11, color: T.text2, fontFamily: isWindows ? FONT_MONO_WINDOWS : FONT_MONO }}>
                 {output ? `${output.length} ${t.chars}` : ''}
               </span>
             </div>
             <div
+              className={isWindows ? 'kf-editor' : undefined}
               dir="auto"
               style={{
                 flex: 1,
                 padding: 16,
                 fontSize: 14,
                 lineHeight: 1.6,
-                fontFamily: FONT_MONO,
-                background: output ? T.accentDim : T.inputBg,
+                fontFamily: isWindows ? FONT_MONO_WINDOWS : FONT_MONO,
+                background: output ? T.accentDim : (isWindows ? T.outputBg : T.inputBg),
                 border: `1px solid ${output ? T.accent : T.border}`,
-                borderRadius: 10,
+                borderRadius: isWindows ? 7 : 10,
                 color: output ? T.text1 : T.text2,
                 overflowY: 'auto',
                 boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
@@ -395,7 +490,7 @@ export function DesktopApp() {
         {/* Footer Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           {/* Developer Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
+          <div className={isWindows ? 'kf-footer-meta' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: isWindows ? 1 : 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
             <span>KeyFixer v{appVersion}</span>
             <span>&bull;</span>
             <span title="Global shortcut">{platform === 'windows' ? 'Ctrl+Alt+K' : '⌥⌘K'}</span>
@@ -403,6 +498,7 @@ export function DesktopApp() {
             <span>By Obada Dallo</span>
             <span>&bull;</span>
             <button
+              className={isWindows ? 'kf-legal-button' : undefined}
               type="button"
               onClick={() => setShowLegal(true)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
@@ -412,6 +508,7 @@ export function DesktopApp() {
           </div>
 
           <button
+            className={isWindows ? 'kf-copy-button' : undefined}
             onClick={doCopy}
             disabled={!output}
             style={{
@@ -419,14 +516,14 @@ export function DesktopApp() {
               padding: '10px 24px',
               fontSize: 13,
               fontWeight: 600,
-              color: copied ? '#FFFFFF' : T.btnText,
-              background: copied ? '#34C759' : output ? T.accent : T.surface,
-              border: 'none',
-              borderRadius: 8,
+              color: copied ? '#FFFFFF' : output ? T.btnText : (isWindows ? T.disabledText : T.btnText),
+              background: copied ? (isWindows ? '#107C10' : '#34C759') : output ? T.accent : (isWindows ? T.disabledBg : T.surface),
+              border: isWindows ? `1px solid ${output ? T.accent : T.border}` : 'none',
+              borderRadius: isWindows ? 6 : 8,
               cursor: output ? 'pointer' : 'not-allowed',
-              opacity: output ? 1 : 0.5,
+              opacity: isWindows ? 1 : output ? 1 : 0.5,
               transition: 'all 0.2s',
-              boxShadow: output ? '0 2px 8px rgba(245,158,11,0.25)' : 'none',
+              boxShadow: output && !isWindows ? '0 2px 8px rgba(245,158,11,0.25)' : 'none',
             }}
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
