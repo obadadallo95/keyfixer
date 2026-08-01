@@ -6,7 +6,11 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+#[cfg(target_os = "macos")]
 const GLOBAL_SHORTCUT_LABEL: &str = "⌥⌘K";
+
+#[cfg(not(target_os = "macos"))]
+const GLOBAL_SHORTCUT_LABEL: &str = "Ctrl+Alt+K";
 
 fn toggle_main_window(app: &AppHandle) {
     let Some(window) = app.get_webview_window("main") else {
@@ -82,8 +86,15 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
                 Some(Modifiers::ALT | Modifiers::SUPER),
+                Code::KeyK,
+            );
+
+            #[cfg(not(target_os = "macos"))]
+            let keyfixer_shortcut = Shortcut::new(
+                Some(Modifiers::CONTROL | Modifiers::ALT),
                 Code::KeyK,
             );
             let handled_shortcut = keyfixer_shortcut;
@@ -123,11 +134,20 @@ pub fn run() {
             let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-icon@2x.png"))
                 .unwrap();
 
+            #[cfg(target_os = "macos")]
             let builder = TrayIconBuilder::new()
                 .icon(tray_icon)
                 .icon_as_template(true)
                 .menu(&menu)
-                .show_menu_on_left_click(false)
+                .show_menu_on_left_click(false);
+
+            #[cfg(not(target_os = "macos"))]
+            let builder = TrayIconBuilder::new()
+                .icon(tray_icon)
+                .menu(&menu)
+                .show_menu_on_left_click(false);
+
+            let builder = builder
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => {
                         app.exit(0);

@@ -125,9 +125,13 @@ export function DesktopApp() {
     }
   }, []);
 
+  const platform = useMemo<'windows' | 'mac'>(() => {
+    return navigator.userAgent.includes('Windows') ? 'windows' : 'mac';
+  }, []);
+
   const output = useMemo(
-    () => convertKeyboardLayout(input, { mode, platform: 'mac' }).fixedText,
-    [input, mode]
+    () => convertKeyboardLayout(input, { mode, platform }).fixedText,
+    [input, mode, platform]
   );
 
   const doCopy = useCallback(() => {
