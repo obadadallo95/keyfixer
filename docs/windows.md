@@ -52,4 +52,23 @@ The in-app privacy and terms dialog explains the local-only processing model and
 
 ## Microsoft Store
 
-The current version (V1) is intended for testing and direct distribution. It has not yet been prepared for Microsoft Store submission. A separate MSIX build and signed configuration will be needed before store publication.
+KeyFixer is available on the Microsoft Store as a packaged Win32 MSIX application.
+
+The MSIX build is separate from the NSIS installer and uses a manual `MakeAppx.exe`
+workflow (Tauri v2 does not have a native MSIX bundle target).
+
+**Build command:**
+
+```bash
+npm run build:windows:msix
+```
+
+**Output:** `src-tauri/target/release/bundle/msix/KeyFixer_1.1.1.0_x64.msix`
+
+**CI workflow:** `.github/workflows/microsoft-store-msix.yml`
+
+For full details — Partner Center identity values, signing instructions, local testing,
+Store upload steps, and version increment rules — see:
+
+→ [docs/microsoft-store-msix.md](microsoft-store-msix.md)
+

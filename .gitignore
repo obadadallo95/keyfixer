@@ -18,6 +18,10 @@ dist-desktop/
 KeyFixer.iconset/
 src-tauri/target/
 
+# MSIX staging and output (generated, never commit)
+src-tauri/target/msix-staging/
+src-tauri/target/msix-inspect/
+
 # Local Apple signing assets (never commit)
 src-tauri/signing/
 store-assets/ar/
