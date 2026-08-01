@@ -73,15 +73,15 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({ lang }) => {
             href={DOWNLOAD_LINKS.windows}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-[#0078D4]/40 hover:bg-[#0078D4]/10 text-slate-300 hover:text-[#0078D4] font-medium transition-all shadow-sm group"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/20 hover:border-[#0078D4]/60 hover:bg-[#0078D4]/20 text-slate-200 hover:text-white font-semibold transition-all shadow-md group"
           >
-            <Monitor className="w-3.5 h-3.5" />
+            <Monitor className="w-4 h-4 text-[#0078D4]" />
             <span>{t.windows}</span>
-            <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
           </a>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.05] text-slate-500 font-normal select-none">
-            <Monitor className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 text-slate-400 font-medium select-none shadow-sm">
+            <Monitor className="w-4 h-4 opacity-50" />
             <span>{t.windows}</span>
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
           </span>
@@ -93,15 +93,15 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({ lang }) => {
             href={DOWNLOAD_LINKS.chrome}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 hover:border-amber-500/40 hover:bg-amber-500/10 text-slate-300 hover:text-amber-400 font-medium transition-all shadow-sm group"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/20 hover:border-amber-500/60 hover:bg-amber-500/20 text-slate-200 hover:text-white font-semibold transition-all shadow-md group"
           >
-            <Chrome className="w-3.5 h-3.5" />
+            <Chrome className="w-4 h-4 text-amber-500" />
             <span>{t.chrome}</span>
-            <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
           </a>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.05] text-slate-500 font-normal select-none">
-            <Chrome className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 text-slate-400 font-medium select-none shadow-sm">
+            <Chrome className="w-4 h-4 opacity-50" />
             <span>{t.chrome}</span>
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
           </span>
