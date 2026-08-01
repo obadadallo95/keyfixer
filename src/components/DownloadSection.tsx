@@ -21,18 +21,20 @@ const DOWNLOAD_LINKS = {
 
 const i18n = {
   en: {
-    macLabel: 'Download on Mac App Store',
+    macLabel: 'Mac App Store',
     macSub: 'Free',
     windows: 'Windows',
     chrome: 'Chrome',
     comingSoon: 'Soon',
+    soonOnMac: 'Soon on Mac App Store',
   },
   ar: {
-    macLabel: 'تحميل من Mac App Store',
+    macLabel: 'Mac App Store',
     macSub: 'مجاني',
     windows: 'ويندوز',
     chrome: 'إضافة كروم',
     comingSoon: 'قريباً',
+    soonOnMac: 'قريباً على Mac App Store',
   },
 };
 
@@ -56,11 +58,13 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({ lang }) => {
         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
         <Apple className="w-6 h-6 relative z-10" />
         <div className="flex flex-col items-start relative z-10">
-          <span className="text-sm font-bold leading-tight">{t.macLabel}</span>
           {!DOWNLOAD_LINKS.mac ? (
-            <span className="text-[10px] font-medium opacity-80 uppercase tracking-widest">{t.comingSoon}</span>
+            <span className="text-sm font-bold leading-tight tracking-wide">{t.soonOnMac}</span>
           ) : (
-            <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{t.macSub}</span>
+            <>
+              <span className="text-sm font-bold leading-tight">{t.macLabel}</span>
+              <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{t.macSub}</span>
+            </>
           )}
         </div>
       </a>
