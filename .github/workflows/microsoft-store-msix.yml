@@ -158,14 +158,42 @@ jobs:
         shell: pwsh
         run: |
           $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
-          $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
-          $signtool = Get-ChildItem -Path $sdkBase -Recurse -Filter "signtool.exe" |
-                      Where-Object { $_.FullName -match "x64" } |
-                      Sort-Object FullName -Descending |
-                      Select-Object -First 1 -ExpandProperty FullName
 
-          & $signtool verify /pa /v $msix
-          Write-Host "Signature verified."
+          # Use Get-AuthenticodeSignature to verify the signature is structurally
+          # valid and signed by the correct certificate. This works with self-signed
+          # certs without requiring a globally trusted root chain.
+          $sig = Get-AuthenticodeSignature -FilePath $msix
+          Write-Host "SignerCertificate: $($sig.SignerCertificate.Subject)"
+          Write-Host "TimeStamperCertificate: $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "Status: $($sig.Status)"
+          Write-Host "StatusMessage: $($sig.StatusMessage)"
+
+          # Confirm signed by exactly the correct Publisher identity
+          $expectedSubject = "CN=A2B67C57-E9AA-4233-B229-7A21800FE184"
+          if ($sig.SignerCertificate.Subject -ne $expectedSubject) {
+            Write-Error "Signer subject mismatch! Got: $($sig.SignerCertificate.Subject)"
+            exit 1
+          }
+
+          # Confirm thumbprint matches the cert we created
+          if ($sig.SignerCertificate.Thumbprint -ne $env:CERT_THUMBPRINT) {
+            Write-Error "Thumbprint mismatch! Expected: $env:CERT_THUMBPRINT Got: $($sig.SignerCertificate.Thumbprint)"
+            exit 1
+          }
+
+          # Accept HashMismatch only if it means "untrusted root" for a self-signed cert
+          # (UnknownError = untrusted root; Valid = trusted). Both confirm the signature exists.
+          $acceptableStatuses = @('Valid', 'UnknownError')
+          if ($sig.Status -notin $acceptableStatuses) {
+            Write-Error "Unexpected signature status: $($sig.Status) — $($sig.StatusMessage)"
+            exit 1
+          }
+
+          Write-Host ""
+          Write-Host "Signature validation passed:"
+          Write-Host "  Signer   : $($sig.SignerCertificate.Subject)"
+          Write-Host "  Thumbprint: $($sig.SignerCertificate.Thumbprint)"
+          Write-Host "  Status   : $($sig.Status)"
 
       # ── 8. Validate manifest ─────────────────────────────────────────────────
       - name: Validate MSIX manifest fields
