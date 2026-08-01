@@ -6,6 +6,9 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+#[cfg(target_os = "windows")]
+const SUPPORT_URL: &str = "https://obadadallo.web.app/contact/";
+
 #[cfg(target_os = "macos")]
 const GLOBAL_SHORTCUT_LABEL: &str = "⌥⌘K";
 
@@ -73,14 +76,40 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Open the single approved support page in the Windows default browser.
+#[command]
+async fn open_support_page(app: AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use tauri_plugin_opener::OpenerExt;
+
+        return app
+            .opener()
+            .open_url(SUPPORT_URL, None::<&str>)
+            .map_err(|error| error.to_string());
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app;
+        Err("The support-page command is only available on Windows.".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    #[cfg(target_os = "windows")]
+    let builder = builder.plugin(tauri_plugin_opener::init());
+
+    let app = builder
         .invoke_handler(tauri::generate_handler![
             collapse_window,
             expand_window,
             close_app,
             start_drag,
+            open_support_page,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

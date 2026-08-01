@@ -325,16 +325,26 @@ export function DesktopApp() {
               </p>
               <p style={{ marginBottom: 0, color: T.text2 }}>
                 {isRTL ? 'للدعم أو طلبات الخصوصية، تواصل معنا عبر: ' : 'For support or privacy requests, contact us at: '}
-                <a
-                  className="kf-support-link"
-                  href={SUPPORT_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: T.accent, overflowWrap: 'anywhere' }}
-                >
-                  {isWindows ? (isRTL ? 'فتح صفحة الدعم' : 'Open support page') : SUPPORT_URL}
-                  {isWindows && <ExternalLink size={12} aria-hidden="true" />}
-                </a>
+                {isWindows ? (
+                  <button
+                    type="button"
+                    className="kf-support-link"
+                    onClick={() => invoke('open_support_page').catch(console.error)}
+                    style={{ color: T.accent }}
+                  >
+                    {isRTL ? 'فتح صفحة الدعم' : 'Open support page'}
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <a
+                    href={SUPPORT_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: T.accent, overflowWrap: 'anywhere' }}
+                  >
+                    {SUPPORT_URL}
+                  </a>
+                )}
               </p>
             </div>
           </section>
