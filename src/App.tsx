@@ -57,7 +57,7 @@ export default function App({
         </div>
 
         <div className="flex items-center gap-3">
-          {isDesktop ? (
+          {isDesktop && (
             <button
               type="button"
               onClick={onCollapse}
@@ -67,17 +67,6 @@ export default function App({
               <AppWindow className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
               <span className="hidden sm:inline">{lang === 'ar' ? 'طي النافذة' : 'Collapse Window'}</span>
               <span className="sm:hidden">{lang === 'ar' ? 'طي' : 'Collapse'}</span>
-            </button>
-          ) : pipSupported && (
-            <button
-              type="button"
-              onClick={() => openFloatingKeyFixerWindow(lang)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/20 text-amber-400 text-xs font-bold transition-all shadow-sm group"
-              title={t.converter.openFloating}
-            >
-              <AppWindow className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">{t.converter.openFloating}</span>
-              <span className="sm:hidden">{lang === 'ar' ? 'عائم' : 'Floating'}</span>
             </button>
           )}
 
