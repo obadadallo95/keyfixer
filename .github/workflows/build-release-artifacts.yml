@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KeyFixer-1.1.2-macos-unsigned-validation
-          path: src-tauri/target/universal-apple-darwin/release/bundle/
+          path: src-tauri/target/release/bundle/macos/
 
   build-windows:
     needs: verify
@@ -109,9 +109,9 @@ jobs:
               Write-Error "Could not locate signtool.exe in Windows Kits"
               exit 1
           }
-          & $SignToolPath sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\msix\AppPackages\KeyFixer\KeyFixer.msix
+          & $SignToolPath sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix
       - name: Upload MSIX artifacts
         uses: actions/upload-artifact@v4
         with:
           name: KeyFixer-1.1.2.0-windows-msix-ci-signed-test
-          path: src-tauri/msix/AppPackages/KeyFixer/KeyFixer.msix
+          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.2.0_x64.msix

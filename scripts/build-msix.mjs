@@ -36,8 +36,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // ── Configuration ─────────────────────────────────────────────────────────────
+const pkgPath = path.join(ROOT, 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 const PACKAGE_NAME    = 'ObadaDallo.KeyFixer';
-const VERSION         = '1.1.1.0';
+const VERSION         = `${pkg.version}.0`;
 const ARCH            = 'x64';
 const APP_ID          = 'KeyFixer';
 const MSIX_FILENAME   = `KeyFixer_${VERSION}_${ARCH}.msix`;
