@@ -1,6 +1,9 @@
 name: Build Release Artifacts
 
 on:
+  push:
+    branches:
+      - fix/v1.1.2-stability
   workflow_dispatch:
 
 jobs:
