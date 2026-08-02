@@ -46,11 +46,11 @@ jobs:
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ── 2. Node.js ───────────────────────────────────────────────────────────
       - name: Set up Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22.x'
           cache: 'npm'
@@ -61,7 +61,7 @@ jobs:
 
       # Cache Cargo registry and compilation artifacts
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -289,7 +289,7 @@ jobs:
 
       # ── 11. Upload artifact ──────────────────────────────────────────────────
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: KeyFixer-Microsoft-Store-MSIX
           path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.1.0_x64.msix
