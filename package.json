@@ -11,6 +11,7 @@
     "build:web": "npm run build",
     "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && node -e \"require('fs').copyFileSync('dist-desktop/index-desktop.html', 'dist-desktop/index.html')\"",
     "build:appstore": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
+    "build:mac-ci": "tauri build --bundles app --config src-tauri/tauri.ci-mac.conf.json",
     "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json",
     "build:windows:msix": "node scripts/build-msix.mjs",
     "verify:appstore": "bash scripts/verify-appstore-bundle.sh",

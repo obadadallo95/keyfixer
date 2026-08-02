@@ -38,11 +38,11 @@ jobs:
       - name: Build macOS unsigned artifacts
         run: |
           npm run build:desktop
-          npm run build:appstore
+          npm run build:mac-ci
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macOS-unsigned
+          name: KeyFixer-1.1.2-macos-unsigned-validation
           path: src-tauri/target/universal-apple-darwin/release/bundle/
 
   build-windows:
@@ -92,9 +92,26 @@ jobs:
           Export-PfxCertificate -Cert $Cert -FilePath "ci-cert.pfx" -Password $CertPassword
       - name: Sign MSIX (CI Ephemeral)
         run: |
-          & 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe' sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\msix\AppPackages\KeyFixer\KeyFixer.msix
+          $SdkBinBase = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $SignToolPath = ""
+          if (Test-Path $SdkBinBase) {
+              $Versions = Get-ChildItem -Path $SdkBinBase | Where-Object { $_.Name -match "^10\.0\.\d+\.\d+$" } | Sort-Object -Property Name -Descending
+              foreach ($Ver in $Versions) {
+                  $Candidate = Join-Path -Path $Ver.FullName -ChildPath "x64\signtool.exe"
+                  if (Test-Path $Candidate) {
+                      $SignToolPath = $Candidate
+                      Write-Host "Found signtool.exe: $SignToolPath"
+                      break
+                  }
+              }
+          }
+          if (-not $SignToolPath) {
+              Write-Error "Could not locate signtool.exe in Windows Kits"
+              exit 1
+          }
+          & $SignToolPath sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\msix\AppPackages\KeyFixer\KeyFixer.msix
       - name: Upload MSIX artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-msix-ci-signed
+          name: KeyFixer-1.1.2.0-windows-msix-ci-signed-test
           path: src-tauri/msix/AppPackages/KeyFixer/KeyFixer.msix
