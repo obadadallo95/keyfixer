@@ -7,10 +7,6 @@ function createReverseMap(enMap: Record<string, string>): Record<string, string>
       map[arKey] = enKey;
     }
   }
-  map['لا'] = 'b';
-  map['لأ'] = 'G';
-  map['لإ'] = 'T';
-  map['لآ'] = 'B';
   return map;
 }
 

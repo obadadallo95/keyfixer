@@ -1,7 +1,7 @@
 {
   "name": "keyfixer",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A privacy-first Arabic and English keyboard layout correction tool for the web and Chrome.",
   "type": "module",
   "scripts": {
@@ -21,7 +21,10 @@
     "typecheck:extension": "tsc --project tsconfig.extension.json",
     "test": "vitest",
     "test:run": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "version:set": "node scripts/set-version.mjs",
+    "version:check": "node scripts/check-version-sync.mjs",
+    "release:check": "npm run version:check && npm run typecheck && npm run typecheck:extension && npm run test:run && npm run build && npm run build:extension"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

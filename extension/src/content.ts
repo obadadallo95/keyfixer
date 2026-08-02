@@ -32,13 +32,13 @@ function replaceSelectedText(fixed: string) {
     const selection = window.getSelection();
     if (selection?.rangeCount) {
       const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(document.createTextNode(fixed));
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      activeElement.dispatchEvent(new Event('input', { bubbles: true }));
-      replaced = true;
+      const preText = selection.toString();
+      const success = document.execCommand('insertText', false, fixed);
+      
+      // Verify that execCommand succeeded and didn't fail silently
+      if (success) {
+        replaced = true;
+      }
     }
   }
 

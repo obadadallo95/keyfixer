@@ -14,7 +14,7 @@
   <Identity
     Name="ObadaDallo.KeyFixer"
     Publisher="CN=A2B67C57-E9AA-4233-B229-7A21800FE184"
-    Version="1.1.1.0"
+    Version="1.1.2.0"
     ProcessorArchitecture="x64" />
 
   <Properties>

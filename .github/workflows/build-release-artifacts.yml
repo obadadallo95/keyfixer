@@ -1,0 +1,97 @@
+name: Build Release Artifacts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unified release check
+        run: npm run release:check
+
+  build-mac:
+    needs: verify
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install macOS targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Build macOS unsigned artifacts
+        run: |
+          npm run build:desktop
+          npm run build:appstore
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-unsigned
+          path: src-tauri/target/universal-apple-darwin/release/bundle/
+
+  build-windows:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Windows NSIS unsigned
+        run: |
+          npm run build:desktop
+          npm run build:windows
+      - name: Upload Windows NSIS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nsis-unsigned
+          path: src-tauri/target/release/bundle/nsis/
+
+  build-windows-msix:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Windows MSIX
+        run: |
+          npm run build:desktop
+          npm run build:windows:msix
+      - name: Generate CI Ephemeral Certificate
+        run: |
+          $Cert = New-SelfSignedCertificate -Type Custom -Subject "CN=A2B67C57-E9AA-4233-B229-7A21800FE184" -KeyUsage DigitalSignature -FriendlyName "KeyFixer CI Ephemeral Cert" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}") -HashAlgorithm sha256
+          $CertPassword = ConvertTo-SecureString -String "ci-ephemeral-pass" -Force -AsPlainText
+          Export-PfxCertificate -Cert $Cert -FilePath "ci-cert.pfx" -Password $CertPassword
+      - name: Sign MSIX (CI Ephemeral)
+        run: |
+          & 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe' sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\msix\AppPackages\KeyFixer\KeyFixer.msix
+      - name: Upload MSIX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-ci-signed
+          path: src-tauri/msix/AppPackages/KeyFixer/KeyFixer.msix
