@@ -1,10 +1,8 @@
 name: Build Release Artifacts
 
 on:
-  push:
-    branches:
-      - fix/v1.1.2-stability
   workflow_dispatch:
+
 
 jobs:
   verify:
@@ -19,6 +17,16 @@ jobs:
         run: npm ci
       - name: Run unified release check
         run: npm run release:check
+      - name: Upload Web artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyFixer-1.1.2-web-unsigned-validation
+          path: dist/
+      - name: Upload Chrome Extension artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyFixer-1.1.2-chrome-unsigned-validation.zip
+          path: extension/dist/
 
   build-mac:
     needs: verify
