@@ -76,6 +76,15 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Hide the application window
+#[command]
+async fn hide_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+    Ok(())
+}
+
 /// Open the single approved support page in the Windows default browser.
 #[command]
 async fn open_support_page(app: AppHandle) -> Result<(), String> {
@@ -103,6 +112,8 @@ pub fn run() {
     #[cfg(target_os = "windows")]
     let builder = builder.plugin(tauri_plugin_opener::init());
 
+    let builder = builder.plugin(tauri_plugin_clipboard_manager::init());
+
     let app = builder
         .invoke_handler(tauri::generate_handler![
             collapse_window,
@@ -110,6 +121,7 @@ pub fn run() {
             close_app,
             start_drag,
             open_support_page,
+            hide_window,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -134,7 +146,12 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            toggle_main_window(app);
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.unminimize();
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                let _ = window.emit("shortcut-pressed", ());
+                            }
                         }
                     })
                     .build(),

@@ -21,9 +21,10 @@ import {
 
 interface ConverterAreaProps {
   lang: UILanguage;
+  isDesktop?: boolean;
 }
 
-export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
+export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = false }) => {
   const t = translations[lang].converter;
 
   const [inputText, setInputText] = useState<string>('');
@@ -34,6 +35,20 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [stats, setStats] = useState({ charCount: 0, wordCount: 0, changedCount: 0 });
+  const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
+  const [showGlow, setShowGlow] = useState<boolean>(false);
+  
+  const inputRef = React.useRef<HTMLTextAreaElement>(null);
+  
+  // Refs for event listener
+  const stateRef = React.useRef({
+    workflowState,
+    outputText,
+  });
+  useEffect(() => {
+    stateRef.current.workflowState = workflowState;
+    stateRef.current.outputText = outputText;
+  }, [workflowState, outputText]);
   
   const audioCtxRef = React.useRef<AudioContext | null>(null);
 
@@ -120,6 +135,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
+    setWorkflowState('idle'); // user typing resets workflow
     // If text length increased, it means a key was pressed (simplistic check)
     if (e.target.value.length >= inputText.length) {
       playClickSound();
@@ -128,13 +144,14 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
 
   const handleCopy = () => {
     if (!outputText) return;
-    navigator.clipboard.writeText(outputText);
+    navigator.clipboard.writeText(outputText).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
   const handleClear = () => {
     setInputText('');
+    setWorkflowState('idle');
   };
 
   const handleSwap = useCallback(() => {
@@ -152,8 +169,87 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
     }
   };
 
+  // Listen for Tauri app reopen (manual open)
+  useEffect(() => {
+    if (!isDesktop) return;
+    let unlisten: (() => void) | undefined;
+    const setupListener = async () => {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        unlisten = await listen('tauri://focus', () => {
+          if (inputRef.current && inputText.length > 0) {
+             inputRef.current.select();
+          } else if (inputRef.current) {
+             inputRef.current.focus();
+          }
+        });
+      } catch (err) {}
+    };
+    setupListener();
+    return () => { if (unlisten) unlisten(); };
+  }, [isDesktop, inputText]);
+
+  // Listen for global shortcut
+  useEffect(() => {
+    if (!isDesktop) return;
+    let unlisten: (() => void) | undefined;
+    
+    const setupShortcutListener = async () => {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        
+        unlisten = await listen('shortcut-pressed', async () => {
+          const { readText, writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+          const { invoke } = await import('@tauri-apps/api/core');
+          
+          if (stateRef.current.workflowState === 'idle') {
+            try {
+              const clipboardText = await readText();
+              if (clipboardText && clipboardText.trim().length > 0) {
+                setInputText(clipboardText);
+                setWorkflowState('resultReady');
+                if (inputRef.current) {
+                  // Focus but do not select text when populated automatically
+                  inputRef.current.focus();
+                  inputRef.current.setSelectionRange(clipboardText.length, clipboardText.length);
+                }
+              } else {
+                if (inputRef.current) inputRef.current.focus();
+              }
+            } catch (err) {
+              if (inputRef.current) inputRef.current.focus();
+            }
+          } else if (stateRef.current.workflowState === 'resultReady') {
+            if (stateRef.current.outputText) {
+              try {
+                await writeText(stateRef.current.outputText);
+                setCopied(true);
+                setShowGlow(true);
+                
+                setTimeout(() => {
+                  setCopied(false);
+                  setShowGlow(false);
+                  setInputText('');
+                  setWorkflowState('idle');
+                  invoke('hide_window').catch(() => {});
+                }, 350);
+              } catch (err) {
+                console.error("Failed to write to clipboard", err);
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Failed to setup shortcut listener", err);
+      }
+    };
+    
+    setupShortcutListener();
+    return () => { if (unlisten) unlisten(); };
+  }, [isDesktop]);
+
   return (
-    <div className="w-full h-full max-w-6xl mx-auto flex flex-col gap-4 sm:gap-5 relative z-10 flex-1 min-h-0">
+    <div className={`w-full h-full max-w-6xl mx-auto flex flex-col gap-4 sm:gap-5 relative z-10 flex-1 min-h-0 transition-all duration-300 rounded-3xl ${showGlow ? 'shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-1 ring-amber-500/50' : ''}`}>
       {/* Controls Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shrink-0">
         
@@ -267,6 +363,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             </div>
           </div>
           <textarea
+            ref={inputRef}
             value={inputText}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
