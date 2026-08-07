@@ -3,10 +3,12 @@ import { convertKeyboardLayout } from '../core/keyboard';
 import { ConversionMode } from '../core/keyboard/types';
 import { translations } from '../i18n/translations';
 import { UILanguage } from '../types';
-import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X, Volume2, VolumeX } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import * as tauriEvent from '@tauri-apps/api/event';
+import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
 import './DesktopApp.css';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
@@ -14,6 +16,39 @@ const FONT_MONO = '"SF Mono", ui-monospace, Menlo, monospace';
 const FONT_WINDOWS = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
 const FONT_MONO_WINDOWS = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
+
+function playSystemSound(type: 'paste' | 'copy') {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (type === 'paste') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(640, ctx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.04);
+    } else {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.06);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.09);
+    }
+  } catch {}
+}
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {
   return (
@@ -147,7 +182,29 @@ export function DesktopApp() {
   const [copied, setCopied] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [appVersion, setAppVersion] = useState('1.1.0');
+  const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
+  const [showGlow, setShowGlow] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('keyfixer_sound_enabled') === 'true';
+  });
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('keyfixer_sound_enabled', String(soundEnabled));
+  }, [soundEnabled]);
+
+  const stateRef = useRef({
+    workflowState: 'idle' as 'idle' | 'resultReady',
+    isProcessingShortcut: false,
+    outputText: '',
+    conversionMode: 'auto' as ConversionMode,
+    keyboardPlatform: platform,
+  });
+
+  useEffect(() => {
+    stateRef.current.conversionMode = mode;
+    stateRef.current.keyboardPlatform = platform;
+  }, [mode, platform]);
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => {});
@@ -162,6 +219,130 @@ export function DesktopApp() {
     focusInput();
     return () => window.removeEventListener('focus', focusInput);
   }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    
+    const setupShortcutListener = async () => {
+      try {
+        if (!isMounted) return;
+        const currentWin = getCurrentWindow();
+        
+        const handleShortcut = async () => {
+          console.log("DesktopApp received shortcut-pressed!", stateRef.current.workflowState);
+          if (stateRef.current.isProcessingShortcut) return;
+          stateRef.current.isProcessingShortcut = true;
+          
+          try {
+            if (stateRef.current.workflowState === 'idle') {
+              let clipboardText = '';
+              try {
+                clipboardText = await tauriClipboard.readText() || '';
+                console.log("Read clipboard:", clipboardText);
+              } catch (err) {
+                console.error("Failed to read clipboard:", err);
+              }
+              
+              if (clipboardText && clipboardText.trim().length > 0) {
+                console.log("Converting text...");
+                const result = convertKeyboardLayout(clipboardText, {
+                  mode: stateRef.current.conversionMode,
+                  platform: stateRef.current.keyboardPlatform,
+                });
+                
+                setInput(clipboardText);
+                setWorkflowState('resultReady');
+                
+                stateRef.current.outputText = result.fixedText;
+                stateRef.current.workflowState = 'resultReady';
+                
+                if (soundEnabled) playSystemSound('paste');
+                
+                if (inputRef.current) {
+                  inputRef.current.focus();
+                  inputRef.current.setSelectionRange(clipboardText.length, clipboardText.length);
+                }
+              } else {
+                if (inputRef.current) inputRef.current.focus();
+              }
+            } else if (stateRef.current.workflowState === 'resultReady') {
+              if (stateRef.current.outputText) {
+                let writeSuccess = false;
+                try {
+                  await tauriClipboard.writeText(stateRef.current.outputText);
+                  writeSuccess = true;
+                } catch (err) {}
+                
+                if (writeSuccess) {
+                  setCopied(true);
+                  setShowGlow(true);
+                  if (soundEnabled) playSystemSound('copy');
+                  
+                  setTimeout(() => {
+                    setCopied(false);
+                    setShowGlow(false);
+                    setInput('');
+                    setWorkflowState('idle');
+                    stateRef.current.workflowState = 'idle';
+                    stateRef.current.outputText = '';
+                    invoke('hide_window').catch(() => {});
+                  }, 350);
+                }
+              }
+            }
+          } finally {
+            stateRef.current.isProcessingShortcut = false;
+          }
+        };
+
+        const u1 = await currentWin.listen('shortcut-pressed', handleShortcut);
+        const u2 = await tauriEvent.listen('shortcut-pressed', handleShortcut);
+        unlisten = () => { u1(); u2(); };
+      } catch (err) {
+        console.error("Failed to setup shortcut listener:", err);
+      }
+    };
+    
+    setupShortcutListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, []);
+
+  // Listen for tauri window focus to auto-select or focus input
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    const setupListener = async () => {
+      try {
+        if (!isMounted) return;
+        unlisten = await tauriEvent.listen('tauri://focus', () => {
+          if (inputRef.current && input.length > 0) {
+             inputRef.current.select();
+          } else if (inputRef.current) {
+             inputRef.current.focus();
+          }
+        });
+      } catch (err) {}
+    };
+    setupListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, [input]);
 
   useEffect(() => {
     if (!showLegal) return;
@@ -196,8 +377,9 @@ export function DesktopApp() {
     if (!output) return;
     navigator.clipboard.writeText(output).catch(() => {});
     setCopied(true);
+    if (soundEnabled) playSystemSound('copy');
     setTimeout(() => setCopied(false), 1600);
-  }, [output]);
+  }, [output, soundEnabled]);
 
   const doClear = useCallback(() => {
     setInput('');
@@ -374,7 +556,7 @@ export function DesktopApp() {
         )}
         
         {/* Controls Row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           {isWindows && <span className="kf-controls-label">{isRTL ? 'اتجاه التحويل' : 'Conversion direction'}</span>}
           
           {/* Conversion Mode Segmented Control */}
@@ -411,6 +593,36 @@ export function DesktopApp() {
               );
             })}
           </div>
+
+          {/* Sound Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={isWindows ? 'kf-segment' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 500,
+              color: soundEnabled ? T.accent : T.text2,
+              background: soundEnabled ? T.accentDim : (isWindows ? T.surface : T.segmentedBg),
+              border: `1px solid ${soundEnabled ? T.accent : T.border}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              userSelect: 'none',
+            }}
+            title={
+              soundEnabled
+                ? (isRTL ? 'تعطيل المؤثرات الصوتية' : 'Disable Sound Feedback')
+                : (isRTL ? 'تفعيل المؤثرات الصوتية عند النسخ واللصق' : 'Enable Sound Feedback')
+            }
+          >
+            {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            <span>{soundEnabled ? (isRTL ? 'الصوت مفعّل' : 'Sound On') : (isRTL ? 'الصوت متوقف' : 'Sound Off')}</span>
+          </button>
         </div>
 
         {/* Editor Split View */}
@@ -488,7 +700,8 @@ export function DesktopApp() {
                 borderRadius: isWindows ? 7 : 10,
                 color: output ? T.text1 : T.text2,
                 overflowY: 'auto',
-                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
+                boxShadow: showGlow ? `0 0 15px ${T.focus}` : 'inset 0 1px 4px rgba(0,0,0,0.1)',
+                transition: 'box-shadow 0.3s ease, border-color 0.2s, background-color 0.2s',
                 userSelect: 'text',
               }}
             >

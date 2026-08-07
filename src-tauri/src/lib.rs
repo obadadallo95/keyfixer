@@ -2,7 +2,7 @@ use tauri::{
     command,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+    AppHandle, Manager, Emitter,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -125,9 +125,6 @@ pub fn run() {
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-
-            #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
                 Some(Modifiers::ALT | Modifiers::SUPER),
                 Code::KeyK,
@@ -146,11 +143,16 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
+                            println!("Global shortcut pressed!");
                             if let Some(window) = app.get_webview_window("main") {
                                 let _ = window.unminimize();
                                 let _ = window.show();
                                 let _ = window.set_focus();
+                                #[cfg(debug_assertions)]
+                                window.open_devtools();
                                 let _ = window.emit("shortcut-pressed", ());
+                                let _ = app.emit("shortcut-pressed", ());
+                                println!("Event emitted to app and window.");
                             }
                         }
                     })

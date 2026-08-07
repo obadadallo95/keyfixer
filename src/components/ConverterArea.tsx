@@ -219,6 +219,10 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = 
         if (!isMounted) return;
         
         unlisten = await tauriEvent.listen('shortcut-pressed', async () => {
+          console.log("React received shortcut-pressed event", { 
+            isProcessing: stateRef.current.isProcessingShortcut,
+            workflowState: stateRef.current.workflowState 
+          });
           if (stateRef.current.isProcessingShortcut) return;
           stateRef.current.isProcessingShortcut = true;
           
