@@ -3,7 +3,11 @@
  * @description Dual-Textarea Converter with Windows/Mac Platform Selection. Immersive dark theme.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as tauriEvent from '@tauri-apps/api/event';
+import * as tauriCore from '@tauri-apps/api/core';
+import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 import { UILanguage } from '../types';
 import { KeyboardPlatform, ConversionMode } from '../core/keyboard';
 import { translations } from '../i18n/translations';
@@ -40,15 +44,19 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = 
   
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
   
-  // Refs for event listener
   const stateRef = React.useRef({
     workflowState,
     outputText,
+    conversionMode,
+    keyboardPlatform,
+    isProcessingShortcut: false,
   });
   useEffect(() => {
     stateRef.current.workflowState = workflowState;
     stateRef.current.outputText = outputText;
-  }, [workflowState, outputText]);
+    stateRef.current.conversionMode = conversionMode;
+    stateRef.current.keyboardPlatform = keyboardPlatform;
+  }, [workflowState, outputText, conversionMode, keyboardPlatform]);
   
   const audioCtxRef = React.useRef<AudioContext | null>(null);
 
@@ -173,20 +181,31 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = 
   useEffect(() => {
     if (!isDesktop) return;
     let unlisten: (() => void) | undefined;
+    let isMounted = true;
     const setupListener = async () => {
       try {
-        const { listen } = await import('@tauri-apps/api/event');
-        unlisten = await listen('tauri://focus', () => {
+        if (!isMounted) return;
+        unlisten = await tauriEvent.listen('tauri://focus', () => {
           if (inputRef.current && inputText.length > 0) {
              inputRef.current.select();
           } else if (inputRef.current) {
              inputRef.current.focus();
           }
         });
-      } catch (err) {}
+      } catch (err) {
+        console.error("Focus listener setup failed:", err);
+      }
     };
     setupListener();
-    return () => { if (unlisten) unlisten(); };
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
   }, [isDesktop, inputText]);
 
   // Listen for global shortcut
@@ -194,20 +213,39 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = 
     if (!isDesktop) return;
     let unlisten: (() => void) | undefined;
     
+    let isMounted = true;
     const setupShortcutListener = async () => {
       try {
-        const { listen } = await import('@tauri-apps/api/event');
+        if (!isMounted) return;
         
-        unlisten = await listen('shortcut-pressed', async () => {
-          const { readText, writeText } = await import('@tauri-apps/plugin-clipboard-manager');
-          const { invoke } = await import('@tauri-apps/api/core');
+        unlisten = await tauriEvent.listen('shortcut-pressed', async () => {
+          if (stateRef.current.isProcessingShortcut) return;
+          stateRef.current.isProcessingShortcut = true;
           
-          if (stateRef.current.workflowState === 'idle') {
-            try {
-              const clipboardText = await readText();
+          try {
+            
+            if (stateRef.current.workflowState === 'idle') {
+              let clipboardText = '';
+              try {
+                clipboardText = await tauriClipboard.readText() || '';
+              } catch (err) {
+                // Read denied or empty
+              }
+              
               if (clipboardText && clipboardText.trim().length > 0) {
+                // Synchronously calculate result before transitioning state
+                const result = convertKeyboardLayout(clipboardText, {
+                  mode: stateRef.current.conversionMode,
+                  platform: stateRef.current.keyboardPlatform,
+                });
+                
                 setInputText(clipboardText);
+                setOutputText(result.fixedText);
                 setWorkflowState('resultReady');
+                
+                stateRef.current.outputText = result.fixedText;
+                stateRef.current.workflowState = 'resultReady';
+                
                 if (inputRef.current) {
                   // Focus but do not select text when populated automatically
                   inputRef.current.focus();
@@ -216,36 +254,54 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = 
               } else {
                 if (inputRef.current) inputRef.current.focus();
               }
-            } catch (err) {
-              if (inputRef.current) inputRef.current.focus();
-            }
-          } else if (stateRef.current.workflowState === 'resultReady') {
-            if (stateRef.current.outputText) {
-              try {
-                await writeText(stateRef.current.outputText);
-                setCopied(true);
-                setShowGlow(true);
+            } else if (stateRef.current.workflowState === 'resultReady') {
+              if (stateRef.current.outputText) {
+                let writeSuccess = false;
+                try {
+                  await tauriClipboard.writeText(stateRef.current.outputText);
+                  writeSuccess = true;
+                } catch (err) {
+                  console.error("Failed to write to clipboard", err);
+                }
                 
-                setTimeout(() => {
-                  setCopied(false);
-                  setShowGlow(false);
-                  setInputText('');
-                  setWorkflowState('idle');
-                  invoke('hide_window').catch(() => {});
-                }, 350);
-              } catch (err) {
-                console.error("Failed to write to clipboard", err);
+                if (writeSuccess) {
+                  setCopied(true);
+                  setShowGlow(true);
+                  
+                  setTimeout(() => {
+                    setCopied(false);
+                    setShowGlow(false);
+                    setInputText('');
+                    setOutputText('');
+                    setWorkflowState('idle');
+                    stateRef.current.workflowState = 'idle';
+                    stateRef.current.outputText = '';
+                    tauriCore.invoke('hide_window').catch(() => {});
+                  }, 350);
+                }
               }
             }
+          } catch (err) {
+            console.error("Failed to process shortcut", err);
+          } finally {
+            stateRef.current.isProcessingShortcut = false;
           }
         });
       } catch (err) {
-        console.error("Failed to setup shortcut listener", err);
+        console.error("Shortcut listener setup failed:", err);
       }
     };
     
     setupShortcutListener();
-    return () => { if (unlisten) unlisten(); };
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
   }, [isDesktop]);
 
   return (
