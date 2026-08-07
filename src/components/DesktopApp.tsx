@@ -3,10 +3,12 @@ import { convertKeyboardLayout } from '../core/keyboard';
 import { ConversionMode } from '../core/keyboard/types';
 import { translations } from '../i18n/translations';
 import { UILanguage } from '../types';
-import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X, Volume2, VolumeX } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import * as tauriEvent from '@tauri-apps/api/event';
+import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
 import './DesktopApp.css';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
@@ -14,6 +16,10 @@ const FONT_MONO = '"SF Mono", ui-monospace, Menlo, monospace';
 const FONT_WINDOWS = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif';
 const FONT_MONO_WINDOWS = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
+
+function playSystemSound(type: 'paste' | 'copy') {
+  invoke('play_feedback_sound', { soundType: type }).catch(() => {});
+}
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {
   return (
@@ -147,7 +153,79 @@ export function DesktopApp() {
   const [copied, setCopied] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [appVersion, setAppVersion] = useState('1.1.0');
+  const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
+  const [showGlow, setShowGlow] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('keyfixer_sound_enabled') === 'true';
+  });
+  const [inlineFixEnabled, setInlineFixEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('keyfixer_inline_fix_enabled') === 'true';
+  });
+  const [hasAccessibility, setHasAccessibility] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('keyfixer_sound_enabled', String(soundEnabled));
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    invoke<boolean>('get_inline_fix_enabled')
+      .then((enabled) => {
+        setInlineFixEnabled(enabled);
+        if (enabled) {
+          invoke<boolean>('check_accessibility_permission')
+            .then(setHasAccessibility)
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleToggleInlineFix = useCallback(async (enable: boolean) => {
+    setInlineFixEnabled(enable);
+    localStorage.setItem('keyfixer_inline_fix_enabled', String(enable));
+    try {
+      await invoke('set_inline_fix_enabled', { enabled: enable });
+      if (enable) {
+        const trusted = await invoke<boolean>('check_accessibility_permission');
+        setHasAccessibility(trusted);
+      }
+    } catch (err) {
+      console.error('Failed to set inline fix enabled state:', err);
+    }
+  }, []);
+
+  const handleOpenAccessibility = useCallback(async () => {
+    try {
+      await invoke('open_accessibility_settings');
+    } catch (err) {
+      console.error('Failed to open accessibility settings:', err);
+    }
+  }, []);
+
+  const handleRefreshAccessibility = useCallback(async () => {
+    try {
+      const trusted = await invoke<boolean>('check_accessibility_permission');
+      setHasAccessibility(trusted);
+    } catch (err) {
+      console.error('Failed to refresh accessibility permission:', err);
+    }
+  }, []);
+
+  const stateRef = useRef({
+    workflowState: 'idle' as 'idle' | 'resultReady',
+    isProcessingShortcut: false,
+    outputText: '',
+    conversionMode: 'auto' as ConversionMode,
+    keyboardPlatform: platform,
+    soundEnabled: soundEnabled,
+  });
+
+  useEffect(() => {
+    stateRef.current.conversionMode = mode;
+    stateRef.current.keyboardPlatform = platform;
+    stateRef.current.soundEnabled = soundEnabled;
+  }, [mode, platform, soundEnabled]);
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => {});
@@ -162,6 +240,162 @@ export function DesktopApp() {
     focusInput();
     return () => window.removeEventListener('focus', focusInput);
   }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    
+    const setupShortcutListener = async () => {
+      try {
+        if (!isMounted) return;
+        const currentWin = getCurrentWindow();
+        
+        const handleShortcut = async () => {
+          if (stateRef.current.isProcessingShortcut) return;
+          stateRef.current.isProcessingShortcut = true;
+          
+          try {
+            if (stateRef.current.workflowState === 'idle') {
+              let clipboardText = '';
+              try {
+                clipboardText = await tauriClipboard.readText() || '';
+              } catch (err) {}
+              
+              if (clipboardText && clipboardText.trim().length > 0) {
+                const result = convertKeyboardLayout(clipboardText, {
+                  mode: stateRef.current.conversionMode,
+                  platform: stateRef.current.keyboardPlatform,
+                });
+                
+                setInput(clipboardText);
+                setWorkflowState('resultReady');
+                
+                stateRef.current.outputText = result.fixedText;
+                stateRef.current.workflowState = 'resultReady';
+                
+                if (stateRef.current.soundEnabled) {
+                  playSystemSound('paste');
+                }
+                
+                if (inputRef.current) {
+                  inputRef.current.focus();
+                  inputRef.current.setSelectionRange(clipboardText.length, clipboardText.length);
+                }
+              } else {
+                if (inputRef.current) inputRef.current.focus();
+              }
+            } else if (stateRef.current.workflowState === 'resultReady') {
+              if (stateRef.current.outputText) {
+                let writeSuccess = false;
+                try {
+                  await tauriClipboard.writeText(stateRef.current.outputText);
+                  writeSuccess = true;
+                } catch (err) {}
+                
+                if (writeSuccess) {
+                  setCopied(true);
+                  setShowGlow(true);
+                  if (stateRef.current.soundEnabled) {
+                    playSystemSound('copy');
+                  }
+                  
+                  setTimeout(() => {
+                    setCopied(false);
+                    setShowGlow(false);
+                    setInput('');
+                    setWorkflowState('idle');
+                    stateRef.current.workflowState = 'idle';
+                    stateRef.current.outputText = '';
+                    invoke('hide_window').catch(() => {});
+                  }, 350);
+                }
+              }
+            }
+          } finally {
+            stateRef.current.isProcessingShortcut = false;
+          }
+        };
+
+        unlisten = await tauriEvent.listen('shortcut-pressed', handleShortcut);
+      } catch (err) {
+        // Listener setup error
+      }
+    };
+    
+    setupShortcutListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, []);
+
+  // Listen for background inline conversion requests and reply with converted text
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    const setupInlineListener = async () => {
+      try {
+        if (!isMounted) return;
+        unlisten = await tauriEvent.listen<{ id: number; text: string }>(
+          'inline-convert-request',
+          async (event) => {
+            const { id, text } = event.payload;
+            const result = convertKeyboardLayout(text, {
+              mode: stateRef.current.conversionMode,
+              platform: stateRef.current.keyboardPlatform,
+            });
+            invoke('inline_convert_response', {
+              id,
+              fixedText: result.fixedText,
+            }).catch(() => {});
+          }
+        );
+      } catch (err) {}
+    };
+    setupInlineListener();
+    return () => {
+      isMounted = false;
+      if (unlisten) {
+        try {
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  // Listen for tauri window focus to auto-select or focus input
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    const setupListener = async () => {
+      try {
+        if (!isMounted) return;
+        unlisten = await tauriEvent.listen('tauri://focus', () => {
+          if (inputRef.current && input.length > 0) {
+             inputRef.current.select();
+          } else if (inputRef.current) {
+             inputRef.current.focus();
+          }
+        });
+      } catch (err) {}
+    };
+    setupListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, [input]);
 
   useEffect(() => {
     if (!showLegal) return;
@@ -196,8 +430,9 @@ export function DesktopApp() {
     if (!output) return;
     navigator.clipboard.writeText(output).catch(() => {});
     setCopied(true);
+    if (soundEnabled) playSystemSound('copy');
     setTimeout(() => setCopied(false), 1600);
-  }, [output]);
+  }, [output, soundEnabled]);
 
   const doClear = useCallback(() => {
     setInput('');
@@ -374,7 +609,7 @@ export function DesktopApp() {
         )}
         
         {/* Controls Row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           {isWindows && <span className="kf-controls-label">{isRTL ? 'اتجاه التحويل' : 'Conversion direction'}</span>}
           
           {/* Conversion Mode Segmented Control */}
@@ -411,6 +646,188 @@ export function DesktopApp() {
               );
             })}
           </div>
+
+          {/* Sound Toggle Button (Compact & Sleek) */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              if (next) playSystemSound('copy');
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: soundEnabled ? T.accentDim : T.segmentedBg,
+              border: `1px solid ${soundEnabled ? T.accent : T.border}`,
+              color: soundEnabled ? T.accent : T.text2,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            title={
+              soundEnabled
+                ? (isRTL ? 'المؤثر الصوتي مفعّل (انقر للتعطيل)' : 'Sound Feedback On (Click to mute)')
+                : (isRTL ? 'المؤثر الصوتي متوقف (انقر للتفعيل)' : 'Sound Feedback Off (Click to enable)')
+            }
+          >
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+          </button>
+        </div>
+
+        {/* Pro Inline Fix Experimental Toggle Card */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: inlineFixEnabled ? T.accentDim : T.surface,
+            border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text1 }}>
+                {isRTL ? 'تصحيح مباشر (Pro Inline Fix)' : 'Pro Inline Fix'}
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  background: inlineFixEnabled ? T.accent : T.segmentedBg,
+                  color: inlineFixEnabled ? '#FFFFFF' : T.text2,
+                }}
+              >
+                {isRTL ? 'تجريبي' : 'Experimental'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={inlineFixEnabled}
+              onClick={() => handleToggleInlineFix(!inlineFixEnabled)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: 20,
+                background: inlineFixEnabled ? T.accent : T.segmentedBg,
+                color: inlineFixEnabled ? '#FFFFFF' : T.text2,
+                border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: inlineFixEnabled ? '#FFFFFF' : T.text2 }} />
+              {inlineFixEnabled ? (isRTL ? 'مفعّل (ON)' : 'ON') : (isRTL ? 'معطّل (OFF)' : 'OFF')}
+            </button>
+          </div>
+
+          <p style={{ margin: 0, fontSize: 11, color: T.text2, lineHeight: 1.4 }}>
+            {isRTL
+              ? 'تصحيح النص المحدد مباشرة داخل التطبيقات الأخرى (Safari، Chrome، VS Code) بالضغط على ⌥⌘K دون فتح النافذة.'
+              : 'Experimental — Fix selected text directly in other apps'}
+          </p>
+
+          {inlineFixEnabled && hasAccessibility === false && (
+            <div
+              style={{
+                marginTop: 4,
+                padding: '8px 12px',
+                borderRadius: 6,
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: T.text1,
+                fontSize: 11,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#DC2626', fontWeight: 600 }}>
+                <span>⚠️</span>
+                <span>
+                  {isRTL
+                    ? 'مطلوب إذن إمكانية الوصول (Accessibility)'
+                    : 'Accessibility Permission Required for Inline Fix'}
+                </span>
+              </div>
+              <p style={{ margin: 0, color: T.text2, lineHeight: 1.4 }}>
+                {isRTL
+                  ? 'لاستبدال النص داخل التطبيقات الأخرى، افتح إعدادات النظام ← الخصوصية والأمان ← إمكانية الوصول وفعّل KeyFixer.'
+                  : 'To replace text inside other apps, enable KeyFixer in System Settings → Privacy & Security → Accessibility.'}
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                <button
+                  type="button"
+                  onClick={handleOpenAccessibility}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    borderRadius: 5,
+                    background: '#DC2626',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isRTL ? 'فتح إعدادات إمكانية الوصول' : 'Open Accessibility Settings'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefreshAccessibility}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    borderRadius: 5,
+                    background: T.surface,
+                    color: T.text1,
+                    border: `1px solid ${T.border}`,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isRTL ? 'إعادة الفحص' : 'Check Again'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {inlineFixEnabled && hasAccessibility === true && (
+            <div
+              style={{
+                marginTop: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                color: '#16A34A',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <span>✅</span>
+              <span>
+                {isRTL
+                  ? 'إمكانية الوصول مفعلة: حدد أي نص في أي تطبيق واضغط ⌥⌘K'
+                  : 'Accessibility Granted: Select text in any app & press ⌥⌘K'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Editor Split View */}
@@ -488,7 +905,8 @@ export function DesktopApp() {
                 borderRadius: isWindows ? 7 : 10,
                 color: output ? T.text1 : T.text2,
                 overflowY: 'auto',
-                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
+                boxShadow: showGlow ? `0 0 15px ${T.focus}` : 'inset 0 1px 4px rgba(0,0,0,0.1)',
+                transition: 'box-shadow 0.3s ease, border-color 0.2s, background-color 0.2s',
                 userSelect: 'text',
               }}
             >

@@ -3,7 +3,11 @@
  * @description Dual-Textarea Converter with Windows/Mac Platform Selection. Immersive dark theme.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as tauriEvent from '@tauri-apps/api/event';
+import * as tauriCore from '@tauri-apps/api/core';
+import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 import { UILanguage } from '../types';
 import { KeyboardPlatform, ConversionMode } from '../core/keyboard';
 import { translations } from '../i18n/translations';
@@ -21,9 +25,10 @@ import {
 
 interface ConverterAreaProps {
   lang: UILanguage;
+  isDesktop?: boolean;
 }
 
-export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
+export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang, isDesktop = false }) => {
   const t = translations[lang].converter;
 
   const [inputText, setInputText] = useState<string>('');
@@ -34,6 +39,24 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [stats, setStats] = useState({ charCount: 0, wordCount: 0, changedCount: 0 });
+  const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
+  const [showGlow, setShowGlow] = useState<boolean>(false);
+  
+  const inputRef = React.useRef<HTMLTextAreaElement>(null);
+  
+  const stateRef = React.useRef({
+    workflowState,
+    outputText,
+    conversionMode,
+    keyboardPlatform,
+    isProcessingShortcut: false,
+  });
+  useEffect(() => {
+    stateRef.current.workflowState = workflowState;
+    stateRef.current.outputText = outputText;
+    stateRef.current.conversionMode = conversionMode;
+    stateRef.current.keyboardPlatform = keyboardPlatform;
+  }, [workflowState, outputText, conversionMode, keyboardPlatform]);
   
   const audioCtxRef = React.useRef<AudioContext | null>(null);
 
@@ -120,6 +143,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
+    setWorkflowState('idle'); // user typing resets workflow
     // If text length increased, it means a key was pressed (simplistic check)
     if (e.target.value.length >= inputText.length) {
       playClickSound();
@@ -128,13 +152,14 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
 
   const handleCopy = () => {
     if (!outputText) return;
-    navigator.clipboard.writeText(outputText);
+    navigator.clipboard.writeText(outputText).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
   const handleClear = () => {
     setInputText('');
+    setWorkflowState('idle');
   };
 
   const handleSwap = useCallback(() => {
@@ -152,8 +177,139 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
     }
   };
 
+  // Listen for Tauri app reopen (manual open)
+  useEffect(() => {
+    if (!isDesktop) return;
+    let unlisten: (() => void) | undefined;
+    let isMounted = true;
+    const setupListener = async () => {
+      try {
+        if (!isMounted) return;
+        unlisten = await tauriEvent.listen('tauri://focus', () => {
+          if (inputRef.current && inputText.length > 0) {
+             inputRef.current.select();
+          } else if (inputRef.current) {
+             inputRef.current.focus();
+          }
+        });
+      } catch (err) {
+        console.error("Focus listener setup failed:", err);
+      }
+    };
+    setupListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, [isDesktop, inputText]);
+
+  // Listen for global shortcut
+  useEffect(() => {
+    if (!isDesktop) return;
+    let unlisten: (() => void) | undefined;
+    
+    let isMounted = true;
+    const setupShortcutListener = async () => {
+      try {
+        if (!isMounted) return;
+        
+        unlisten = await tauriEvent.listen('shortcut-pressed', async () => {
+          console.log("React received shortcut-pressed event", { 
+            isProcessing: stateRef.current.isProcessingShortcut,
+            workflowState: stateRef.current.workflowState 
+          });
+          if (stateRef.current.isProcessingShortcut) return;
+          stateRef.current.isProcessingShortcut = true;
+          
+          try {
+            
+            if (stateRef.current.workflowState === 'idle') {
+              let clipboardText = '';
+              try {
+                clipboardText = await tauriClipboard.readText() || '';
+              } catch (err) {
+                // Read denied or empty
+              }
+              
+              if (clipboardText && clipboardText.trim().length > 0) {
+                // Synchronously calculate result before transitioning state
+                const result = convertKeyboardLayout(clipboardText, {
+                  mode: stateRef.current.conversionMode,
+                  platform: stateRef.current.keyboardPlatform,
+                });
+                
+                setInputText(clipboardText);
+                setOutputText(result.fixedText);
+                setWorkflowState('resultReady');
+                
+                stateRef.current.outputText = result.fixedText;
+                stateRef.current.workflowState = 'resultReady';
+                
+                if (inputRef.current) {
+                  // Focus but do not select text when populated automatically
+                  inputRef.current.focus();
+                  inputRef.current.setSelectionRange(clipboardText.length, clipboardText.length);
+                }
+              } else {
+                if (inputRef.current) inputRef.current.focus();
+              }
+            } else if (stateRef.current.workflowState === 'resultReady') {
+              if (stateRef.current.outputText) {
+                let writeSuccess = false;
+                try {
+                  await tauriClipboard.writeText(stateRef.current.outputText);
+                  writeSuccess = true;
+                } catch (err) {
+                  console.error("Failed to write to clipboard", err);
+                }
+                
+                if (writeSuccess) {
+                  setCopied(true);
+                  setShowGlow(true);
+                  
+                  setTimeout(() => {
+                    setCopied(false);
+                    setShowGlow(false);
+                    setInputText('');
+                    setOutputText('');
+                    setWorkflowState('idle');
+                    stateRef.current.workflowState = 'idle';
+                    stateRef.current.outputText = '';
+                    tauriCore.invoke('hide_window').catch(() => {});
+                  }, 350);
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Failed to process shortcut", err);
+          } finally {
+            stateRef.current.isProcessingShortcut = false;
+          }
+        });
+      } catch (err) {
+        console.error("Shortcut listener setup failed:", err);
+      }
+    };
+    
+    setupShortcutListener();
+    return () => { 
+      isMounted = false;
+      if (unlisten) {
+        try { 
+          const res = unlisten() as any;
+          if (res && res.catch) res.catch(() => {});
+        } catch (e) {}
+      } 
+    };
+  }, [isDesktop]);
+
   return (
-    <div className="w-full h-full max-w-6xl mx-auto flex flex-col gap-4 sm:gap-5 relative z-10 flex-1 min-h-0">
+    <div className={`w-full h-full max-w-6xl mx-auto flex flex-col gap-4 sm:gap-5 relative z-10 flex-1 min-h-0 transition-all duration-300 rounded-3xl ${showGlow ? 'shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-1 ring-amber-500/50' : ''}`}>
       {/* Controls Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 shrink-0">
         
@@ -267,6 +423,7 @@ export const ConverterArea: React.FC<ConverterAreaProps> = ({ lang }) => {
             </div>
           </div>
           <textarea
+            ref={inputRef}
             value={inputText}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}

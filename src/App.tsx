@@ -102,7 +102,7 @@ export default function App({
 
       {/* Main Content */}
       <main className="flex-1 relative z-10 w-full max-w-6xl mx-auto px-2 sm:px-6 lg:px-8 pb-4 sm:py-6 flex flex-col min-h-0">
-        <ConverterArea lang={lang} />
+        <ConverterArea lang={lang} isDesktop={isDesktop} />
         <DownloadSection lang={lang} />
         <DeveloperCredit lang={lang} />
       </main>

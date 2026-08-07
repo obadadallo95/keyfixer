@@ -2,7 +2,7 @@ use tauri::{
     command,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+    AppHandle, Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -76,6 +76,107 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Hide the application window
+#[command]
+async fn hide_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+    Ok(())
+}
+
+/// Plays native auditory feedback for shortcut operations.
+/// - macOS: Uses `Pop.aiff` for paste/open and `Tink.aiff` for accept/copy.
+/// - Windows: Uses `SystemSounds::Beep` as a single native confirmation sound.
+/// Playback is dispatched on a background thread and never blocks the workflow.
+#[command]
+fn play_feedback_sound(sound_type: String) {
+    #[cfg(target_os = "macos")]
+    {
+        std::thread::spawn(move || {
+            let sound_name = if sound_type == "paste" { "Pop" } else { "Tink" };
+            let path = format!("/System/Library/Sounds/{}.aiff", sound_name);
+            let _ = std::process::Command::new("afplay").arg(path).output();
+        });
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::thread::spawn(move || {
+            let _ = std::process::Command::new("powershell")
+                .args(["-c", "[System.Media.SystemSounds]::Beep.Play()"])
+                .output();
+        });
+    }
+}
+
+mod inline_fix;
+
+/// Submit response for inline conversion request from webview
+#[command]
+fn inline_convert_response(id: u64, fixed_text: String) {
+    #[cfg(target_os = "macos")]
+    inline_fix::macos::submit_conversion_response(id, fixed_text);
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (id, fixed_text);
+    }
+}
+
+/// Enable or disable Pro Inline Fix mode
+#[command]
+fn set_inline_fix_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::set_enabled(&app, enabled);
+        Ok(enabled)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, enabled);
+        Ok(false)
+    }
+}
+
+/// Query current Pro Inline Fix mode status
+#[command]
+fn get_inline_fix_enabled() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::is_enabled()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
+    }
+}
+
+/// Check macOS Accessibility permission status
+#[tauri::command]
+fn check_accessibility_permission() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::prompt_and_check_accessibility()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        true
+    }
+}
+
+/// Open macOS System Settings directly to Accessibility panel
+#[command]
+fn open_accessibility_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::open_accessibility_settings();
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
 /// Open the single approved support page in the Windows default browser.
 #[command]
 async fn open_support_page(app: AppHandle) -> Result<(), String> {
@@ -103,6 +204,8 @@ pub fn run() {
     #[cfg(target_os = "windows")]
     let builder = builder.plugin(tauri_plugin_opener::init());
 
+    let builder = builder.plugin(tauri_plugin_clipboard_manager::init());
+
     let app = builder
         .invoke_handler(tauri::generate_handler![
             collapse_window,
@@ -110,10 +213,17 @@ pub fn run() {
             close_app,
             start_drag,
             open_support_page,
+            hide_window,
+            play_feedback_sound,
+            inline_convert_response,
+            set_inline_fix_enabled,
+            get_inline_fix_enabled,
+            check_accessibility_permission,
+            open_accessibility_settings,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            inline_fix::macos::init_persisted_setting(app.handle());
 
             #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
@@ -134,7 +244,35 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            toggle_main_window(app);
+                            #[cfg(target_os = "macos")]
+                            {
+                                if inline_fix::macos::is_enabled() {
+                                    let app_handle = app.clone();
+                                    std::thread::spawn(move || {
+                                        inline_fix::macos::run_inline_fix(&app_handle);
+                                    });
+                                } else {
+                                    if let Some(window) = app.get_webview_window("main") {
+                                        let _ = window.unminimize();
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                        #[cfg(debug_assertions)]
+                                        window.open_devtools();
+                                        let _ = app.emit("shortcut-pressed", ());
+                                    }
+                                }
+                            }
+                            #[cfg(not(target_os = "macos"))]
+                            {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.unminimize();
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                    #[cfg(debug_assertions)]
+                                    window.open_devtools();
+                                    let _ = app.emit("shortcut-pressed", ());
+                                }
+                            }
                         }
                     })
                     .build(),
