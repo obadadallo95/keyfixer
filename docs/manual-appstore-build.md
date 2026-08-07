@@ -104,25 +104,49 @@ src-tauri/target/release/bundle/macos/KeyFixer.app
 
 ## Step 5 – Local smoke test (manual, on macOS)
 
-> **Do not launch the app from Finder during the smoke test** – a sandboxed App Store build must be tested via open(1) or directly double-clicking to verify it works identically to what the App Store reviewer will see.
+> **Important**: An app signed with the "3rd Party Mac Developer Application" certificate (App Store distribution) **cannot be launched directly** with `open` or from Finder. macOS returns error Code=163 ("Launchd job spawn failed") because this signing identity requires the App Store sandbox environment to run.
+>
+> This is **normal and expected** — it is not a bug in your build.
 
-1. **Run the smoke test:**
-   ```bash
-   open src-tauri/target/release/bundle/macos/KeyFixer.app
-   ```
+### Option A — Quick binary verification (no launch needed)
 
-2. **Verify on launch:**
-   - The app appears in the system tray (menu bar) within 3 seconds
-   - No Gatekeeper warning (expected since it's signed with Apple Distribution, not Notarized — this is normal for pre-upload testing)
-   - Press ⌥⌘K (Option+Command+K) to toggle the main window
-   - The KeyFixer UI appears (not a blank window)
-   - The text conversion interface is fully rendered and functional
+Run the post-build verifier. It confirms the app is correctly built and signed **without needing to launch it**:
 
-3. **Verify the window is not blank:**
-   - Open the app
-   - Toggle the window open with ⌥⌘K
-   - Confirm the KeyFixer interface loads (input fields, convert button, output area)
-   - If the window is blank/empty: run the pre-flight check again (`npm run preflight:desktop`) and re-run the full build
+```bash
+npm run verify:appstore
+```
+
+Expected output:
+```
+✅ Binary found (N bytes)
+✅ Frontend marker 'desktop-root' found embedded in binary
+✅ Frontend marker 'index-desktop' found embedded in binary
+✅ No dev-server references found embedded in binary
+✅ CFBundleIdentifier = com.obadadallo.keyfixer
+✅ Code signature valid
+✅ com.apple.security.app-sandbox = true
+✅ Mac App Store bundle verification passed
+```
+
+### Option B — Functional launch test (use a dev-signed local build)
+
+To do a functional UI smoke test locally before submitting, build with the **development** certificate (not the App Store distribution certificate):
+
+```bash
+# Build unsigned / ad-hoc signed for local testing only
+tauri build --bundles app --config src-tauri/tauri.ci-mac.conf.json
+
+# Then launch it
+open src-tauri/target/release/bundle/macos/KeyFixer.app
+```
+
+Verify on launch:
+- App icon appears in the system tray (menu bar) within 3 seconds
+- Press ⌥⌘K (Option+Command+K) to toggle the main window
+- The KeyFixer UI renders fully (not a blank window)
+- Text conversion works end-to-end
+
+> **Note**: This dev build uses `signingIdentity: "-"` (ad-hoc, not App Store). It is for local UI verification only — **never upload this build to App Store Connect**.
 
 4. **Check the tray menu:**
    - Right-click the menu bar icon
@@ -138,12 +162,14 @@ npm run verify:appstore
 
 This runs `scripts/verify-appstore-bundle.sh --stage postbuild` and checks:
 - KeyFixer.app exists
-- index.html is inside `Contents/Resources/`
-- Referenced JS/CSS assets are present in the bundle
-- No dev-server references in bundled index.html
+- Application binary is present and has a reasonable size
+- Frontend markers (`desktop-root`, `index-desktop`) are embedded in the binary
+- No dev-server references embedded in binary
 - Info.plist metadata (bundle ID, category, min macOS, encryption export)
 - Code signature validity
 - App Sandbox entitlement
+
+> **Note on Resources folder**: In Tauri v2, `Contents/Resources/` only contains `icon.icns`. The HTML/JS/CSS assets are compiled into the binary — this is correct and expected.
 
 ---
 
@@ -199,6 +225,11 @@ Use Transporter (Apple's official upload tool) – **do not use the CI unsigned 
 ### Signing identity not found
 **Cause**: The Apple Distribution certificate is not in your Keychain.  
 **Fix**: Download and install the certificate from https://developer.apple.com/account/resources/certificates/list
+
+### "The application cannot be opened" / Code=163 when running `open KeyFixer.app`
+**Cause**: The app is signed with the "3rd Party Mac Developer Application" certificate (App Store distribution identity). macOS requires the App Store sandbox environment to launch such apps — they cannot be launched directly from the filesystem.  
+**Status**: This is **normal and expected** for App Store builds.  
+**Fix**: Use `npm run verify:appstore` to confirm the build is correct without launching it. For a functional UI test, use the ad-hoc build: `tauri build --bundles app --config src-tauri/tauri.ci-mac.conf.json`.
 
 ### Provisioning profile expired or missing
 **Cause**: `src-tauri/signing/KeyFixer.provisionprofile` is absent or expired.  

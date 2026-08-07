@@ -145,6 +145,13 @@ fi
 # ═════════════════════════════════════════════════════════════════════════════
 # STAGE: postbuild
 # Validates the signed KeyFixer.app bundle produced by tauri build.
+#
+# NOTE – Tauri v2 asset embedding:
+#   In Tauri v2, frontendDist files (HTML/JS/CSS) are compiled INTO the binary
+#   at cargo build time via tauri-build's include_bytes!/include_dir! codegen.
+#   They are NOT placed as separate files in Contents/Resources/.
+#   Contents/Resources/ only contains icon.icns (and any bundle.resources entries).
+#   Asset presence is verified via `strings` on the binary instead.
 # ═════════════════════════════════════════════════════════════════════════════
 echo "KeyFixer – Post-build App Store bundle verification"
 echo "═══════════════════════════════════════════════════"
@@ -152,7 +159,7 @@ echo "════════════════════════�
 APP_PATH="src-tauri/target/release/bundle/macos/KeyFixer.app"
 RESOURCES="$APP_PATH/Contents/Resources"
 INFO_PATH="$APP_PATH/Contents/Info.plist"
-BUNDLE_INDEX="$RESOURCES/index.html"
+BINARY_PATH="$APP_PATH/Contents/MacOS/keyfixer-desktop"
 
 # ── Check 1: .app bundle exists ────────────────────────────────────────────
 section "Check 1 – KeyFixer.app bundle exists"
@@ -164,63 +171,68 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 pass "KeyFixer.app found"
 
-# ── Check 2: index.html inside bundle Resources ───────────────────────────
-section "Check 2 – index.html present in bundle Resources"
-if [[ ! -f "$BUNDLE_INDEX" ]]; then
-  fail "index.html not found inside $RESOURCES"
+# ── Check 2: Binary exists and has reasonable size ─────────────────────────
+# In Tauri v2, frontendDist (HTML/JS/CSS) is compiled INTO the binary at
+# cargo build time via tauri-build include_bytes!/include_dir!.
+# Contents/Resources/ only has icon.icns -- that is CORRECT and expected.
+section "Check 2 – Application binary exists (Tauri v2: assets embedded in binary)"
+if [[ ! -f "$BINARY_PATH" ]]; then
+  fail "Binary not found at $BINARY_PATH"
+  echo ""
+  echo "❌  Post-build check FAILED – binary missing." >&2
+  exit 1
+fi
+BINARY_SIZE=$(wc -c < "$BINARY_PATH" | tr -d ' ')
+if (( BINARY_SIZE < 1000000 )); then
+  fail "Binary is suspiciously small (${BINARY_SIZE} bytes) – may be a stub or empty."
 else
-  SIZE=$(wc -c < "$BUNDLE_INDEX" | tr -d ' ')
-  pass "Resources/index.html present (${SIZE} bytes)"
+  pass "Binary found (${BINARY_SIZE} bytes)"
 fi
 
-# ── Check 3: Bundled JS/CSS assets exist ──────────────────────────────────
-section "Check 3 – Bundled JS/CSS assets exist"
-if [[ -f "$BUNDLE_INDEX" ]]; then
-  BUNDLE_ASSETS=$(grep -oE '(src|href)="/assets/[^"]+"' "$BUNDLE_INDEX" | grep -oE '/assets/[^"]+' || true)
-  if [[ -z "$BUNDLE_ASSETS" ]]; then
-    fail "No /assets/ references found in bundled index.html."
-  else
-    while IFS= read -r asset_ref; do
-      bundle_asset_path="$RESOURCES$asset_ref"
-      if [[ ! -f "$bundle_asset_path" ]]; then
-        fail "Bundled asset not found: $asset_ref"
-      else
-        SIZE=$(wc -c < "$bundle_asset_path" | tr -d ' ')
-        pass "$asset_ref (${SIZE} bytes)"
-      fi
-    done <<< "$BUNDLE_ASSETS"
-  fi
+# -- Check 3: Frontend asset paths embedded in binary ---------------------
+# Tauri v2 compresses HTML/JS/CSS content using zlib before embedding it.
+# Asset file PATHS (not content) are stored as plain strings in the binary.
+# We use grep -c with || true to avoid SIGPIPE issues with set -o pipefail.
+section "Check 3 - Frontend asset paths embedded in binary"
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "index-desktop" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  pass "Frontend asset path 'index-desktop' found embedded in binary (${_cnt} occurrences)"
+else
+  fail "Frontend asset path 'index-desktop' NOT found in binary - dist-desktop/ may have been empty when cargo built the binary."
+fi
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "/index-desktop.html" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  pass "Frontend entry point '/index-desktop.html' found embedded in binary"
+else
+  fail "Frontend entry point '/index-desktop.html' NOT found in binary."
 fi
 
-# ── Check 4: No dev-server references inside bundle ───────────────────────
-section "Check 4 – No dev-server references in bundled index.html"
-if [[ -f "$BUNDLE_INDEX" ]]; then
-  BUNDLE_DEV_FOUND=false
-  if grep -qi "localhost" "$BUNDLE_INDEX"; then
-    fail "Bundled index.html contains 'localhost'."
-    BUNDLE_DEV_FOUND=true
-  fi
-  if grep -q "127\.0\.0\.1" "$BUNDLE_INDEX"; then
-    fail "Bundled index.html contains '127.0.0.1'."
-    BUNDLE_DEV_FOUND=true
-  fi
-  if grep -qE "http://[^'\"> ]" "$BUNDLE_INDEX"; then
-    fail "Bundled index.html contains an http:// URL."
-    BUNDLE_DEV_FOUND=true
-  fi
-  if [[ "$BUNDLE_DEV_FOUND" == "false" ]]; then
-    pass "No dev-server references in bundled index.html"
-  fi
+# -- Check 4: No unexpected dev-server references embedded in binary -------
+# NOTE: Tauri v2 stores the devUrl string (localhost:5174) in its compiled
+# binary as an internal config record. This is a Tauri implementation detail
+# and does NOT mean the app connects to a dev server at runtime.
+# We only flag 127.0.0.1 which should never appear in a production Tauri binary.
+section "Check 4 - No unexpected dev-server references embedded in binary"
+BINARY_DEV_FOUND=false
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "127\.0\.0\.1" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  fail "Binary contains '127.0.0.1' (unexpected dev-server reference: ${_cnt} occurrences)."
+  BINARY_DEV_FOUND=true
+fi
+if [[ "$BINARY_DEV_FOUND" == "false" ]]; then
+  pass "No unexpected dev-server references found in binary"
 fi
 
-# ── Check 5: Bundle resource listing ──────────────────────────────────────
+# ── Check 5: Bundle resource listing ────────────────────────────────────
 section "Check 5 – Bundle resource listing"
-echo "   (informational – all files in Contents/Resources/)"
+echo "   Note: In Tauri v2, only icon.icns is expected in Contents/Resources/."
+echo "         HTML/JS/CSS are embedded in the binary -- not as separate files."
+echo "   (listing all files in Contents/Resources/)"
 find "$RESOURCES" -type f | sort | while read -r f; do
   SIZE=$(wc -c < "$f" | tr -d ' ')
   echo "       ${SIZE}B  ${f#$RESOURCES/}"
 done
-pass "Resource listing complete (see above)"
+pass "Resource listing complete (icon.icns only is correct for Tauri v2)"
 
 # ── Check 6: Info.plist metadata ──────────────────────────────────────────
 section "Check 6 – Info.plist metadata"

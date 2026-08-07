@@ -49,46 +49,51 @@ jobs:
         run: npm run preflight:desktop
       - name: Build macOS unsigned artifact
         run: npm run build:mac-ci
-      - name: Validate bundle resources (smoke test)
+      - name: Validate bundle resources – Tauri v2 binary embedding smoke test
         run: |
-          APP_RESOURCES="src-tauri/target/release/bundle/macos/KeyFixer.app/Contents/Resources"
-          echo "════════════════════════════════════════════════════"
-          echo "Bundle resource listing:"
-          echo "════════════════════════════════════════════════════"
-          find "$APP_RESOURCES" -type f | sort
-          echo "════════════════════════════════════════════════════"
-          echo "Verifying index.html is present..."
-          if [ ! -f "$APP_RESOURCES/index.html" ]; then
-            echo "❌ FAIL: index.html NOT found in bundle Resources" >&2
+          # In Tauri v2, frontendDist files are compiled INTO the binary, not in Resources/.
+          # Contents/Resources/ only has icon.icns - that is correct and expected.
+          APP_PATH="src-tauri/target/release/bundle/macos/KeyFixer.app"
+          BINARY="$APP_PATH/Contents/MacOS/keyfixer-desktop"
+          RESOURCES="$APP_PATH/Contents/Resources"
+          echo "========================================================"
+          echo "Bundle resource listing (Tauri v2: only icon.icns expected):"
+          echo "========================================================"
+          find "$RESOURCES" -type f | sort
+          echo "========================================================"
+          echo "Verifying binary exists..."
+          if [ ! -f "$BINARY" ]; then
+            echo "FAIL: binary not found at $BINARY" >&2
             exit 1
           fi
-          echo "✅ index.html confirmed in bundle Resources"
-          echo "Checking for dev-server references in bundled index.html..."
-          if grep -qi "localhost\|127\.0\.0\.1" "$APP_RESOURCES/index.html"; then
-            echo "❌ FAIL: bundled index.html contains dev-server references" >&2
+          BINARY_SIZE=$(wc -c < "$BINARY" | tr -d ' ')
+          echo "Binary size: ${BINARY_SIZE} bytes"
+          if [ "$BINARY_SIZE" -lt 1000000 ]; then
+            echo "FAIL: binary is suspiciously small (${BINARY_SIZE} bytes)" >&2
             exit 1
           fi
-          echo "✅ No dev-server references in bundled index.html"
-          echo "Verifying referenced JS/CSS assets exist in bundle..."
-          ASSET_REFS=$(grep -oE '(src|href)="/assets/[^"]+"' "$APP_RESOURCES/index.html" | grep -oE '/assets/[^"]+' || true)
-          if [ -z "$ASSET_REFS" ]; then
-            echo "❌ FAIL: No /assets/ references found in bundled index.html" >&2
+          echo "PASS: binary found (${BINARY_SIZE} bytes)"
+          echo "Checking frontend marker embedded in binary..."
+          if strings "$BINARY" | grep -q "desktop-root"; then
+            echo "PASS: frontend marker 'desktop-root' found embedded in binary"
+          else
+            echo "FAIL: 'desktop-root' NOT found in binary - assets may not have been embedded" >&2
             exit 1
           fi
-          ASSET_FAIL=0
-          while IFS= read -r asset_ref; do
-            asset_path="$APP_RESOURCES$asset_ref"
-            if [ ! -f "$asset_path" ]; then
-              echo "❌ FAIL: Bundled asset missing: $asset_ref" >&2
-              ASSET_FAIL=1
-            else
-              SIZE=$(wc -c < "$asset_path" | tr -d ' ')
-              echo "✅ $asset_ref (${SIZE} bytes)"
-            fi
-          done <<< "$ASSET_REFS"
-          if [ "$ASSET_FAIL" -ne 0 ]; then exit 1; fi
-          echo "════════════════════════════════════════════════════"
-          echo "✅ All bundle resource checks passed."
+          if strings "$BINARY" | grep -q "index-desktop"; then
+            echo "PASS: frontend marker 'index-desktop' found embedded in binary"
+          else
+            echo "FAIL: 'index-desktop' NOT found in binary" >&2
+            exit 1
+          fi
+          echo "Checking for dev-server references embedded in binary..."
+          if strings "$BINARY" | grep -q "localhost:5174"; then
+            echo "FAIL: binary contains 'localhost:5174' (dev-server URL embedded)" >&2
+            exit 1
+          fi
+          echo "PASS: no dev-server references found in binary"
+          echo "========================================================"
+          echo "All bundle smoke test checks passed."
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v7
         with:
