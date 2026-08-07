@@ -85,6 +85,10 @@ async fn hide_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Plays native auditory feedback for shortcut operations.
+/// - macOS: Uses `Pop.aiff` for paste/open and `Tink.aiff` for accept/copy.
+/// - Windows: Uses `SystemSounds::Beep` as a single native confirmation sound.
+/// Playback is dispatched on a background thread and never blocks the workflow.
 #[command]
 fn play_feedback_sound(sound_type: String) {
     #[cfg(target_os = "macos")]
@@ -164,16 +168,13 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            println!("Global shortcut pressed!");
                             if let Some(window) = app.get_webview_window("main") {
                                 let _ = window.unminimize();
                                 let _ = window.show();
                                 let _ = window.set_focus();
                                 #[cfg(debug_assertions)]
                                 window.open_devtools();
-                                let _ = window.emit("shortcut-pressed", ());
                                 let _ = app.emit("shortcut-pressed", ());
-                                println!("Event emitted to app and window.");
                             }
                         }
                     })

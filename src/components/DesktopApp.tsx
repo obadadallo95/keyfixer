@@ -203,7 +203,6 @@ export function DesktopApp() {
         const currentWin = getCurrentWindow();
         
         const handleShortcut = async () => {
-          console.log("DesktopApp received shortcut-pressed!", stateRef.current.workflowState);
           if (stateRef.current.isProcessingShortcut) return;
           stateRef.current.isProcessingShortcut = true;
           
@@ -212,13 +211,9 @@ export function DesktopApp() {
               let clipboardText = '';
               try {
                 clipboardText = await tauriClipboard.readText() || '';
-                console.log("Read clipboard:", clipboardText);
-              } catch (err) {
-                console.error("Failed to read clipboard:", err);
-              }
+              } catch (err) {}
               
               if (clipboardText && clipboardText.trim().length > 0) {
-                console.log("Converting text...");
                 const result = convertKeyboardLayout(clipboardText, {
                   mode: stateRef.current.conversionMode,
                   platform: stateRef.current.keyboardPlatform,
@@ -273,11 +268,9 @@ export function DesktopApp() {
           }
         };
 
-        const u1 = await currentWin.listen('shortcut-pressed', handleShortcut);
-        const u2 = await tauriEvent.listen('shortcut-pressed', handleShortcut);
-        unlisten = () => { u1(); u2(); };
+        unlisten = await tauriEvent.listen('shortcut-pressed', handleShortcut);
       } catch (err) {
-        console.error("Failed to setup shortcut listener:", err);
+        // Listener setup error
       }
     };
     

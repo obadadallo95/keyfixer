@@ -260,4 +260,13 @@ describe('ConverterArea Frontend State Machine', () => {
     expect(writeText).not.toHaveBeenCalled();
     expect(invoke).not.toHaveBeenCalled();
   });
+
+  it('registers exactly ONE shortcut-pressed listener to prevent duplicate events', async () => {
+    render(<ConverterArea lang="en" isDesktop={true} />);
+    
+    await waitFor(() => expect(getShortcutCallback()).toBeDefined());
+    
+    const shortcutCalls = (listen as any).mock.calls.filter((c: any) => c[0] === 'shortcut-pressed');
+    expect(shortcutCalls.length).toBe(1);
+  });
 });
