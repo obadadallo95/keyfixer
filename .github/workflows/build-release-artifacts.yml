@@ -43,15 +43,58 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Install macOS targets
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
-      - name: Build macOS unsigned artifacts
+      - name: Build desktop frontend
+        run: npm run build:desktop
+      - name: Pre-flight – verify dist-desktop before Tauri packaging
+        run: npm run preflight:desktop
+      - name: Build macOS unsigned artifact
+        run: npm run build:mac-ci
+      - name: Validate bundle resources (smoke test)
         run: |
-          npm run build:desktop
-          npm run build:mac-ci
+          APP_RESOURCES="src-tauri/target/release/bundle/macos/KeyFixer.app/Contents/Resources"
+          echo "════════════════════════════════════════════════════"
+          echo "Bundle resource listing:"
+          echo "════════════════════════════════════════════════════"
+          find "$APP_RESOURCES" -type f | sort
+          echo "════════════════════════════════════════════════════"
+          echo "Verifying index.html is present..."
+          if [ ! -f "$APP_RESOURCES/index.html" ]; then
+            echo "❌ FAIL: index.html NOT found in bundle Resources" >&2
+            exit 1
+          fi
+          echo "✅ index.html confirmed in bundle Resources"
+          echo "Checking for dev-server references in bundled index.html..."
+          if grep -qi "localhost\|127\.0\.0\.1" "$APP_RESOURCES/index.html"; then
+            echo "❌ FAIL: bundled index.html contains dev-server references" >&2
+            exit 1
+          fi
+          echo "✅ No dev-server references in bundled index.html"
+          echo "Verifying referenced JS/CSS assets exist in bundle..."
+          ASSET_REFS=$(grep -oE '(src|href)="/assets/[^"]+"' "$APP_RESOURCES/index.html" | grep -oE '/assets/[^"]+' || true)
+          if [ -z "$ASSET_REFS" ]; then
+            echo "❌ FAIL: No /assets/ references found in bundled index.html" >&2
+            exit 1
+          fi
+          ASSET_FAIL=0
+          while IFS= read -r asset_ref; do
+            asset_path="$APP_RESOURCES$asset_ref"
+            if [ ! -f "$asset_path" ]; then
+              echo "❌ FAIL: Bundled asset missing: $asset_ref" >&2
+              ASSET_FAIL=1
+            else
+              SIZE=$(wc -c < "$asset_path" | tr -d ' ')
+              echo "✅ $asset_ref (${SIZE} bytes)"
+            fi
+          done <<< "$ASSET_REFS"
+          if [ "$ASSET_FAIL" -ne 0 ]; then exit 1; fi
+          echo "════════════════════════════════════════════════════"
+          echo "✅ All bundle resource checks passed."
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v7
         with:
           name: KeyFixer-1.1.2-macos-unsigned-validation
           path: src-tauri/target/release/bundle/macos/
+
 
   build-windows:
     needs: verify
