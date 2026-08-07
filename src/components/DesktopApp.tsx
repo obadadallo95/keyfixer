@@ -231,12 +231,14 @@ export function DesktopApp() {
     outputText: '',
     conversionMode: 'auto' as ConversionMode,
     keyboardPlatform: platform,
+    soundEnabled: soundEnabled,
   });
 
   useEffect(() => {
     stateRef.current.conversionMode = mode;
     stateRef.current.keyboardPlatform = platform;
-  }, [mode, platform]);
+    stateRef.current.soundEnabled = soundEnabled;
+  }, [mode, platform, soundEnabled]);
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => {});
@@ -289,7 +291,9 @@ export function DesktopApp() {
                 stateRef.current.outputText = result.fixedText;
                 stateRef.current.workflowState = 'resultReady';
                 
-                if (soundEnabled) playSystemSound('paste');
+                if (stateRef.current.soundEnabled) {
+                  playSystemSound('paste');
+                }
                 
                 if (inputRef.current) {
                   inputRef.current.focus();
@@ -309,7 +313,9 @@ export function DesktopApp() {
                 if (writeSuccess) {
                   setCopied(true);
                   setShowGlow(true);
-                  if (soundEnabled) playSystemSound('copy');
+                  if (stateRef.current.soundEnabled) {
+                    playSystemSound('copy');
+                  }
                   
                   setTimeout(() => {
                     setCopied(false);
