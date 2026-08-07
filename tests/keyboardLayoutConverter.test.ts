@@ -123,5 +123,109 @@ describe('Keyboard Layout Converter - Engine Core', () => {
     const restored = convertKeyboardLayout(converted, { mode: 'ar2en', platform: 'windows' }).fixedText;
     expect(restored).toBe(original);
   });
+
+  describe('Uppercase & Shift Semantics Preservation', () => {
+    it('preserves uppercase when converting Arabic text with uppercase mappings to English', () => {
+      const result = convertKeyboardLayout('أشممخ ÷ شة ×لاشيش', { mode: 'ar2en', platform: 'windows' });
+      expect(result.fixedText).toBe('Hallo I am Obada');
+    });
+
+    it('correctly handles English words with uppercase letters in en2ar without symbol corruption', () => {
+      // Obada (starts with O) should convert to Arabic letters, not multiplication symbol '×'
+      const result = convertKeyboardLayout('Obada', { mode: 'en2ar', platform: 'windows' });
+      expect(result.fixedText).toBe('خلاشيش');
+    });
+
+    it('preserves lowercase text in standard Arabic to English conversion', () => {
+      const input = 'اثممخ ه شة خلاشيش';
+      const result = convertKeyboardLayout(input, { mode: 'ar2en', platform: 'windows' });
+      expect(result.fixedText).toBe('hello i am obada');
+    });
+
+    it('handles mixed-case English input gracefully without symbol corruption', () => {
+      const result = convertKeyboardLayout('Hallo I am Obada', { mode: 'en2ar', platform: 'windows' });
+      expect(result.fixedText).toBe('أشممخ ه شة خلاشيش');
+    });
+
+    it('handles all-uppercase English words without math symbol corruption', () => {
+      const result = convertKeyboardLayout('HELLO', { mode: 'en2ar', platform: 'windows' });
+      expect(result.fixedText).toBe('أثممخ');
+    });
+
+    it('converts common English names properly without symbol corruption', () => {
+      expect(convertKeyboardLayout('Sara', { mode: 'en2ar', platform: 'windows' }).fixedText).toBe('سشقش');
+      expect(convertKeyboardLayout('Karim', { mode: 'en2ar', platform: 'windows' }).fixedText).toBe('نشقهة');
+      expect(convertKeyboardLayout('David', { mode: 'en2ar', platform: 'windows' }).fixedText).toBe('يشرهي');
+      expect(convertKeyboardLayout('Obada', { mode: 'en2ar', platform: 'windows' }).fixedText).toBe('خلاشيش');
+      expect(convertKeyboardLayout('Obada', { mode: 'en2ar', platform: 'mac' }).fixedText).toBe('خزشيش');
+    });
+
+    it('preserves capital letters in English names when converted back', () => {
+      expect(convertKeyboardLayout('×لاشيش', { mode: 'ar2en', platform: 'windows' }).fixedText).toBe('Obada');
+      expect(convertKeyboardLayout('×زشيش', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('Obada');
+      expect(convertKeyboardLayout('خزشيش', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('obada');
+      expect(convertKeyboardLayout('أشممخ', { mode: 'ar2en', platform: 'windows' }).fixedText).toBe('Hallo');
+      expect(convertKeyboardLayout('÷', { mode: 'ar2en', platform: 'windows' }).fixedText).toBe('I');
+      expect(convertKeyboardLayout('÷', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('I');
+    });
+
+    it('correctly converts Mac Arabic bracket text (اه ه شو ]زشيش -> hi i am Obada)', () => {
+      const enResult = convertKeyboardLayout('اه ه شو ]زشيش', { mode: 'ar2en', platform: 'mac' });
+      expect(enResult.fixedText).toBe('hi i am Obada');
+      expect(convertKeyboardLayout(']زشيش', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('Obada');
+    });
+
+    it('correctly converts ALL-CAPS Shifted English typed on Mac Arabic layout (أ÷ ÷ ِؤ ]أِيِ -> HI I AM OBADA)', () => {
+      const result = convertKeyboardLayout('أ÷ ÷ ِؤ ]أِيِ', { mode: 'ar2en', platform: 'mac' });
+      expect(result.fixedText).toBe('HI I AM OBADA');
+    });
+  });
+
+  describe('Comprehensive Professional Word & Sentence Suite', () => {
+    it('handles full pangram sentences bidirectionally on Mac & Windows', () => {
+      const englishSentence = 'the quick brown fox jumps over the lazy dog';
+      
+      // Windows
+      const winAr = convertKeyboardLayout(englishSentence, { mode: 'en2ar', platform: 'windows' }).fixedText;
+      const winEn = convertKeyboardLayout(winAr, { mode: 'ar2en', platform: 'windows' }).fixedText;
+      expect(winEn).toBe(englishSentence);
+
+      // Mac
+      const macAr = convertKeyboardLayout(englishSentence, { mode: 'en2ar', platform: 'mac' }).fixedText;
+      const macEn = convertKeyboardLayout(macAr, { mode: 'ar2en', platform: 'mac' }).fixedText;
+      expect(macEn).toBe(englishSentence);
+    });
+
+    it('handles mistyped Arabic sentences back to English perfectly', () => {
+      // User typed "hi i am Obada" on Mac Arabic keyboard
+      expect(convertKeyboardLayout('اه ه شو ]زشيش', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('hi i am Obada');
+      
+      // User typed "Hallo I am Obada" on Mac Arabic keyboard ("am" = "شو")
+      expect(convertKeyboardLayout('أشممخ ÷ شو ]زشيش', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('Hallo I am Obada');
+
+      // User typed "HI I AM OBADA" on Mac Arabic keyboard
+      expect(convertKeyboardLayout('أ÷ ÷ ِؤ ]أِيِ', { mode: 'ar2en', platform: 'mac' }).fixedText).toBe('HI I AM OBADA');
+    });
+
+    it('handles mistyped English typed when keyboard was on Arabic (Windows)', () => {
+      // User typed "hello world" on Windows Arabic 101 keyboard: "اثممخ صخقمي"
+      expect(convertKeyboardLayout('اثممخ صخقمي', { mode: 'ar2en', platform: 'windows' }).fixedText).toBe('hello world');
+
+      // User typed "Hallo I am Obada" on Windows Arabic keyboard: "أشممخ ÷ شة ×لاشيش"
+      expect(convertKeyboardLayout('أشممخ ÷ شة ×لاشيش', { mode: 'ar2en', platform: 'windows' }).fixedText).toBe('Hallo I am Obada');
+    });
+
+    it('handles popular city & country names with mixed casing', () => {
+      const names = ['london', 'berlin', 'cairo', 'dubai', 'amman', 'riyadh'];
+      for (const name of names) {
+        const arMac = convertKeyboardLayout(name, { mode: 'en2ar', platform: 'mac' }).fixedText;
+        const restoredMac = convertKeyboardLayout(arMac, { mode: 'ar2en', platform: 'mac' }).fixedText;
+        expect(restoredMac.toLowerCase()).toBe(name.toLowerCase());
+      }
+    });
+  });
 });
+
+
+
 

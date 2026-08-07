@@ -2,7 +2,7 @@ use tauri::{
     command,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, Emitter,
+    AppHandle, Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -109,6 +109,74 @@ fn play_feedback_sound(sound_type: String) {
     }
 }
 
+mod inline_fix;
+
+/// Submit response for inline conversion request from webview
+#[command]
+fn inline_convert_response(id: u64, fixed_text: String) {
+    #[cfg(target_os = "macos")]
+    inline_fix::macos::submit_conversion_response(id, fixed_text);
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (id, fixed_text);
+    }
+}
+
+/// Enable or disable Pro Inline Fix mode
+#[command]
+fn set_inline_fix_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::set_enabled(&app, enabled);
+        Ok(enabled)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, enabled);
+        Ok(false)
+    }
+}
+
+/// Query current Pro Inline Fix mode status
+#[command]
+fn get_inline_fix_enabled() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::is_enabled()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
+    }
+}
+
+/// Check macOS Accessibility permission status
+#[tauri::command]
+fn check_accessibility_permission() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::prompt_and_check_accessibility()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        true
+    }
+}
+
+/// Open macOS System Settings directly to Accessibility panel
+#[command]
+fn open_accessibility_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        inline_fix::macos::open_accessibility_settings();
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
 /// Open the single approved support page in the Windows default browser.
 #[command]
 async fn open_support_page(app: AppHandle) -> Result<(), String> {
@@ -147,8 +215,16 @@ pub fn run() {
             open_support_page,
             hide_window,
             play_feedback_sound,
+            inline_convert_response,
+            set_inline_fix_enabled,
+            get_inline_fix_enabled,
+            check_accessibility_permission,
+            open_accessibility_settings,
         ])
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            inline_fix::macos::init_persisted_setting(app.handle());
+
             #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
                 Some(Modifiers::ALT | Modifiers::SUPER),
@@ -168,13 +244,34 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.unminimize();
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                                #[cfg(debug_assertions)]
-                                window.open_devtools();
-                                let _ = app.emit("shortcut-pressed", ());
+                            #[cfg(target_os = "macos")]
+                            {
+                                if inline_fix::macos::is_enabled() {
+                                    let app_handle = app.clone();
+                                    std::thread::spawn(move || {
+                                        inline_fix::macos::run_inline_fix(&app_handle);
+                                    });
+                                } else {
+                                    if let Some(window) = app.get_webview_window("main") {
+                                        let _ = window.unminimize();
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                        #[cfg(debug_assertions)]
+                                        window.open_devtools();
+                                        let _ = app.emit("shortcut-pressed", ());
+                                    }
+                                }
+                            }
+                            #[cfg(not(target_os = "macos"))]
+                            {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.unminimize();
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                    #[cfg(debug_assertions)]
+                                    window.open_devtools();
+                                    let _ = app.emit("shortcut-pressed", ());
+                                }
                             }
                         }
                     })

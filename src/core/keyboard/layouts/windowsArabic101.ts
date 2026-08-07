@@ -2,14 +2,51 @@ function createReverseMap(enMap: Record<string, string>): Record<string, string>
   const map: Record<string, string> = {};
   for (const [enKey, arKey] of Object.entries(enMap)) {
     if (!map[arKey]) {
+      // Do not map punctuation symbols to uppercase letters in reverse map (e.g. ] -> D)
+      if (/[A-Z]/.test(enKey) && /[\[\]\{\}\/~`!@#$%^&*()_+=|\\:;"'<>,.?]/.test(arKey)) {
+        continue;
+      }
       map[arKey] = enKey;
     }
   }
-  // Add special multi-char reverse mappings
+  // Explicit reverse mappings for Windows Arabic 101 layout
+  map['د'] = ']';
+  map['ج'] = '[';
+  map['ك'] = ';';
+  map['ط'] = "'";
+  map['أ'] = 'H';
+  map['إ'] = 'Y';
+  map['آ'] = 'N';
+  map['ؤ'] = 'c';
+  map['ئ'] = 'z';
+  map['ء'] = 'x';
   map['لا'] = 'b';
   map['لأ'] = 'G';
   map['لإ'] = 'T';
   map['لآ'] = 'B';
+  map['×'] = 'O';
+  map['÷'] = 'I';
+  map['؛'] = 'P';
+  map['،'] = 'K';
+  map['ـ'] = 'J';
+  map['؟'] = '?';
+  map[']'] = ']';
+  map['['] = '[';
+  map['}'] = '}';
+  map['{'] = '{';
+  map['/'] = '/';
+  map['~'] = '~';
+
+  // Tashkeel Vowels (Shifted QWERTY keys when typing ALL-CAPS in English on Arabic layout)
+  map['َ'] = 'Q';  // Fatha -> Q
+  map['ً'] = 'W';  // Tanwin Fath -> W
+  map['ُ'] = 'E';  // Damma -> E
+  map['ٌ'] = 'R';  // Tanwin Damm -> R
+  map['ِ'] = 'A';  // Kasra -> A
+  map['ٍ'] = 'S';  // Tanwin Kasr -> S
+  map['ْ'] = 'X';  // Sukun -> X
+  map['ّ'] = '~';  // Shadda -> ~
+
   return map;
 }
 
@@ -26,3 +63,4 @@ export const WIN_EN_TO_AR_MAP: Record<string, string> = {
 };
 
 export const WIN_AR_TO_EN_MAP = createReverseMap(WIN_EN_TO_AR_MAP);
+
