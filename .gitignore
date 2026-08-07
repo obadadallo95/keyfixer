@@ -25,3 +25,7 @@ src-tauri/target/msix-inspect/
 # Local Apple signing assets (never commit)
 src-tauri/signing/
 store-assets/ar/
+
+# Private Pro Module (local proprietary code, never commit to public git)
+/pro-private/
+

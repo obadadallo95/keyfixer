@@ -9,6 +9,7 @@ import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import * as tauriEvent from '@tauri-apps/api/event';
 import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
+import { getProBridge } from '../pro/bridge';
 import './DesktopApp.css';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
@@ -40,6 +41,9 @@ function HeaderLogo({ isDark }: { isDark: boolean }) {
 }
 
 export function DesktopApp() {
+  const proBridge = useMemo(() => getProBridge(), []);
+  const [isProAvailable, setIsProAvailable] = useState(false);
+
   const platform = useMemo<'windows' | 'mac'>(() => {
     return navigator.userAgent.includes('Windows') ? 'windows' : 'mac';
   }, []);
@@ -169,12 +173,19 @@ export function DesktopApp() {
   }, [soundEnabled]);
 
   useEffect(() => {
-    invoke<boolean>('get_inline_fix_enabled')
-      .then((enabled) => {
-        setInlineFixEnabled(enabled);
-        if (enabled) {
-          invoke<boolean>('check_accessibility_permission')
-            .then(setHasAccessibility)
+    proBridge.getAccessState()
+      .then((access) => {
+        setIsProAvailable(access.inlineFixAvailable);
+        if (access.inlineFixAvailable) {
+          proBridge.getInlineFixEnabled()
+            .then((enabled) => {
+              setInlineFixEnabled(enabled);
+              if (enabled) {
+                proBridge.checkAccessibility()
+                  .then(setHasAccessibility)
+                  .catch(() => {});
+              }
+            })
             .catch(() => {});
         }
       })
@@ -185,9 +196,9 @@ export function DesktopApp() {
     setInlineFixEnabled(enable);
     localStorage.setItem('keyfixer_inline_fix_enabled', String(enable));
     try {
-      await invoke('set_inline_fix_enabled', { enabled: enable });
+      await proBridge.setInlineFixEnabled(enable);
       if (enable) {
-        const trusted = await invoke<boolean>('check_accessibility_permission');
+        const trusted = await proBridge.checkAccessibility();
         setHasAccessibility(trusted);
       }
     } catch (err) {
@@ -197,7 +208,7 @@ export function DesktopApp() {
 
   const handleOpenAccessibility = useCallback(async () => {
     try {
-      await invoke('open_accessibility_settings');
+      await proBridge.openAccessibilitySettings();
     } catch (err) {
       console.error('Failed to open accessibility settings:', err);
     }
@@ -349,10 +360,7 @@ export function DesktopApp() {
               mode: stateRef.current.conversionMode,
               platform: stateRef.current.keyboardPlatform,
             });
-            invoke('inline_convert_response', {
-              id,
-              fixedText: result.fixedText,
-            }).catch(() => {});
+            proBridge.submitConversionResponse(id, result.fixedText).catch(() => {});
           }
         );
       } catch (err) {}
@@ -679,134 +687,111 @@ export function DesktopApp() {
         </div>
 
         {/* Pro Inline Fix Experimental Toggle Card */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            padding: '10px 14px',
-            borderRadius: 10,
-            background: inlineFixEnabled ? T.accentDim : T.surface,
-            border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text1 }}>
-                {isRTL ? 'تصحيح مباشر (Pro Inline Fix)' : 'Pro Inline Fix'}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: inlineFixEnabled ? T.accent : T.segmentedBg,
-                  color: inlineFixEnabled ? '#FFFFFF' : T.text2,
-                }}
-              >
-                {isRTL ? 'تجريبي' : 'Experimental'}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              role="switch"
-              aria-checked={inlineFixEnabled}
-              onClick={() => handleToggleInlineFix(!inlineFixEnabled)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 600,
-                borderRadius: 20,
-                background: inlineFixEnabled ? T.accent : T.segmentedBg,
-                color: inlineFixEnabled ? '#FFFFFF' : T.text2,
-                border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: inlineFixEnabled ? '#FFFFFF' : T.text2 }} />
-              {inlineFixEnabled ? (isRTL ? 'مفعّل (ON)' : 'ON') : (isRTL ? 'معطّل (OFF)' : 'OFF')}
-            </button>
-          </div>
-
-          <p style={{ margin: 0, fontSize: 11, color: T.text2, lineHeight: 1.4 }}>
-            {isRTL
-              ? 'تصحيح النص المحدد مباشرة داخل التطبيقات الأخرى (Safari، Chrome، VS Code) بالضغط على ⌥⌘K دون فتح النافذة.'
-              : 'Experimental — Fix selected text directly in other apps'}
-          </p>
-
-          {inlineFixEnabled && hasAccessibility === false && (
-            <div
-              style={{
-                marginTop: 4,
-                padding: '8px 12px',
-                borderRadius: 6,
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.35)',
-                color: T.text1,
-                fontSize: 11,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#DC2626', fontWeight: 600 }}>
-                <span>⚠️</span>
-                <span>
-                  {isRTL
-                    ? 'مطلوب إذن إمكانية الوصول (Accessibility)'
-                    : 'Accessibility Permission Required for Inline Fix'}
+        {isProAvailable && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 10,
+              background: inlineFixEnabled ? T.accentDim : T.surface,
+              border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text1 }}>
+                  {isRTL ? 'تصحيح مباشر (Pro Inline Fix)' : 'Pro Inline Fix'}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: inlineFixEnabled ? T.accent : T.segmentedBg,
+                    color: inlineFixEnabled ? '#FFFFFF' : T.text2,
+                  }}
+                >
+                  {isRTL ? 'تجريبي' : 'Experimental'}
                 </span>
               </div>
-              <p style={{ margin: 0, color: T.text2, lineHeight: 1.4 }}>
-                {isRTL
-                  ? 'لاستبدال النص داخل التطبيقات الأخرى، افتح إعدادات النظام ← الخصوصية والأمان ← إمكانية الوصول وفعّل KeyFixer.'
-                  : 'To replace text inside other apps, enable KeyFixer in System Settings → Privacy & Security → Accessibility.'}
-              </p>
-              <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={inlineFixEnabled}
+                onClick={() => handleToggleInlineFix(!inlineFixEnabled)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 20,
+                  background: inlineFixEnabled ? T.accent : T.segmentedBg,
+                  color: inlineFixEnabled ? '#FFFFFF' : T.text2,
+                  border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: inlineFixEnabled ? '#FFFFFF' : T.text2 }} />
+                {inlineFixEnabled ? (isRTL ? 'مفعّل (ON)' : 'ON') : (isRTL ? 'معطّل (OFF)' : 'OFF')}
+              </button>
+            </div>
+
+            <p style={{ margin: 0, fontSize: 11, color: T.text2, lineHeight: 1.4 }}>
+              {isRTL
+                ? 'تصحيح النص المحدد مباشرة داخل التطبيقات الأخرى (Safari، Chrome، VS Code) بالضغط على ⌥⌘K دون فتح النافذة.'
+                : 'Experimental — Fix selected text directly in other apps'}
+            </p>
+
+            {inlineFixEnabled && hasAccessibility === false && (
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#EF4444', fontSize: 11, fontWeight: 600 }}>
+                  <ShieldCheck size={14} />
+                  <span>
+                    {isRTL
+                      ? 'يلزم منح إذن إمكانية الوصول (Accessibility)'
+                      : 'Accessibility Permission Required'}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={handleOpenAccessibility}
                   style={{
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    borderRadius: 5,
-                    background: '#DC2626',
+                    padding: '3px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    borderRadius: 4,
+                    background: '#EF4444',
                     color: '#FFFFFF',
                     border: 'none',
                     cursor: 'pointer',
                   }}
                 >
-                  {isRTL ? 'فتح إعدادات إمكانية الوصول' : 'Open Accessibility Settings'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRefreshAccessibility}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    borderRadius: 5,
-                    background: T.surface,
-                    color: T.text1,
-                    border: `1px solid ${T.border}`,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isRTL ? 'إعادة الفحص' : 'Check Again'}
+                  {isRTL ? 'تفعيل الإذن' : 'Grant'}
                 </button>
               </div>
-            </div>
-          )}
+            )}
 
           {inlineFixEnabled && hasAccessibility === true && (
             <div
@@ -829,6 +814,7 @@ export function DesktopApp() {
             </div>
           )}
         </div>
+      )}
 
         {/* Editor Split View */}
         <div className={isWindows ? 'kf-editors' : undefined} style={{ flex: 1, display: 'flex', gap: isWindows ? 14 : 20, minHeight: 0 }}>

@@ -109,72 +109,40 @@ fn play_feedback_sound(sound_type: String) {
     }
 }
 
-mod inline_fix;
+#[cfg(all(feature = "appstore", feature = "pro"))]
+compile_error!("Mac App Store build must not include Pro features!");
+
+mod pro_bridge;
 
 /// Submit response for inline conversion request from webview
 #[command]
 fn inline_convert_response(id: u64, fixed_text: String) {
-    #[cfg(target_os = "macos")]
-    inline_fix::macos::submit_conversion_response(id, fixed_text);
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (id, fixed_text);
-    }
+    pro_bridge::submit_conversion_response(id, fixed_text);
 }
 
 /// Enable or disable Pro Inline Fix mode
 #[command]
 fn set_inline_fix_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {
-    #[cfg(target_os = "macos")]
-    {
-        inline_fix::macos::set_enabled(&app, enabled);
-        Ok(enabled)
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = (app, enabled);
-        Ok(false)
-    }
+    Ok(pro_bridge::set_inline_fix_enabled(&app, enabled))
 }
 
 /// Query current Pro Inline Fix mode status
 #[command]
 fn get_inline_fix_enabled() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        inline_fix::macos::is_enabled()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        false
-    }
+    pro_bridge::is_inline_fix_enabled()
 }
 
 /// Check macOS Accessibility permission status
 #[tauri::command]
 fn check_accessibility_permission() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        inline_fix::macos::prompt_and_check_accessibility()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        true
-    }
+    pro_bridge::prompt_and_check_accessibility()
 }
 
 /// Open macOS System Settings directly to Accessibility panel
 #[command]
 fn open_accessibility_settings() -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        inline_fix::macos::open_accessibility_settings();
-        Ok(())
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        Ok(())
-    }
+    pro_bridge::open_accessibility_settings();
+    Ok(())
 }
 
 /// Open the single approved support page in the Windows default browser.
@@ -222,8 +190,7 @@ pub fn run() {
             open_accessibility_settings,
         ])
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            inline_fix::macos::init_persisted_setting(app.handle());
+            pro_bridge::init_persisted_setting(app.handle());
 
             #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
@@ -244,26 +211,12 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            #[cfg(target_os = "macos")]
-                            {
-                                if inline_fix::macos::is_enabled() {
-                                    let app_handle = app.clone();
-                                    std::thread::spawn(move || {
-                                        inline_fix::macos::run_inline_fix(&app_handle);
-                                    });
-                                } else {
-                                    if let Some(window) = app.get_webview_window("main") {
-                                        let _ = window.unminimize();
-                                        let _ = window.show();
-                                        let _ = window.set_focus();
-                                        #[cfg(debug_assertions)]
-                                        window.open_devtools();
-                                        let _ = app.emit("shortcut-pressed", ());
-                                    }
-                                }
-                            }
-                            #[cfg(not(target_os = "macos"))]
-                            {
+                            if pro_bridge::is_inline_fix_enabled() {
+                                let app_handle = app.clone();
+                                std::thread::spawn(move || {
+                                    pro_bridge::run_inline_fix(&app_handle);
+                                });
+                            } else {
                                 if let Some(window) = app.get_webview_window("main") {
                                     let _ = window.unminimize();
                                     let _ = window.show();
