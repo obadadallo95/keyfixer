@@ -17,69 +17,8 @@ const FONT_WINDOWS = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-seri
 const FONT_MONO_WINDOWS = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
 
-let sharedAudioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext | null {
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return null;
-    if (!sharedAudioCtx) {
-      sharedAudioCtx = new AudioCtx();
-    }
-    if (sharedAudioCtx.state === 'suspended') {
-      sharedAudioCtx.resume().catch(() => {});
-    }
-    return sharedAudioCtx;
-  } catch {
-    return null;
-  }
-}
-
-function playSound(ctx: AudioContext, type: 'paste' | 'copy') {
-  try {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    if (type === 'paste') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.06);
-    } else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.04);
-      osc.frequency.setValueAtTime(880, now + 0.09);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.16);
-    }
-  } catch (e) {
-    console.error("Sound play error:", e);
-  }
-}
-
 function playSystemSound(type: 'paste' | 'copy') {
-  try {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => playSound(ctx, type)).catch(() => {});
-    } else {
-      playSound(ctx, type);
-    }
-  } catch (e) {
-    console.error("AudioContext error:", e);
-  }
+  invoke('play_feedback_sound', { soundType: type }).catch(() => {});
 }
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {

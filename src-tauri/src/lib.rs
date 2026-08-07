@@ -85,6 +85,26 @@ async fn hide_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[command]
+fn play_feedback_sound(sound_type: String) {
+    #[cfg(target_os = "macos")]
+    {
+        std::thread::spawn(move || {
+            let sound_name = if sound_type == "paste" { "Pop" } else { "Tink" };
+            let path = format!("/System/Library/Sounds/{}.aiff", sound_name);
+            let _ = std::process::Command::new("afplay").arg(path).output();
+        });
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::thread::spawn(move || {
+            let _ = std::process::Command::new("powershell")
+                .args(["-c", "[System.Media.SystemSounds]::Beep.Play()"])
+                .output();
+        });
+    }
+}
+
 /// Open the single approved support page in the Windows default browser.
 #[command]
 async fn open_support_page(app: AppHandle) -> Result<(), String> {
@@ -122,6 +142,7 @@ pub fn run() {
             start_drag,
             open_support_page,
             hide_window,
+            play_feedback_sound,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
