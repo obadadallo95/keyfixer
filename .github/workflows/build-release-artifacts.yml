@@ -1,0 +1,173 @@
+name: Build Release Artifacts
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unified release check
+        run: npm run release:check
+      - name: Upload Web artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: KeyFixer-1.1.2-web-unsigned-validation
+          path: dist/
+      - name: Upload Chrome Extension artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: KeyFixer-1.1.2-chrome-unsigned-validation.zip
+          path: extension/dist/
+
+  build-mac:
+    needs: verify
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install macOS targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Build desktop frontend
+        run: npm run build:desktop
+      - name: Pre-flight – verify dist-desktop before Tauri packaging
+        run: npm run preflight:desktop
+      - name: Build macOS unsigned artifact
+        run: npm run build:mac-ci
+      - name: Validate bundle resources – Tauri v2 binary embedding smoke test
+        run: |
+          # In Tauri v2, frontendDist files are compiled INTO the binary, not in Resources/.
+          # Contents/Resources/ only has icon.icns - that is correct and expected.
+          APP_PATH="src-tauri/target/release/bundle/macos/KeyFixer.app"
+          BINARY="$APP_PATH/Contents/MacOS/keyfixer-desktop"
+          RESOURCES="$APP_PATH/Contents/Resources"
+          echo "========================================================"
+          echo "Bundle resource listing (Tauri v2: only icon.icns expected):"
+          echo "========================================================"
+          find "$RESOURCES" -type f | sort
+          echo "========================================================"
+          echo "Verifying binary exists..."
+          if [ ! -f "$BINARY" ]; then
+            echo "FAIL: binary not found at $BINARY" >&2
+            exit 1
+          fi
+          BINARY_SIZE=$(wc -c < "$BINARY" | tr -d ' ')
+          echo "Binary size: ${BINARY_SIZE} bytes"
+          if [ "$BINARY_SIZE" -lt 1000000 ]; then
+            echo "FAIL: binary is suspiciously small (${BINARY_SIZE} bytes)" >&2
+            exit 1
+          fi
+          echo "PASS: binary found (${BINARY_SIZE} bytes)"
+          echo "Checking frontend marker embedded in binary..."
+          if strings "$BINARY" | grep -q "desktop-root"; then
+            echo "PASS: frontend marker 'desktop-root' found embedded in binary"
+          else
+            echo "FAIL: 'desktop-root' NOT found in binary - assets may not have been embedded" >&2
+            exit 1
+          fi
+          if strings "$BINARY" | grep -q "index-desktop"; then
+            echo "PASS: frontend marker 'index-desktop' found embedded in binary"
+          else
+            echo "FAIL: 'index-desktop' NOT found in binary" >&2
+            exit 1
+          fi
+          echo "Checking for dev-server references embedded in binary..."
+          if strings "$BINARY" | grep -q "localhost:5174"; then
+            echo "FAIL: binary contains 'localhost:5174' (dev-server URL embedded)" >&2
+            exit 1
+          fi
+          echo "PASS: no dev-server references found in binary"
+          echo "========================================================"
+          echo "All bundle smoke test checks passed."
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: KeyFixer-1.1.2-macos-unsigned-validation
+          path: src-tauri/target/release/bundle/macos/
+
+
+  build-windows:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Windows NSIS unsigned
+        run: |
+          npm run build:desktop
+          npm run build:windows
+      - name: Upload Windows NSIS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-nsis-unsigned
+          path: src-tauri/target/release/bundle/nsis/
+
+  build-windows-msix:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+      - name: Install dependencies
+        run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Windows MSIX
+        run: |
+          npm run build:desktop
+          npm run build:windows:msix
+      - name: Generate CI Ephemeral Certificate
+        run: |
+          $Cert = New-SelfSignedCertificate -Type Custom -Subject "CN=A2B67C57-E9AA-4233-B229-7A21800FE184" -KeyUsage DigitalSignature -FriendlyName "KeyFixer CI Ephemeral Cert" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}") -HashAlgorithm sha256
+          $CertPassword = ConvertTo-SecureString -String "ci-ephemeral-pass" -Force -AsPlainText
+          Export-PfxCertificate -Cert $Cert -FilePath "ci-cert.pfx" -Password $CertPassword
+      - name: Sign MSIX (CI Ephemeral)
+        run: |
+          $SdkBinBase = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $SignToolPath = ""
+          if (Test-Path $SdkBinBase) {
+              $Versions = Get-ChildItem -Path $SdkBinBase | Where-Object { $_.Name -match "^10\.0\.\d+\.\d+$" } | Sort-Object -Property Name -Descending
+              foreach ($Ver in $Versions) {
+                  $Candidate = Join-Path -Path $Ver.FullName -ChildPath "x64\signtool.exe"
+                  if (Test-Path $Candidate) {
+                      $SignToolPath = $Candidate
+                      Write-Host "Found signtool.exe: $SignToolPath"
+                      break
+                  }
+              }
+          }
+          if (-not $SignToolPath) {
+              Write-Error "Could not locate signtool.exe in Windows Kits"
+              exit 1
+          }
+          & $SignToolPath sign /fd sha256 /a /f ci-cert.pfx /p ci-ephemeral-pass src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix
+      - name: Upload MSIX artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: KeyFixer-1.1.2.0-windows-msix-ci-signed-test
+          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.2.0_x64.msix

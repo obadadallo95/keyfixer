@@ -1,7 +1,7 @@
 {
   "name": "keyfixer",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A privacy-first Arabic and English keyboard layout correction tool for the web and Chrome.",
   "type": "module",
   "scripts": {
@@ -10,18 +10,32 @@
     "build": "tsc -b && vite build",
     "build:web": "npm run build",
     "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && node -e \"require('fs').copyFileSync('dist-desktop/index-desktop.html', 'dist-desktop/index.html')\"",
-    "build:appstore": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
+
+    "preflight:desktop": "node scripts/check-desktop-build.mjs",
+
+    "build:appstore:clean": "rm -rf dist-desktop",
+    "build:appstore:prepare": "npm run build:appstore:clean && npm run build:desktop && npm run preflight:desktop",
+    "build:appstore:tauri": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json",
+    "build:appstore": "npm run build:appstore:prepare && npm run build:appstore:tauri && npm run verify:appstore:postbuild",
+
+    "verify:appstore:postbuild": "bash scripts/verify-appstore-bundle.sh --stage postbuild",
+    "verify:appstore": "bash scripts/verify-appstore-bundle.sh --stage postbuild",
+
+    "build:mac-ci": "tauri build --bundles app --config src-tauri/tauri.ci-mac.conf.json",
     "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json",
     "build:windows:msix": "node scripts/build-msix.mjs",
-    "verify:appstore": "bash scripts/verify-appstore-bundle.sh",
     "build:extension": "npm run typecheck:extension && npm run build && node extension-build.js",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-desktop extension/dist",
     "typecheck": "tsc --noEmit",
     "typecheck:extension": "tsc --project tsconfig.extension.json",
+    "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "version:set": "node scripts/set-version.mjs",
+    "version:check": "node scripts/check-version-sync.mjs",
+    "release:check": "npm run version:check && npm run typecheck && npm run typecheck:extension && npm run typecheck:tests && npm run test:run && npm run build && npm run build:extension"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

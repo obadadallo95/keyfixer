@@ -21,7 +21,7 @@ name: Microsoft Store MSIX
 #   before distributing it to users.
 #
 # Upload:
-#   After downloading the artifact, upload KeyFixer_1.1.1.0_x64.msix to:
+#   After downloading the artifact, upload KeyFixer_1.1.2.0_x64.msix to:
 #   https://partner.microsoft.com/ → Product Management → Packages
 #   Partner Center validates the Publisher identity and applies Store signing.
 #
@@ -46,11 +46,11 @@ jobs:
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ── 2. Node.js ───────────────────────────────────────────────────────────
       - name: Set up Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22.x'
           cache: 'npm'
@@ -61,7 +61,7 @@ jobs:
 
       # Cache Cargo registry and compilation artifacts
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -129,7 +129,7 @@ jobs:
       - name: Sign MSIX package
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
 
           # Locate SignTool from the Windows SDK
           $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
@@ -157,7 +157,7 @@ jobs:
       - name: Verify package signature
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
 
           # Use Get-AuthenticodeSignature to verify the signature is structurally
           # valid and signed by the correct certificate. This works with self-signed
@@ -199,7 +199,7 @@ jobs:
       - name: Validate MSIX manifest fields
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
           $unpackDir = "src-tauri\target\msix-inspect"
 
           # Locate MakeAppx
@@ -226,7 +226,7 @@ jobs:
           $errors = 0
           if ($id.Name -ne "ObadaDallo.KeyFixer")                                     { Write-Error "Name mismatch!";      $errors++ }
           if ($id.Publisher -ne "CN=A2B67C57-E9AA-4233-B229-7A21800FE184")            { Write-Error "Publisher mismatch!"; $errors++ }
-          if ($id.Version -ne "1.1.1.0")                                               { Write-Error "Version mismatch!";   $errors++ }
+          if ($id.Version -ne "1.1.2.0")                                               { Write-Error "Version mismatch!";   $errors++ }
           if ($id.ProcessorArchitecture -ne "x64")                                     { Write-Error "Arch mismatch!";      $errors++ }
 
           $exe = "$unpackDir\KeyFixer\keyfixer-desktop.exe"
@@ -256,13 +256,13 @@ jobs:
       - name: Report package info
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.1.0_x64.msix"
+          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
           $size = (Get-Item $msix).Length
           $hash = (Get-FileHash $msix -Algorithm SHA256).Hash
           Write-Host ""
           Write-Host "═══════════════════════════════════════════"
           Write-Host " MSIX Artifact"
-          Write-Host "  File   : KeyFixer_1.1.1.0_x64.msix"
+          Write-Host "  File   : KeyFixer_1.1.2.0_x64.msix"
           Write-Host "  Size   : $([math]::Round($size/1MB,2)) MB ($size bytes)"
           Write-Host "  SHA256 : $hash"
           Write-Host "═══════════════════════════════════════════"
@@ -289,9 +289,9 @@ jobs:
 
       # ── 11. Upload artifact ──────────────────────────────────────────────────
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: KeyFixer-Microsoft-Store-MSIX
-          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.1.0_x64.msix
+          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.2.0_x64.msix
           if-no-files-found: error
           retention-days: 90
