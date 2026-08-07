@@ -17,37 +17,69 @@ const FONT_WINDOWS = '"Segoe UI Variable Text", "Segoe UI", system-ui, sans-seri
 const FONT_MONO_WINDOWS = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const SUPPORT_URL = 'https://obadadallo.web.app/contact/';
 
-function playSystemSound(type: 'paste' | 'copy') {
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (type === 'paste') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(640, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.06, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.04);
-    } else {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.06);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.09);
+    if (!AudioCtx) return null;
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new AudioCtx();
     }
-  } catch {}
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+function playSound(ctx: AudioContext, type: 'paste' | 'copy') {
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    if (type === 'paste') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.04);
+      osc.frequency.setValueAtTime(880, now + 0.09);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    }
+  } catch (e) {
+    console.error("Sound play error:", e);
+  }
+}
+
+function playSystemSound(type: 'paste' | 'copy') {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => playSound(ctx, type)).catch(() => {});
+    } else {
+      playSound(ctx, type);
+    }
+  } catch (e) {
+    console.error("AudioContext error:", e);
+  }
 }
 
 function HeaderLogo({ isDark }: { isDark: boolean }) {
@@ -594,34 +626,34 @@ export function DesktopApp() {
             })}
           </div>
 
-          {/* Sound Toggle Button */}
+          {/* Sound Toggle Button (Compact & Sleek) */}
           <button
             type="button"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className={isWindows ? 'kf-segment' : undefined}
+            onClick={() => {
+              const next = !soundEnabled;
+              setSoundEnabled(next);
+              if (next) playSystemSound('copy');
+            }}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              fontSize: 12,
-              fontWeight: 500,
-              color: soundEnabled ? T.accent : T.text2,
-              background: soundEnabled ? T.accentDim : (isWindows ? T.surface : T.segmentedBg),
-              border: `1px solid ${soundEnabled ? T.accent : T.border}`,
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
               borderRadius: 8,
+              background: soundEnabled ? T.accentDim : T.segmentedBg,
+              border: `1px solid ${soundEnabled ? T.accent : T.border}`,
+              color: soundEnabled ? T.accent : T.text2,
               cursor: 'pointer',
               transition: 'all 0.2s',
-              userSelect: 'none',
             }}
             title={
               soundEnabled
-                ? (isRTL ? 'تعطيل المؤثرات الصوتية' : 'Disable Sound Feedback')
-                : (isRTL ? 'تفعيل المؤثرات الصوتية عند النسخ واللصق' : 'Enable Sound Feedback')
+                ? (isRTL ? 'المؤثر الصوتي مفعّل (انقر للتعطيل)' : 'Sound Feedback On (Click to mute)')
+                : (isRTL ? 'المؤثر الصوتي متوقف (انقر للتفعيل)' : 'Sound Feedback Off (Click to enable)')
             }
           >
-            {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            <span>{soundEnabled ? (isRTL ? 'الصوت مفعّل' : 'Sound On') : (isRTL ? 'الصوت متوقف' : 'Sound Off')}</span>
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
         </div>
 
