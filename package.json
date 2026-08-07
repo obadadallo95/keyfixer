@@ -29,12 +29,13 @@
     "clean": "rm -rf dist dist-desktop extension/dist",
     "typecheck": "tsc --noEmit",
     "typecheck:extension": "tsc --project tsconfig.extension.json",
+    "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
     "tauri": "tauri",
     "version:set": "node scripts/set-version.mjs",
     "version:check": "node scripts/check-version-sync.mjs",
-    "release:check": "npm run version:check && npm run typecheck && npm run typecheck:extension && npm run test:run && npm run build && npm run build:extension"
+    "release:check": "npm run version:check && npm run typecheck && npm run typecheck:extension && npm run typecheck:tests && npm run test:run && npm run build && npm run build:extension"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
