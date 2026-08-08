@@ -1,27 +1,19 @@
-import { ProAccessState, ProRuntimeBridge } from './contracts';
+import { ProRuntimeBridge, ProStateDto } from './contracts';
 
-export const freeAccessState: ProAccessState = {
-  tier: 'free',
-  inlineFixAvailable: false,
+export const FREE_STATE: ProStateDto = {
+  mode: 'free',
+  uiState: 'FREE',
+  trialCreditsRemaining: 0,
+  trialStarted: false,
+  inlineFixEnabled: false,
 };
 
+/** Used in non-Pro builds (free/appstore). All operations are no-ops. */
 export const FreeProBridge: ProRuntimeBridge = {
-  async getAccessState() {
-    return freeAccessState;
-  },
-  async setInlineFixEnabled(_enabled: boolean) {
-    return false;
-  },
-  async getInlineFixEnabled() {
-    return false;
-  },
-  async checkAccessibility() {
-    return true;
-  },
-  async openAccessibilitySettings() {
-    // no-op for free build
-  },
-  async submitConversionResponse(_id: number, _text: string) {
-    // no-op for free build
-  },
+  async getProState() { return FREE_STATE; },
+  async activateTrial() { return false; },
+  async setInlineFixPreference(_enabled: boolean) {},
+  async checkAccessibility() { return true; },
+  async openAccessibilitySettings() {},
+  async submitConversionResponse(_id: number, _text: string) {},
 };

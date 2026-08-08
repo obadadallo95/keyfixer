@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["chrome", "node"]
+    "types": ["chrome", "node", "@testing-library/jest-dom"]
   },
   "include": [
     "tests/**/*.ts",

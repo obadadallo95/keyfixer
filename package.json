@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "dev:desktop": "vite --config vite.config.desktop.ts",
+    "dev:pro:mac": "VITE_PRO_BUILD=true tauri dev --features pro",
     "build": "tsc -b && vite build",
     "build:web": "npm run build",
     "build:desktop": "tsc -b && vite build --config vite.config.desktop.ts && node -e \"require('fs').copyFileSync('dist-desktop/index-desktop.html', 'dist-desktop/index.html')\"",

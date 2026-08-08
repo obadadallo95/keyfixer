@@ -3,27 +3,50 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy.tsx'));
-const TermsOfUse = lazy(() => import('./components/TermsOfUse.tsx'));
+const LegalPage = lazy(() =>
+  import('./components/LegalPage.tsx').then((m) => ({ default: m.LegalPage }))
+);
 const AboutDeveloper = lazy(() => import('./components/AboutDeveloper.tsx'));
 
 function Root() {
-  const path = window.location.pathname;
-  if (path === '/privacy' || path === '/privacy/') {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+
+  if (path === '/privacy') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
-        <PrivacyPolicy />
+        <LegalPage initialDocId="privacy" />
       </Suspense>
     );
   }
-  if (path === '/terms' || path === '/terms/') {
+  if (path === '/terms') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
-        <TermsOfUse />
+        <LegalPage initialDocId="terms" />
       </Suspense>
     );
   }
-  if (path === '/about' || path === '/about/') {
+  if (path === '/refund') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <LegalPage initialDocId="purchase-refund" />
+      </Suspense>
+    );
+  }
+  if (path === '/impressum') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <LegalPage initialDocId="impressum" />
+      </Suspense>
+    );
+  }
+  if (path === '/accessibility') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+        <LegalPage initialDocId="accessibility" />
+      </Suspense>
+    );
+  }
+  if (path === '/about') {
     return (
       <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
         <AboutDeveloper />
@@ -38,3 +61,4 @@ createRoot(document.getElementById('root')!).render(
     <Root />
   </StrictMode>,
 );
+

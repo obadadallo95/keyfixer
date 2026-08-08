@@ -114,28 +114,10 @@ compile_error!("Mac App Store build must not include Pro features!");
 
 mod pro_bridge;
 
-/// Submit response for inline conversion request from webview
-#[command]
-fn inline_convert_response(id: u64, fixed_text: String) {
-    pro_bridge::submit_conversion_response(id, fixed_text);
-}
-
-/// Enable or disable Pro Inline Fix mode
-#[command]
-fn set_inline_fix_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {
-    Ok(pro_bridge::set_inline_fix_enabled(&app, enabled))
-}
-
-/// Query current Pro Inline Fix mode status
-#[command]
-fn get_inline_fix_enabled() -> bool {
-    pro_bridge::is_inline_fix_enabled()
-}
-
-/// Check macOS Accessibility permission status
+/// Check macOS Accessibility permission status silently
 #[tauri::command]
 fn check_accessibility_permission() -> bool {
-    pro_bridge::prompt_and_check_accessibility()
+    pro_bridge::check_accessibility()
 }
 
 /// Open macOS System Settings directly to Accessibility panel
@@ -143,6 +125,61 @@ fn check_accessibility_permission() -> bool {
 fn open_accessibility_settings() -> Result<(), String> {
     pro_bridge::open_accessibility_settings();
     Ok(())
+}
+
+/// Submit response for inline conversion request from webview
+#[command]
+fn inline_convert_response(id: u64, fixed_text: String) {
+    pro_bridge::submit_conversion_response(id, fixed_text);
+}
+
+/// Return the full Pro state snapshot to the frontend
+#[command]
+fn get_pro_state(app: AppHandle) -> serde_json::Value {
+    pro_bridge::get_pro_state_dto(&app).unwrap_or_else(|| serde_json::json!({
+        "mode": "free",
+        "uiState": "FREE",
+        "trialCreditsRemaining": 0,
+        "trialStarted": false,
+        "inlineFixEnabled": false
+    }))
+}
+
+/// Activate the trial (free -> trial). Idempotent if already trial/paid.
+#[command]
+fn activate_trial(app: AppHandle) -> bool {
+    pro_bridge::activate_trial(&app)
+}
+
+/// Set the user's inline fix preference (independent of entitlement).
+#[command]
+fn set_inline_fix_preference(app: AppHandle, enabled: bool) {
+    pro_bridge::set_inline_fix_preference(&app, enabled);
+}
+
+// ── DEV-ONLY commands (excluded from release/appstore builds) ────────────────
+
+#[cfg(debug_assertions)]
+#[command]
+fn dev_reset_trial_credits(app: AppHandle) -> bool {
+    pro_bridge::dev_reset_trial_credits(&app)
+}
+
+#[cfg(debug_assertions)]
+#[command]
+fn dev_simulate_paid(app: AppHandle) -> bool {
+    pro_bridge::dev_simulate_paid(&app)
+}
+
+// ── TEMP: Testing-only reset — REMOVE BEFORE APP STORE SUBMISSION ────────────
+#[command]
+fn reset_trial_for_testing(app: AppHandle) -> bool {
+    pro_bridge::reset_trial_for_testing(&app)
+}
+
+#[command]
+fn reset_to_free_for_testing(app: AppHandle) -> bool {
+    pro_bridge::reset_to_free_for_testing(&app)
 }
 
 /// Open the single approved support page in the Windows default browser.
@@ -174,6 +211,8 @@ pub fn run() {
 
     let builder = builder.plugin(tauri_plugin_clipboard_manager::init());
 
+    // Production handler (always included)
+    #[cfg(not(debug_assertions))]
     let app = builder
         .invoke_handler(tauri::generate_handler![
             collapse_window,
@@ -184,13 +223,41 @@ pub fn run() {
             hide_window,
             play_feedback_sound,
             inline_convert_response,
-            set_inline_fix_enabled,
-            get_inline_fix_enabled,
+            get_pro_state,
+            activate_trial,
+            set_inline_fix_preference,
             check_accessibility_permission,
             open_accessibility_settings,
-        ])
+            reset_trial_for_testing,
+            reset_to_free_for_testing,
+        ]);
+
+    // Debug handler (includes DEV-ONLY commands)
+    #[cfg(debug_assertions)]
+    let app = builder
+        .invoke_handler(tauri::generate_handler![
+            collapse_window,
+            expand_window,
+            close_app,
+            start_drag,
+            open_support_page,
+            hide_window,
+            play_feedback_sound,
+            inline_convert_response,
+            get_pro_state,
+            activate_trial,
+            set_inline_fix_preference,
+            check_accessibility_permission,
+            open_accessibility_settings,
+            reset_trial_for_testing,
+            reset_to_free_for_testing,
+            dev_reset_trial_credits,
+            dev_simulate_paid,
+        ]);
+
+    let app = app
         .setup(|app| {
-            pro_bridge::init_persisted_setting(app.handle());
+            pro_bridge::init_pro_state(app.handle());
 
             #[cfg(target_os = "macos")]
             let keyfixer_shortcut = Shortcut::new(
@@ -211,21 +278,11 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Pressed
                         {
-                            if pro_bridge::is_inline_fix_enabled() {
-                                let app_handle = app.clone();
-                                std::thread::spawn(move || {
-                                    pro_bridge::run_inline_fix(&app_handle);
-                                });
-                            } else {
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.unminimize();
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                    #[cfg(debug_assertions)]
-                                    window.open_devtools();
-                                    let _ = app.emit("shortcut-pressed", ());
-                                }
-                            }
+                            let app_handle = app.clone();
+                            // run_inline_fix internally checks state, preference, accessibility
+                            std::thread::spawn(move || {
+                                pro_bridge::run_inline_fix(&app_handle);
+                            });
                         }
                     })
                     .build(),

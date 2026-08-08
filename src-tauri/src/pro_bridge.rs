@@ -1,87 +1,141 @@
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
 #[path = "../../pro-private/native/inline_fix.rs"]
 mod inline_fix;
 
-pub fn submit_conversion_response(id: u64, fixed_text: String) {
-    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
-    inline_fix::macos::submit_conversion_response(id, fixed_text);
+#[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+pub use inline_fix::macos::{SharedProState, ProStateDto};
 
-    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+pub fn init_pro_state(app: &AppHandle) {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        let _ = (id, fixed_text);
+        let shared = inline_fix::macos::init_pro_state(app);
+        app.manage(shared);
     }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; }
 }
 
-pub fn set_inline_fix_enabled(app: &AppHandle, enabled: bool) -> bool {
+// ── State queries ─────────────────────────────────────────────────────────────
+
+pub fn get_pro_state_dto(app: &AppHandle) -> Option<serde_json::Value> {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        inline_fix::macos::set_enabled(app, enabled);
-        enabled
+        // app.state() panics if not managed; use inner PRO_STATE instead
+        let shared = inline_fix::macos::get_shared_state()?;
+        let dto = inline_fix::macos::get_pro_state_dto(&shared);
+        return serde_json::to_value(dto).ok();
     }
-
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
-    {
-        let _ = (app, enabled);
-        false
-    }
+    { let _ = app; None }
 }
 
-pub fn is_inline_fix_enabled() -> bool {
+// ── Mutations ─────────────────────────────────────────────────────────────────
+
+pub fn activate_trial(app: &AppHandle) -> bool {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        inline_fix::macos::is_enabled()
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return false; };
+        let _ = inline_fix::macos::activate_trial(app, &shared);
+        return true;
     }
-
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
-    {
-        false
-    }
+    { let _ = app; false }
 }
 
-pub fn prompt_and_check_accessibility() -> bool {
+pub fn set_inline_fix_preference(app: &AppHandle, enabled: bool) {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        inline_fix::macos::prompt_and_check_accessibility()
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return; };
+        inline_fix::macos::set_inline_fix_preference(app, &shared, enabled);
     }
-
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
-    {
-        true
-    }
+    { let _ = (app, enabled); }
+}
+
+// ── Inline fix runner ─────────────────────────────────────────────────────────
+
+pub fn run_inline_fix(app: &AppHandle) {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    { inline_fix::macos::run_inline_fix(app); }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; }
+}
+
+// ── Accessibility ─────────────────────────────────────────────────────────────
+
+pub fn check_accessibility() -> bool {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    { return inline_fix::macos::check_accessibility(); }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { true }
 }
 
 pub fn open_accessibility_settings() {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
-    {
-        inline_fix::macos::open_accessibility_settings();
-    }
-
+    { inline_fix::macos::open_accessibility_settings(); }
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
     {}
 }
 
-pub fn init_persisted_setting(app: &AppHandle) {
-    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
-    {
-        inline_fix::macos::init_persisted_setting(app);
-    }
+// ── Conversion response ───────────────────────────────────────────────────────
 
+pub fn submit_conversion_response(id: u64, fixed_text: String) {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    { inline_fix::macos::submit_conversion_response(id, fixed_text); }
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
-    {
-        let _ = app;
-    }
+    { let _ = (id, fixed_text); }
 }
 
-pub fn run_inline_fix(app: &AppHandle) {
+// ── DEV-ONLY commands (not compiled in release builds) ────────────────────────
+
+#[cfg(debug_assertions)]
+pub fn dev_reset_trial_credits(app: &AppHandle) -> bool {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        inline_fix::macos::run_inline_fix(app);
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return false; };
+        let _ = inline_fix::macos::dev_reset_trial_credits(app, &shared);
+        return true;
     }
-
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; false }
+}
+
+#[cfg(debug_assertions)]
+pub fn dev_simulate_paid(app: &AppHandle) -> bool {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        let _ = app;
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return false; };
+        let _ = inline_fix::macos::dev_simulate_paid(app, &shared);
+        return true;
     }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; false }
+}
+
+// ── TEMP: Testing reset — REMOVE BEFORE APP STORE ────────────────────────────
+
+pub fn reset_trial_for_testing(app: &AppHandle) -> bool {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return false; };
+        let _ = inline_fix::macos::reset_trial_for_testing(app, &shared);
+        return true;
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; false }
+}
+
+pub fn reset_to_free_for_testing(app: &AppHandle) -> bool {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let Some(shared) = inline_fix::macos::get_shared_state() else { return false; };
+        let _ = inline_fix::macos::reset_to_free_for_testing(app, &shared);
+        return true;
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    { let _ = app; false }
 }

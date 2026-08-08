@@ -2,6 +2,9 @@
   "rewrites": [
     { "source": "/privacy", "destination": "/index.html" },
     { "source": "/terms", "destination": "/index.html" },
+    { "source": "/refund", "destination": "/index.html" },
+    { "source": "/impressum", "destination": "/index.html" },
+    { "source": "/accessibility", "destination": "/index.html" },
     { "source": "/about", "destination": "/index.html" }
   ]
 }

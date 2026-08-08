@@ -3,13 +3,15 @@ import { convertKeyboardLayout } from '../core/keyboard';
 import { ConversionMode } from '../core/keyboard/types';
 import { translations } from '../i18n/translations';
 import { UILanguage } from '../types';
-import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X, Volume2, VolumeX } from 'lucide-react';
+import { Copy, Check, ExternalLink, Keyboard, ShieldCheck, Trash2, X, Volume2, VolumeX, Languages } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import * as tauriEvent from '@tauri-apps/api/event';
 import * as tauriClipboard from '@tauri-apps/plugin-clipboard-manager';
-import { getProBridge } from '../pro/bridge';
+import { getProBridge, getProPanel } from '../pro/bridge';
+import { LegalViewerModal } from './LegalViewerModal';
+import { LegalDocId } from '../legal/legalContent';
 import './DesktopApp.css';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
@@ -22,9 +24,10 @@ function playSystemSound(type: 'paste' | 'copy') {
   invoke('play_feedback_sound', { soundType: type }).catch(() => {});
 }
 
-function HeaderLogo({ isDark }: { isDark: boolean }) {
+function HeaderLogo({ isDark, proStatus }: { isDark: boolean; proStatus?: 'pro' | 'trial' | 'free' }) {
   return (
     <span
+      dir="ltr"
       style={{
         fontSize: 16,
         fontWeight: 800,
@@ -32,17 +35,59 @@ function HeaderLogo({ isDark }: { isDark: boolean }) {
         fontFamily: FONT_SYS,
         pointerEvents: 'none',
         userSelect: 'none',
+        display: 'inline-flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
       }}
     >
-      <span style={{ color: isDark ? '#FFFFFF' : '#1C1C1E' }}>Key</span>
-      <span style={{ color: isDark ? '#F59E0B' : '#D97706' }}>Fixer</span>
+      {/* App name always first on left */}
+      <span>
+        <span style={{ color: isDark ? '#FFFFFF' : '#1C1C1E' }}>Key</span>
+        <span style={{ color: isDark ? '#F59E0B' : '#D97706' }}>Fixer</span>
+      </span>
+
+      {/* Pro badge to the RIGHT of the name */}
+      {proStatus === 'pro' && (
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+            color: '#171717',
+            padding: '2px 8px',
+            borderRadius: 6,
+            boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)',
+            letterSpacing: '0.02em',
+          }}
+        >
+          Pro
+        </span>
+      )}
+
+      {proStatus === 'trial' && (
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            background: 'rgba(245, 158, 11, 0.18)',
+            color: '#F59E0B',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            padding: '2px 8px',
+            borderRadius: 6,
+            letterSpacing: '0.02em',
+          }}
+        >
+          Trial
+        </span>
+      )}
     </span>
   );
 }
 
 export function DesktopApp() {
   const proBridge = useMemo(() => getProBridge(), []);
-  const [isProAvailable, setIsProAvailable] = useState(false);
+  const ProPanelComponent = useMemo(() => getProPanel(), []);
 
   const platform = useMemo<'windows' | 'mac'>(() => {
     return navigator.userAgent.includes('Windows') ? 'windows' : 'mac';
@@ -149,79 +194,45 @@ export function DesktopApp() {
     }
   }, [isDark, isWindows]);
 
-  const [lang] = useState<UILanguage>(() => {
+  const [lang, setLang] = useState<UILanguage>(() => {
+    const saved = localStorage.getItem('keyfixer_ui_language');
+    if (saved === 'ar' || saved === 'en') return saved;
     return navigator.language.startsWith('ar') ? 'ar' : 'en';
   });
+  const [proStatus, setProStatus] = useState<'pro' | 'trial' | 'free'>('free');
+  const handleProStatusChange = useCallback((status: 'pro' | 'trial' | 'free') => {
+    setProStatus(status);
+  }, []);
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ConversionMode>('auto');
   const [copied, setCopied] = useState(false);
-  const [showLegal, setShowLegal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [selectedLegalDoc, setSelectedLegalDoc] = useState<LegalDocId>('privacy');
   const [appVersion, setAppVersion] = useState('1.1.0');
   const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
   const [showGlow, setShowGlow] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     return localStorage.getItem('keyfixer_sound_enabled') === 'true';
   });
-  const [inlineFixEnabled, setInlineFixEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('keyfixer_inline_fix_enabled') === 'true';
-  });
-  const [hasAccessibility, setHasAccessibility] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleOpenDoc = (e: Event) => {
+      const customEvent = e as CustomEvent<{ doc?: LegalDocId }>;
+      if (customEvent.detail?.doc) {
+        setSelectedLegalDoc(customEvent.detail.doc);
+      }
+      setShowLegalModal(true);
+    };
+    window.addEventListener('open-legal-doc', handleOpenDoc);
+    return () => window.removeEventListener('open-legal-doc', handleOpenDoc);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('keyfixer_sound_enabled', String(soundEnabled));
   }, [soundEnabled]);
 
-  useEffect(() => {
-    proBridge.getAccessState()
-      .then((access) => {
-        setIsProAvailable(access.inlineFixAvailable);
-        if (access.inlineFixAvailable) {
-          proBridge.getInlineFixEnabled()
-            .then((enabled) => {
-              setInlineFixEnabled(enabled);
-              if (enabled) {
-                proBridge.checkAccessibility()
-                  .then(setHasAccessibility)
-                  .catch(() => {});
-              }
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {});
-  }, []);
 
-  const handleToggleInlineFix = useCallback(async (enable: boolean) => {
-    setInlineFixEnabled(enable);
-    localStorage.setItem('keyfixer_inline_fix_enabled', String(enable));
-    try {
-      await proBridge.setInlineFixEnabled(enable);
-      if (enable) {
-        const trusted = await proBridge.checkAccessibility();
-        setHasAccessibility(trusted);
-      }
-    } catch (err) {
-      console.error('Failed to set inline fix enabled state:', err);
-    }
-  }, []);
-
-  const handleOpenAccessibility = useCallback(async () => {
-    try {
-      await proBridge.openAccessibilitySettings();
-    } catch (err) {
-      console.error('Failed to open accessibility settings:', err);
-    }
-  }, []);
-
-  const handleRefreshAccessibility = useCallback(async () => {
-    try {
-      const trusted = await invoke<boolean>('check_accessibility_permission');
-      setHasAccessibility(trusted);
-    } catch (err) {
-      console.error('Failed to refresh accessibility permission:', err);
-    }
-  }, []);
 
   const stateRef = useRef({
     workflowState: 'idle' as 'idle' | 'resultReady',
@@ -405,17 +416,6 @@ export function DesktopApp() {
     };
   }, [input]);
 
-  useEffect(() => {
-    if (!showLegal) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowLegal(false);
-    };
-
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [showLegal]);
-
   const isRTL = lang === 'ar';
   const t = translations[lang].converter;
 
@@ -489,110 +489,18 @@ export function DesktopApp() {
             cursor: 'grab',
           }}
         >
-          <HeaderLogo isDark={isDark} />
+          <HeaderLogo isDark={isDark} proStatus={proStatus} />
         </div>
       )}
 
-      {showLegal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="legal-title"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowLegal(false);
-          }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: isWindows ? 24 : 32,
-            background: 'rgba(0,0,0,0.62)',
-            backdropFilter: isWindows ? 'none' : 'blur(8px)',
-          }}
-        >
-          <section
-            className={isWindows ? 'kf-legal-dialog' : undefined}
-            style={{
-              width: isWindows ? 'min(560px, 100%)' : 'min(620px, 100%)',
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              padding: 24,
-              borderRadius: 14,
-              border: `1px solid ${T.border}`,
-              background: T.surface,
-              boxShadow: '0 20px 70px rgba(0,0,0,0.45)',
-              userSelect: 'text',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <h2 id="legal-title" style={{ margin: 0, fontSize: 18 }}>
-                  {isRTL ? 'الخصوصية وشروط الاستخدام' : 'Privacy & Terms'}
-                </h2>
-                <p style={{ margin: '6px 0 0', color: T.text2, fontSize: 12 }}>
-                  {isRTL ? 'آخر تحديث: 1 أغسطس 2026' : 'Last updated: August 1, 2026'}
-                </p>
-              </div>
-              <button
-                className={isWindows ? 'kf-dialog-close' : undefined}
-                type="button"
-                aria-label={isRTL ? 'إغلاق' : 'Close'}
-                onClick={() => setShowLegal(false)}
-                style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', border: 0, borderRadius: 8, background: T.segmentedBg, color: T.text1, cursor: 'pointer' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ marginTop: 20, fontSize: 13, lineHeight: 1.7, color: T.text1 }}>
-              <h3 style={{ marginBottom: 6 }}>{isRTL ? 'سياسة الخصوصية' : 'Privacy Policy'}</h3>
-              <p style={{ marginTop: 0 }}>
-                {isRTL
-                  ? 'يعالج KeyFixer النص بالكامل على جهازك. لا يجمع التطبيق النصوص أو يخزنها أو يرسلها إلى أي خادم، ولا يتضمن تحليلات أو إعلانات أو تتبعًا.'
-                  : 'KeyFixer processes text entirely on your device. The app does not collect, store, or transmit your text and includes no analytics, advertising, or tracking.'}
-              </p>
-              <p>
-                {isRTL
-                  ? 'يكتب التطبيق النص المصحح إلى الحافظة فقط عندما تضغط زر النسخ، ولا يقرأ محتوى الحافظة. لا يتطلب التطبيق حسابًا ولا اتصالًا بالإنترنت.'
-                  : 'The app writes corrected text to the clipboard only when you press Copy and does not read clipboard contents. No account or internet connection is required.'}
-              </p>
-
-              <h3 style={{ marginBottom: 6 }}>{isRTL ? 'شروط الاستخدام' : 'Terms of Use'}</h3>
-              <p style={{ marginTop: 0 }}>
-                {isRTL
-                  ? 'تُقدّم الأداة كما هي للمساعدة في تصحيح تخطيط لوحة المفاتيح. أنت مسؤول عن مراجعة النص الناتج قبل استخدامه. لا يجوز إساءة استخدام التطبيق أو محاولة تعطيله أو إعادة توزيعه بما يخالف ترخيصه.'
-                  : 'The utility is provided as-is to help correct keyboard-layout text. You are responsible for reviewing converted text before use. You may not misuse, disrupt, or redistribute the app contrary to its license.'}
-              </p>
-              <p style={{ marginBottom: 0, color: T.text2 }}>
-                {isRTL ? 'للدعم أو طلبات الخصوصية، تواصل معنا عبر: ' : 'For support or privacy requests, contact us at: '}
-                {isWindows ? (
-                  <button
-                    type="button"
-                    className="kf-support-link"
-                    onClick={() => invoke('open_support_page').catch(console.error)}
-                    style={{ color: T.accent }}
-                  >
-                    {isRTL ? 'فتح صفحة الدعم' : 'Open support page'}
-                    <ExternalLink size={12} aria-hidden="true" />
-                  </button>
-                ) : (
-                  <a
-                    href={SUPPORT_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: T.accent, overflowWrap: 'anywhere' }}
-                  >
-                    {SUPPORT_URL}
-                  </a>
-                )}
-              </p>
-            </div>
-          </section>
-        </div>
-      )}
+      {/* ── LEGAL VIEWER MODAL ── */}
+      <LegalViewerModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialDoc={selectedLegalDoc}
+        lang={lang}
+        isDark={isDark}
+      />
 
       {/* ── MAIN CONTENT ── */}
       <div
@@ -655,166 +563,51 @@ export function DesktopApp() {
             })}
           </div>
 
-          {/* Sound Toggle Button (Compact & Sleek) */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = !soundEnabled;
-              setSoundEnabled(next);
-              if (next) playSystemSound('copy');
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: soundEnabled ? T.accentDim : T.segmentedBg,
-              border: `1px solid ${soundEnabled ? T.accent : T.border}`,
-              color: soundEnabled ? T.accent : T.text2,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-            title={
-              soundEnabled
-                ? (isRTL ? 'المؤثر الصوتي مفعّل (انقر للتعطيل)' : 'Sound Feedback On (Click to mute)')
-                : (isRTL ? 'المؤثر الصوتي متوقف (انقر للتفعيل)' : 'Sound Feedback Off (Click to enable)')
-            }
-          >
-            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-          </button>
-        </div>
-
-        {/* Pro Inline Fix Experimental Toggle Card */}
-        {isProAvailable && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              padding: '10px 14px',
-              borderRadius: 10,
-              background: inlineFixEnabled ? T.accentDim : T.surface,
-              border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text1 }}>
-                  {isRTL ? 'تصحيح مباشر (Pro Inline Fix)' : 'Pro Inline Fix'}
-                </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    background: inlineFixEnabled ? T.accent : T.segmentedBg,
-                    color: inlineFixEnabled ? '#FFFFFF' : T.text2,
-                  }}
-                >
-                  {isRTL ? 'تجريبي' : 'Experimental'}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                role="switch"
-                aria-checked={inlineFixEnabled}
-                onClick={() => handleToggleInlineFix(!inlineFixEnabled)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 10px',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  borderRadius: 20,
-                  background: inlineFixEnabled ? T.accent : T.segmentedBg,
-                  color: inlineFixEnabled ? '#FFFFFF' : T.text2,
-                  border: `1px solid ${inlineFixEnabled ? T.accent : T.border}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* KeyFixer Pro Button & Options (Right next to Sound Button) */}
+            {ProPanelComponent && (
+              <ProPanelComponent
+                bridge={proBridge}
+                isRTL={isRTL}
+                onStatusChange={handleProStatusChange}
+                onOpenLegal={(doc) => {
+                  setSelectedLegalDoc(doc);
+                  setShowLegalModal(true);
                 }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: inlineFixEnabled ? '#FFFFFF' : T.text2 }} />
-                {inlineFixEnabled ? (isRTL ? 'مفعّل (ON)' : 'ON') : (isRTL ? 'معطّل (OFF)' : 'OFF')}
-              </button>
-            </div>
-
-            <p style={{ margin: 0, fontSize: 11, color: T.text2, lineHeight: 1.4 }}>
-              {isRTL
-                ? 'تصحيح النص المحدد مباشرة داخل التطبيقات الأخرى (Safari، Chrome، VS Code) بالضغط على ⌥⌘K دون فتح النافذة.'
-                : 'Experimental — Fix selected text directly in other apps'}
-            </p>
-
-            {inlineFixEnabled && hasAccessibility === false && (
-              <div
-                style={{
-                  marginTop: 4,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#EF4444', fontSize: 11, fontWeight: 600 }}>
-                  <ShieldCheck size={14} />
-                  <span>
-                    {isRTL
-                      ? 'يلزم منح إذن إمكانية الوصول (Accessibility)'
-                      : 'Accessibility Permission Required'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleOpenAccessibility}
-                  style={{
-                    padding: '3px 8px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    borderRadius: 4,
-                    background: '#EF4444',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isRTL ? 'تفعيل الإذن' : 'Grant'}
-                </button>
-              </div>
+              />
             )}
 
-          {inlineFixEnabled && hasAccessibility === true && (
-            <div
-              style={{
-                marginTop: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                color: '#16A34A',
-                fontSize: 11,
-                fontWeight: 600,
+            {/* Sound Toggle Button (Compact & Sleek) */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                if (next) playSystemSound('copy');
               }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: soundEnabled ? T.accentDim : T.segmentedBg,
+                border: `1px solid ${soundEnabled ? T.accent : T.border}`,
+                color: soundEnabled ? T.accent : T.text2,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title={
+                soundEnabled
+                  ? (isRTL ? 'المؤثر الصوتي مفعّل (انقر للتعطيل)' : 'Sound Feedback On (Click to mute)')
+                  : (isRTL ? 'المؤثر الصوتي متوقف (انقر للتفعيل)' : 'Sound Feedback Off (Click to enable)')
+              }
             >
-              <span>✅</span>
-              <span>
-                {isRTL
-                  ? 'إمكانية الوصول مفعلة: حدد أي نص في أي تطبيق واضغط ⌥⌘K'
-                  : 'Accessibility Granted: Select text in any app & press ⌥⌘K'}
-              </span>
-            </div>
-          )}
+              {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            </button>
+          </div>
         </div>
-      )}
 
         {/* Editor Split View */}
         <div className={isWindows ? 'kf-editors' : undefined} style={{ flex: 1, display: 'flex', gap: isWindows ? 14 : 20, minHeight: 0 }}>
@@ -914,10 +707,13 @@ export function DesktopApp() {
             <button
               className={isWindows ? 'kf-legal-button' : undefined}
               type="button"
-              onClick={() => setShowLegal(true)}
+              onClick={() => {
+                setSelectedLegalDoc('privacy');
+                setShowLegalModal(true);
+              }}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
             >
-              <ShieldCheck size={12} /> {isRTL ? 'الخصوصية والشروط' : 'Privacy & Terms'}
+              <ShieldCheck size={12} /> {isRTL ? 'القانونية' : 'Legal'}
             </button>
           </div>
 
