@@ -4,6 +4,7 @@ import {
   StoreProduct,
   StoreEntitlement,
   PurchaseResult,
+  RestorePurchasesResult,
   STOREKIT_PRODUCT_ID,
 } from './contracts';
 
@@ -43,5 +44,7 @@ export const FreeProBridge: ProRuntimeBridge = {
   async purchasePro(): Promise<PurchaseResult> {
     return { status: 'FAILED', errorMessage: 'StoreKit not available in this configuration' };
   },
-  async restorePurchases() { return FallbackEntitlement; },
+  async restorePurchases(): Promise<RestorePurchasesResult> {
+    return { status: 'NOT_FOUND', entitlement: FallbackEntitlement };
+  },
 };

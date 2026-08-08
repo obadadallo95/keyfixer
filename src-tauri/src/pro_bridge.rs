@@ -165,24 +165,31 @@ pub fn storekit_purchase_pro(app: &AppHandle) -> serde_json::Value {
 pub fn storekit_restore_purchases(app: &AppHandle) -> serde_json::Value {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
-        let e = inline_fix::macos::storekit_restore_purchases(app);
-        return serde_json::to_value(e).unwrap_or(serde_json::json!({
-            "paid": false,
-            "productId": null,
-            "purchaseDate": null,
-            "revocationDate": null,
-            "verificationStatus": "NOT_PURCHASED"
+        let res = inline_fix::macos::storekit_restore_purchases(app);
+        return serde_json::to_value(res).unwrap_or(serde_json::json!({
+            "status": "FAILED",
+            "entitlement": {
+                "paid": false,
+                "productId": null,
+                "purchaseDate": null,
+                "revocationDate": null,
+                "verificationStatus": "NOT_PURCHASED"
+            },
+            "errorMessage": "Failed to parse restore result"
         }));
     }
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
     {
         let _ = app;
         serde_json::json!({
-            "paid": false,
-            "productId": null,
-            "purchaseDate": null,
-            "revocationDate": null,
-            "verificationStatus": "NOT_PURCHASED"
+            "status": "NOT_FOUND",
+            "entitlement": {
+                "paid": false,
+                "productId": null,
+                "purchaseDate": null,
+                "revocationDate": null,
+                "verificationStatus": "NOT_PURCHASED"
+            }
         })
     }
 }

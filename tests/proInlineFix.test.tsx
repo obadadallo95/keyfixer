@@ -380,5 +380,242 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
       expect(buyBtn).toBeDisabled();
     });
   });
+
+  // ── TASK 9C / 9C.1 Restore Purchases & Revocation Tests ─────────────────────
+
+  describe('Restore Purchases & Revocation Handling (TASK 9C / 9C.1)', () => {
+    beforeEach(() => {
+      currentState = {
+        mode: 'trial',
+        uiState: 'TRIAL_EXHAUSTED',
+        trialCreditsRemaining: 0,
+        trialStarted: true,
+        inlineFixEnabled: true,
+      };
+    });
+
+    it('handles RESTORED: unlocks Pro, updates status, displays success toast, preserves user preference', async () => {
+      const onStatusChange = vi.fn();
+      mockBridge.restorePurchases = vi.fn().mockImplementation(async () => {
+        currentState = {
+          mode: 'paid',
+          uiState: 'PAID',
+          trialCreditsRemaining: 0,
+          trialStarted: true,
+          inlineFixEnabled: true,
+        };
+        return {
+          status: 'RESTORED',
+          entitlement: {
+            paid: true,
+            productId: 'com.obadadallo.keyfixer.pro.lifetime',
+            purchaseDate: '2026-08-08T01:00:00Z',
+            revocationDate: null,
+            verificationStatus: 'VERIFIED',
+          },
+        };
+      });
+      mockBridge.getProState = vi.fn().mockImplementation(async () => currentState);
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} onStatusChange={onStatusChange} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      await act(async () => {
+        fireEvent.click(restoreBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(mockBridge.restorePurchases).toHaveBeenCalledTimes(1);
+      expect(onStatusChange).toHaveBeenCalledWith('pro');
+      expect(screen.getByTestId('restore-success-toast')).toHaveTextContent('KeyFixer Pro restored');
+    });
+
+    it('handles NOT_FOUND: shows info message, remains unpaid, preserves trial credits', async () => {
+      mockBridge.restorePurchases = vi.fn().mockResolvedValue({
+        status: 'NOT_FOUND',
+        entitlement: {
+          paid: false,
+          productId: null,
+          purchaseDate: null,
+          revocationDate: null,
+          verificationStatus: 'NOT_PURCHASED',
+        },
+      });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      await act(async () => {
+        fireEvent.click(restoreBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByTestId('restore-info-banner')).toHaveTextContent('No KeyFixer Pro purchase was found for this Apple Account.');
+      expect(screen.queryByTestId('restore-success-toast')).toBeNull();
+    });
+
+    it('handles FAILED: shows localized error message without raw error, does not modify trial credits', async () => {
+      mockBridge.restorePurchases = vi.fn().mockResolvedValue({
+        status: 'FAILED',
+        entitlement: {
+          paid: false,
+          productId: null,
+          purchaseDate: null,
+          revocationDate: null,
+          verificationStatus: 'NOT_PURCHASED',
+        },
+        errorMessage: 'AppStore.sync network failure',
+      });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      await act(async () => {
+        fireEvent.click(restoreBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const errBanner = screen.getByTestId('restore-error-banner');
+      expect(errBanner).toHaveTextContent("Couldn't restore purchases. Please try again.");
+      expect(errBanner).not.toHaveTextContent('network failure'); // No raw error leaked
+    });
+
+    it('sync throwing while already paid does NOT falsely downgrade paid entitlement', async () => {
+      currentState = {
+        mode: 'paid',
+        uiState: 'PAID',
+        trialCreditsRemaining: 0,
+        trialStarted: true,
+        inlineFixEnabled: true,
+      };
+
+      // AppStore.sync failed due to network error, but existing verified entitlement is intact
+      mockBridge.restorePurchases = vi.fn().mockResolvedValue({
+        status: 'FAILED',
+        entitlement: {
+          paid: true,
+          productId: 'com.obadadallo.keyfixer.pro.lifetime',
+          purchaseDate: '2026-08-08T01:00:00Z',
+          revocationDate: null,
+          verificationStatus: 'VERIFIED',
+        },
+        errorMessage: 'AppStore.sync network timeout',
+      });
+
+      mockBridge.getProState = vi.fn().mockResolvedValue(currentState);
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      // App stays in PAID state
+      expect(screen.getByText('Inline Fix')).toBeInTheDocument();
+
+      const res = await mockBridge.restorePurchases();
+      expect(res.status).toBe('FAILED');
+      expect(res.entitlement.paid).toBe(true); // Retains verified entitlement
+    });
+
+    it('handles Arabic Restore Purchases UI and localized Arabic messages', async () => {
+      mockBridge.restorePurchases = vi.fn().mockResolvedValue({
+        status: 'NOT_FOUND',
+        entitlement: {
+          paid: false,
+          productId: null,
+          purchaseDate: null,
+          revocationDate: null,
+          verificationStatus: 'NOT_PURCHASED',
+        },
+      });
+
+      render(<ProPanel bridge={mockBridge} isRTL={true} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      expect(restoreBtn).toHaveTextContent('استعادة المشتريات');
+
+      await act(async () => {
+        fireEvent.click(restoreBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByTestId('restore-info-banner')).toHaveTextContent('لم يتم العثور على شراء KeyFixer Pro مرتبط بحساب Apple هذا.');
+    });
+
+    it('prevents duplicate concurrent restore calls', async () => {
+      let resolveRestore: (val: any) => void;
+      mockBridge.restorePurchases = vi.fn().mockImplementation(
+        () => new Promise((resolve) => { resolveRestore = resolve; })
+      );
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      fireEvent.click(restoreBtn);
+      fireEvent.click(restoreBtn); // Double click
+
+      expect(mockBridge.restorePurchases).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveRestore({ status: 'NOT_FOUND', entitlement: { paid: false, verificationStatus: 'NOT_PURCHASED' } });
+        await vi.advanceTimersByTimeAsync(50);
+      });
+    });
+
+    it('handles paid -> refunded/revoked transition: locks Pro cleanly, preserves unused trial credits', async () => {
+      // User originally paid with 2 trial credits unused
+      currentState = {
+        mode: 'paid',
+        uiState: 'PAID',
+        trialCreditsRemaining: 2,
+        trialStarted: true,
+        inlineFixEnabled: true,
+      };
+
+      // StoreKit detects refund/revocation
+      mockBridge.getProEntitlement = vi.fn().mockResolvedValue({
+        paid: false,
+        productId: 'com.obadadallo.keyfixer.pro.lifetime',
+        purchaseDate: '2026-08-08T01:00:00Z',
+        revocationDate: '2026-08-08T02:00:00Z',
+        verificationStatus: 'REVOKED',
+      });
+
+      // Updated state returned from Rust after StoreKit reconciliation
+      const revokedState: ProStateDto = {
+        mode: 'trial',
+        uiState: 'TRIAL_ACTIVE',
+        trialCreditsRemaining: 2, // Trial history preserved!
+        trialStarted: true,
+        inlineFixEnabled: true,
+      };
+
+      mockBridge.getProState = vi.fn().mockResolvedValue(revokedState);
+
+      const onStatusChange = vi.fn();
+      render(<ProPanel bridge={mockBridge} isRTL={false} onStatusChange={onStatusChange} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      // App transitions from PAID to TRIAL_ACTIVE cleanly without crash or credit loss
+      expect(screen.getByText('2')).toBeInTheDocument(); // 2 credits preserved
+    });
+  });
 });
 

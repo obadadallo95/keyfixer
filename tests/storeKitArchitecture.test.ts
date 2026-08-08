@@ -178,7 +178,7 @@ describe('StoreKit 2 Architecture & Native Bridge (TASK 9A)', () => {
       expect(purchaseRes.errorMessage).toBeDefined();
 
       const restoreRes = await FreeProBridge.restorePurchases();
-      expect(restoreRes).toEqual(FallbackEntitlement);
+      expect(restoreRes).toEqual({ status: 'NOT_FOUND', entitlement: FallbackEntitlement });
     });
 
     it('getProBridge returns a valid runtime bridge instance', () => {

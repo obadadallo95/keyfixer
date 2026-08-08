@@ -48,6 +48,14 @@ export interface PurchaseResult {
   errorMessage?: string;
 }
 
+export type RestoreStatus = 'RESTORED' | 'NOT_FOUND' | 'FAILED';
+
+export interface RestorePurchasesResult {
+  status: RestoreStatus;
+  entitlement: StoreEntitlement;
+  errorMessage?: string;
+}
+
 // ── Runtime Bridge ────────────────────────────────────────────────────────────
 
 export interface ProRuntimeBridge {
@@ -84,7 +92,7 @@ export interface ProRuntimeBridge {
   purchasePro(): Promise<PurchaseResult>;
 
   /** Native restore foundation calling AppStore.sync() */
-  restorePurchases(): Promise<StoreEntitlement>;
+  restorePurchases(): Promise<RestorePurchasesResult>;
 }
 
 // ── Component Props ───────────────────────────────────────────────────────────
