@@ -20,6 +20,34 @@ export interface ProStateDto {
   inlineFixEnabled: boolean;
 }
 
+// ── StoreKit 2 Normalized Models ──────────────────────────────────────────────
+
+export const STOREKIT_PRODUCT_ID = 'com.obadadallo.keyfixer.pro.lifetime';
+
+export interface StoreProduct {
+  id: string;
+  displayName: string;
+  displayPrice: string;
+  isAvailable: boolean;
+}
+
+export type VerificationStatus = 'VERIFIED' | 'UNVERIFIED' | 'REVOKED' | 'NOT_PURCHASED' | 'MISSING';
+
+export interface StoreEntitlement {
+  paid: boolean;
+  productId: string | null;
+  purchaseDate: string | null;
+  revocationDate: string | null;
+  verificationStatus: VerificationStatus;
+}
+
+export type PurchaseStatus = 'SUCCESS' | 'CANCELLED' | 'PENDING' | 'FAILED';
+
+export interface PurchaseResult {
+  status: PurchaseStatus;
+  errorMessage?: string;
+}
+
 // ── Runtime Bridge ────────────────────────────────────────────────────────────
 
 export interface ProRuntimeBridge {
@@ -43,6 +71,20 @@ export interface ProRuntimeBridge {
 
   /** Submit conversion result back to Rust inline fix pipeline */
   submitConversionResponse(id: number, text: string): Promise<void>;
+
+  // ── StoreKit 2 Native Foundation ─────────────────────────────────────────────
+
+  /** Load StoreKit product metadata from Apple */
+  loadProProduct(): Promise<StoreProduct | null>;
+
+  /** Query current StoreKit 2 verified entitlement */
+  getProEntitlement(): Promise<StoreEntitlement>;
+
+  /** Native purchase foundation stub for KeyFixer Pro Lifetime */
+  purchasePro(): Promise<PurchaseResult>;
+
+  /** Native restore foundation calling AppStore.sync() */
+  restorePurchases(): Promise<StoreEntitlement>;
 }
 
 // ── Component Props ───────────────────────────────────────────────────────────
@@ -55,3 +97,4 @@ export interface ProPanelProps {
   /** Open a legal document in the legal viewer modal */
   onOpenLegal?: (doc: 'privacy' | 'terms' | 'purchase-refund' | 'impressum' | 'accessibility') => void;
 }
+

@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
 #[path = "../../pro-private/native/inline_fix.rs"]
@@ -90,7 +90,104 @@ pub fn submit_conversion_response(id: u64, fixed_text: String) {
     { let _ = (id, fixed_text); }
 }
 
-// ── DEV-ONLY commands (not compiled in release builds) ────────────────────────
+// ── StoreKit 2 Native Foundation ─────────────────────────────────────────────
+
+pub fn storekit_load_pro_product(app: &AppHandle) -> serde_json::Value {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let _ = app;
+        let p = inline_fix::macos::storekit_load_pro_product();
+        return serde_json::to_value(p).unwrap_or(serde_json::json!({
+            "id": "com.obadadallo.keyfixer.pro.lifetime",
+            "displayName": "KeyFixer Pro Lifetime",
+            "displayPrice": "",
+            "isAvailable": false
+        }));
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    {
+        let _ = app;
+        serde_json::json!({
+            "id": "com.obadadallo.keyfixer.pro.lifetime",
+            "displayName": "KeyFixer Pro Lifetime",
+            "displayPrice": "",
+            "isAvailable": false
+        })
+    }
+}
+
+pub fn storekit_get_pro_entitlement(app: &AppHandle) -> serde_json::Value {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let _ = app;
+        let e = inline_fix::macos::storekit_get_pro_entitlement();
+        return serde_json::to_value(e).unwrap_or(serde_json::json!({
+            "paid": false,
+            "productId": null,
+            "purchaseDate": null,
+            "revocationDate": null,
+            "verificationStatus": "NOT_PURCHASED"
+        }));
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    {
+        let _ = app;
+        serde_json::json!({
+            "paid": false,
+            "productId": null,
+            "purchaseDate": null,
+            "revocationDate": null,
+            "verificationStatus": "NOT_PURCHASED"
+        })
+    }
+}
+
+pub fn storekit_purchase_pro(app: &AppHandle) -> serde_json::Value {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let _ = app;
+        let res = inline_fix::macos::storekit_purchase_pro();
+        return serde_json::to_value(res).unwrap_or(serde_json::json!({
+            "status": "FAILED",
+            "errorMessage": "Failed to parse purchase result"
+        }));
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    {
+        let _ = app;
+        serde_json::json!({
+            "status": "FAILED",
+            "errorMessage": "StoreKit is only supported on macOS"
+        })
+    }
+}
+
+pub fn storekit_restore_purchases(app: &AppHandle) -> serde_json::Value {
+    #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
+    {
+        let e = inline_fix::macos::storekit_restore_purchases(app);
+        return serde_json::to_value(e).unwrap_or(serde_json::json!({
+            "paid": false,
+            "productId": null,
+            "purchaseDate": null,
+            "revocationDate": null,
+            "verificationStatus": "NOT_PURCHASED"
+        }));
+    }
+    #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
+    {
+        let _ = app;
+        serde_json::json!({
+            "paid": false,
+            "productId": null,
+            "purchaseDate": null,
+            "revocationDate": null,
+            "verificationStatus": "NOT_PURCHASED"
+        })
+    }
+}
+
+// ── DEV-ONLY commands (not compiled in release/appstore builds) ───────────────
 
 #[cfg(debug_assertions)]
 pub fn dev_reset_trial_credits(app: &AppHandle) -> bool {
@@ -116,7 +213,7 @@ pub fn dev_simulate_paid(app: &AppHandle) -> bool {
     { let _ = app; false }
 }
 
-// ── TEMP: Testing reset — REMOVE BEFORE APP STORE ────────────────────────────
+// ── TEMP: Testing reset — REMOVE BEFORE APP STORE SUBMISSION ──────────────────
 
 pub fn reset_trial_for_testing(app: &AppHandle) -> bool {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
@@ -139,3 +236,4 @@ pub fn reset_to_free_for_testing(app: &AppHandle) -> bool {
     #[cfg(not(all(feature = "pro", pro_private_exists, target_os = "macos")))]
     { let _ = app; false }
 }
+

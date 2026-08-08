@@ -2,7 +2,7 @@ use tauri::{
     command,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager,
+    AppHandle, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -109,8 +109,8 @@ fn play_feedback_sound(sound_type: String) {
     }
 }
 
-#[cfg(all(feature = "appstore", feature = "pro"))]
-compile_error!("Mac App Store build must not include Pro features!");
+#[cfg(all(feature = "appstore", debug_assertions))]
+compile_error!("Mac App Store release build must not include debug assertions / simulator commands!");
 
 mod pro_bridge;
 
@@ -155,6 +155,28 @@ fn activate_trial(app: AppHandle) -> bool {
 #[command]
 fn set_inline_fix_preference(app: AppHandle, enabled: bool) {
     pro_bridge::set_inline_fix_preference(&app, enabled);
+}
+
+// ── StoreKit 2 Native Commands ────────────────────────────────────────────────
+
+#[command]
+fn storekit_load_pro_product(app: AppHandle) -> serde_json::Value {
+    pro_bridge::storekit_load_pro_product(&app)
+}
+
+#[command]
+fn storekit_get_pro_entitlement(app: AppHandle) -> serde_json::Value {
+    pro_bridge::storekit_get_pro_entitlement(&app)
+}
+
+#[command]
+fn storekit_purchase_pro(app: AppHandle) -> serde_json::Value {
+    pro_bridge::storekit_purchase_pro(&app)
+}
+
+#[command]
+fn storekit_restore_purchases(app: AppHandle) -> serde_json::Value {
+    pro_bridge::storekit_restore_purchases(&app)
 }
 
 // ── DEV-ONLY commands (excluded from release/appstore builds) ────────────────
@@ -230,6 +252,10 @@ pub fn run() {
             open_accessibility_settings,
             reset_trial_for_testing,
             reset_to_free_for_testing,
+            storekit_load_pro_product,
+            storekit_get_pro_entitlement,
+            storekit_purchase_pro,
+            storekit_restore_purchases,
         ]);
 
     // Debug handler (includes DEV-ONLY commands)
@@ -251,6 +277,10 @@ pub fn run() {
             open_accessibility_settings,
             reset_trial_for_testing,
             reset_to_free_for_testing,
+            storekit_load_pro_product,
+            storekit_get_pro_entitlement,
+            storekit_purchase_pro,
+            storekit_restore_purchases,
             dev_reset_trial_credits,
             dev_simulate_paid,
         ]);

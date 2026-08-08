@@ -165,4 +165,220 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
     fireEvent.click(privacyLink);
     expect(handleOpenLegal).toHaveBeenCalledWith('privacy');
   });
+
+  // ── TASK 9B Real Purchase Flow Tests ──────────────────────────────────────────
+
+  describe('Real Purchase Flow (TASK 9B)', () => {
+    beforeEach(() => {
+      currentState = {
+        mode: 'trial',
+        uiState: 'TRIAL_EXHAUSTED',
+        trialCreditsRemaining: 0,
+        trialStarted: true,
+        inlineFixEnabled: false, // User had turned inline fix off
+      };
+
+      mockBridge.loadProProduct = vi.fn().mockResolvedValue({
+        id: 'com.obadadallo.keyfixer.pro.lifetime',
+        displayName: 'KeyFixer Pro Lifetime',
+        displayPrice: '$4.99',
+        isAvailable: true,
+      });
+
+      mockBridge.getProEntitlement = vi.fn().mockResolvedValue({
+        paid: false,
+        productId: null,
+        purchaseDate: null,
+        revocationDate: null,
+        verificationStatus: 'NOT_PURCHASED',
+      });
+
+      mockBridge.purchasePro = vi.fn().mockResolvedValue({
+        status: 'SUCCESS',
+      });
+    });
+
+    it('renders dynamic display price from StoreKit on purchase button', async () => {
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      expect(buyBtn).toHaveTextContent('Get KeyFixer Pro • $4.99');
+    });
+
+    it('handles verified successful purchase: unlocks Pro, preserves user inline preference, shows success toast', async () => {
+      const onStatusChange = vi.fn();
+      mockBridge.purchasePro = vi.fn().mockImplementation(async () => {
+        currentState = {
+          mode: 'paid',
+          uiState: 'PAID',
+          trialCreditsRemaining: 0,
+          trialStarted: true,
+          inlineFixEnabled: false, // User preference preserved
+        };
+        return { status: 'SUCCESS' };
+      });
+      mockBridge.getProEntitlement = vi.fn().mockResolvedValue({
+        paid: true,
+        productId: 'com.obadadallo.keyfixer.pro.lifetime',
+        purchaseDate: '2026-08-08T01:00:00Z',
+        revocationDate: null,
+        verificationStatus: 'VERIFIED',
+      });
+      mockBridge.getProState = vi.fn().mockImplementation(async () => currentState);
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} onStatusChange={onStatusChange} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      await act(async () => {
+        fireEvent.click(buyBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(mockBridge.purchasePro).toHaveBeenCalledTimes(1);
+      expect(mockBridge.getProEntitlement).toHaveBeenCalled();
+      expect(onStatusChange).toHaveBeenCalledWith('pro');
+      expect(screen.getByTestId('purchase-success-toast')).toHaveTextContent('KeyFixer Pro unlocked');
+    });
+
+    it('handles user cancellation without error banner or trial credit mutation', async () => {
+      mockBridge.purchasePro = vi.fn().mockResolvedValue({ status: 'CANCELLED' });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      await act(async () => {
+        fireEvent.click(buyBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.queryByTestId('purchase-error-banner')).toBeNull();
+      expect(buyBtn).not.toBeDisabled();
+      expect(screen.getByText('Trial Ended')).toBeInTheDocument();
+    });
+
+    it('handles pending purchase with localized approval banner', async () => {
+      mockBridge.purchasePro = vi.fn().mockResolvedValue({ status: 'PENDING' });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      await act(async () => {
+        fireEvent.click(buyBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByTestId('purchase-pending-banner')).toHaveTextContent('Purchase pending approval');
+    });
+
+    it('handles genuine purchase failure with concise localized error message', async () => {
+      mockBridge.purchasePro = vi.fn().mockResolvedValue({
+        status: 'FAILED',
+        errorMessage: 'Payment card declined',
+      });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      await act(async () => {
+        fireEvent.click(buyBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const errorBanner = screen.getByTestId('purchase-error-banner');
+      expect(errorBanner).toHaveTextContent("Purchase couldn't be completed. Please try again.");
+      expect(errorBanner).not.toHaveTextContent('Payment card declined'); // No internal error text leaked
+    });
+
+    it('prevents double-click / concurrent purchase invocations', async () => {
+      let resolvePurchase: (val: any) => void;
+      mockBridge.purchasePro = vi.fn().mockImplementation(
+        () => new Promise((resolve) => { resolvePurchase = resolve; })
+      );
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      fireEvent.click(buyBtn);
+      fireEvent.click(buyBtn); // Repeated click while active
+
+      expect(mockBridge.purchasePro).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolvePurchase({ status: 'CANCELLED' });
+        await vi.advanceTimersByTimeAsync(50);
+      });
+    });
+
+    it('renders StoreKit unavailable message and disables CTA when product is unavailable', async () => {
+      mockBridge.loadProProduct = vi.fn().mockResolvedValue({
+        id: 'com.obadadallo.keyfixer.pro.lifetime',
+        displayName: 'KeyFixer Pro Lifetime',
+        displayPrice: '',
+        isAvailable: false,
+      });
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      fireEvent.click(screen.getByText('Unlock Pro'));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByTestId('purchase-unavailable-banner')).toHaveTextContent('Purchase temporarily unavailable');
+      const buyBtn = screen.getByTestId('purchase-pro-button');
+      expect(buyBtn).toBeDisabled();
+    });
+  });
 });
+

@@ -1,4 +1,11 @@
-import { ProRuntimeBridge, ProStateDto } from './contracts';
+import {
+  ProRuntimeBridge,
+  ProStateDto,
+  StoreProduct,
+  StoreEntitlement,
+  PurchaseResult,
+  STOREKIT_PRODUCT_ID,
+} from './contracts';
 
 export const FREE_STATE: ProStateDto = {
   mode: 'free',
@@ -8,7 +15,22 @@ export const FREE_STATE: ProStateDto = {
   inlineFixEnabled: false,
 };
 
-/** Used in non-Pro builds (free/appstore). All operations are no-ops. */
+export const FallbackProduct: StoreProduct = {
+  id: STOREKIT_PRODUCT_ID,
+  displayName: 'KeyFixer Pro Lifetime',
+  displayPrice: '',
+  isAvailable: false,
+};
+
+export const FallbackEntitlement: StoreEntitlement = {
+  paid: false,
+  productId: null,
+  purchaseDate: null,
+  revocationDate: null,
+  verificationStatus: 'NOT_PURCHASED',
+};
+
+/** Used in non-Pro builds or fallback mode. All operations are safe no-ops. */
 export const FreeProBridge: ProRuntimeBridge = {
   async getProState() { return FREE_STATE; },
   async activateTrial() { return false; },
@@ -16,4 +38,10 @@ export const FreeProBridge: ProRuntimeBridge = {
   async checkAccessibility() { return true; },
   async openAccessibilitySettings() {},
   async submitConversionResponse(_id: number, _text: string) {},
+  async loadProProduct() { return FallbackProduct; },
+  async getProEntitlement() { return FallbackEntitlement; },
+  async purchasePro(): Promise<PurchaseResult> {
+    return { status: 'FAILED', errorMessage: 'StoreKit not available in this configuration' };
+  },
+  async restorePurchases() { return FallbackEntitlement; },
 };
