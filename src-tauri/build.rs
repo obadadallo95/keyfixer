@@ -39,6 +39,7 @@ fn main() {
                 println!("cargo:rustc-link-lib=static=keyfixer_storekit");
                 println!("cargo:rustc-link-lib=framework=StoreKit");
                 println!("cargo:rustc-link-lib=framework=Foundation");
+                println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
             }
         }
     }

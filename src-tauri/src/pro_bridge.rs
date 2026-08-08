@@ -1,4 +1,5 @@
-use tauri::AppHandle;
+#[allow(unused_imports)]
+use tauri::{AppHandle, Manager};
 
 #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
 #[path = "../../pro-private/native/inline_fix.rs"]

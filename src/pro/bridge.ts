@@ -6,6 +6,7 @@ import { FreeProBridge } from './fallback';
 // Safely probe for optional pro-private module at build time
 const proModules = import.meta.glob<{
   ProProvider?: ProRuntimeBridge;
+  ProductionProBridge?: ProRuntimeBridge;
   ProPanel?: React.ComponentType<ProPanelProps>;
 }>(
   '../../pro-private/frontend/provider.ts',
@@ -14,14 +15,15 @@ const proModules = import.meta.glob<{
 
 const proPath = '../../pro-private/frontend/provider.ts';
 const loadedProModule = proModules[proPath];
+const activeBridge = loadedProModule?.ProductionProBridge || loadedProModule?.ProProvider;
 
 export const isProBuildAvailable = Boolean(
-  loadedProModule && loadedProModule.ProProvider
+  loadedProModule && activeBridge
 );
 
 export function getProBridge(): ProRuntimeBridge {
-  if (isProBuildAvailable && loadedProModule?.ProProvider) {
-    return loadedProModule.ProProvider;
+  if (isProBuildAvailable && activeBridge) {
+    return activeBridge;
   }
   return FreeProBridge;
 }

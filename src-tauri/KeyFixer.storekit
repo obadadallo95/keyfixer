@@ -1,0 +1,37 @@
+{
+  "identifier" : "KeyFixerStoreKitConfig",
+  "nonConsumables" : [
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "6741829101",
+      "localizations" : [
+        {
+          "description" : "Lifetime access to KeyFixer Pro features",
+          "displayName" : "KeyFixer Pro Lifetime",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "وصول مدى الحياة لميزات KeyFixer Pro",
+          "displayName" : "KeyFixer Pro مدى الحياة",
+          "locale" : "ar"
+        }
+      ],
+      "productID" : "com.obadadallo.keyfixer.pro.lifetime",
+      "referenceName" : "KeyFixer Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "products" : [ ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [ ]
+  },
+  "subscriptionGroups" : [ ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}
