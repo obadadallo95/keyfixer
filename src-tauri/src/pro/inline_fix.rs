@@ -145,6 +145,7 @@ pub mod macos {
         fn CGEventCreateKeyboardEvent(source: *mut c_void, virtual_key: u16, key_down: bool) -> *mut c_void;
         fn CGEventSetFlags(event: *mut c_void, flags: u64);
         fn CGEventPost(tap: u32, event: *mut c_void);
+        fn CGEventSourceKeyState(stateID: i32, keycode: u16) -> bool;
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -537,8 +538,32 @@ pub mod macos {
         }
         eprintln!("{TAG} Target: PID={target_pid} Bundle='{target_bundle}'");
 
-        // Give time for physical shortcut keys (Option/Command/K) to settle
-        std::thread::sleep(Duration::from_millis(80));
+        // Wait for physical shortcut keys (Option/Command) to settle
+        let poll_start_modifiers = Instant::now();
+        let mut modifiers_released = false;
+        
+        while poll_start_modifiers.elapsed() < Duration::from_millis(500) {
+            unsafe {
+                let l_cmd = CGEventSourceKeyState(1, 55);
+                let r_cmd = CGEventSourceKeyState(1, 54);
+                let l_opt = CGEventSourceKeyState(1, 58);
+                let r_opt = CGEventSourceKeyState(1, 61);
+                
+                if !l_cmd && !r_cmd && !l_opt && !r_opt {
+                    modifiers_released = true;
+                    break;
+                }
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+
+        if !modifiers_released {
+            eprintln!("{TAG} Timeout waiting for physical modifiers to be released");
+            show_main_window(app);
+            return InlineFixResult::NoSelection; // Or a specific timeout result
+        }
+
+        std::thread::sleep(Duration::from_millis(30));
 
         let baseline = unsafe { get_pasteboard_change_count() };
 

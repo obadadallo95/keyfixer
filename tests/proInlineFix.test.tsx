@@ -61,6 +61,7 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
       getProEntitlement: vi.fn().mockResolvedValue({ paid: false, verificationStatus: 'NOT_PURCHASED' }),
       purchasePro: vi.fn().mockResolvedValue({ status: 'FAILED' }),
       restorePurchases: vi.fn().mockResolvedValue({ status: 'NOT_FOUND' }),
+      restartKeyFixer: vi.fn().mockResolvedValue(undefined),
     };
   });
 

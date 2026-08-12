@@ -335,7 +335,7 @@ pub fn run() {
                 tauri_plugin_global_shortcut::Builder::new()
                     .with_handler(move |app, shortcut, event| {
                         if shortcut == &handled_shortcut
-                            && event.state() == ShortcutState::Pressed
+                            && event.state() == ShortcutState::Released
                         {
                             let app_handle = app.clone();
                             // run_inline_fix internally checks state, preference, accessibility
