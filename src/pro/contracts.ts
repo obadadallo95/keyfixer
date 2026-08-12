@@ -84,7 +84,7 @@ export interface ProRuntimeBridge {
   restartKeyFixer(): Promise<void>;
 
   /** Submit conversion result back to Rust inline fix pipeline */
-  submitConversionResponse(id: number, text: string): Promise<void>;
+  submitConversionResponse(id: number, text: string, soundEnabled?: boolean): Promise<void>;
 
   // ── StoreKit 2 Native Foundation ─────────────────────────────────────────────
 
@@ -111,4 +111,3 @@ export interface ProPanelProps {
   /** Open a legal document in the legal viewer modal */
   onOpenLegal?: (doc: 'privacy' | 'terms' | 'purchase-refund' | 'impressum' | 'accessibility') => void;
 }
-

@@ -141,8 +141,8 @@ fn open_post_event_settings() -> Result<(), String> {
 
 /// Submit response for inline conversion request from webview
 #[command]
-fn submit_conversion_response(id: u64, fixed_text: String) {
-    pro_bridge::submit_conversion_response(id, fixed_text);
+fn submit_conversion_response(id: u64, fixed_text: String, sound_enabled: bool) {
+    pro_bridge::submit_conversion_response(id, fixed_text, sound_enabled);
 }
 
 /// Return the full Pro state snapshot to the frontend

@@ -44,7 +44,7 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
         currentState = {
           mode: 'trial',
           uiState: 'TRIAL_ACTIVE',
-          trialCreditsRemaining: 5,
+          trialCreditsRemaining: 25,
           trialStarted: true,
           inlineFixEnabled: true,
         };
@@ -88,10 +88,10 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
 
     fireEvent.click(screen.getByText('Try Pro Free'));
     expect(screen.getByText('Try KeyFixer Pro')).toBeInTheDocument();
-    expect(screen.getByText('Start Free Trial (5 Fixes)')).toBeInTheDocument();
+    expect(screen.getByText('Start Free Trial (25 Fixes)')).toBeInTheDocument();
   });
 
-  it('activating trial transitions to 5 credits and starts trial', async () => {
+  it('activating trial transitions to 25 credits and starts trial', async () => {
     const onStatusChange = vi.fn();
     render(<ProPanel bridge={mockBridge} isRTL={false} onStatusChange={onStatusChange} />);
     await act(async () => {
@@ -100,7 +100,7 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
 
     fireEvent.click(screen.getByText('Try Pro Free'));
     await act(async () => {
-      fireEvent.click(screen.getByText('Start Free Trial (5 Fixes)'));
+      fireEvent.click(screen.getByText('Start Free Trial (25 Fixes)'));
       await vi.advanceTimersByTimeAsync(50);
     });
 
@@ -624,4 +624,3 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
     });
   });
 });
-

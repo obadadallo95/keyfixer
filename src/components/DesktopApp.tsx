@@ -371,7 +371,7 @@ export function DesktopApp() {
               mode: stateRef.current.conversionMode,
               platform: stateRef.current.keyboardPlatform,
             });
-            proBridge.submitConversionResponse(id, result.fixedText).catch(() => {
+            proBridge.submitConversionResponse(id, result.fixedText, stateRef.current.soundEnabled).catch(() => {
               console.warn('INLINE_FIX_FAILED:conversion_response');
             });
           }

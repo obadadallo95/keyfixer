@@ -91,11 +91,11 @@ pub fn open_post_event_settings() {
 
 // ── Conversion response ───────────────────────────────────────────────────────
 
-pub fn submit_conversion_response(id: u64, fixed_text: String) {
+pub fn submit_conversion_response(id: u64, fixed_text: String, sound_enabled: bool) {
     #[cfg(all(feature = "pro", target_os = "macos"))]
-    { inline_fix::macos::submit_conversion_response(id, fixed_text); }
+    { inline_fix::macos::submit_conversion_response(id, fixed_text, sound_enabled); }
     #[cfg(not(all(feature = "pro", target_os = "macos")))]
-    { let _ = (id, fixed_text); }
+    { let _ = (id, fixed_text, sound_enabled); }
 }
 
 // ── StoreKit 2 Native Foundation ─────────────────────────────────────────────
@@ -253,4 +253,3 @@ pub fn reset_to_free_for_testing(app: &AppHandle) -> bool {
     #[cfg(not(all(feature = "pro", target_os = "macos")))]
     { let _ = app; false }
 }
-

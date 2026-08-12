@@ -21,7 +21,9 @@ pub mod macos {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum UiState { Free, TrialActive, TrialExhausted, Paid }
 
-    fn default_trial_credits() -> i32 { 5 }
+    const TRIAL_CREDIT_LIMIT: i32 = 25;
+    fn default_trial_credits() -> i32 { TRIAL_CREDIT_LIMIT }
+    fn legacy_trial_credit_limit() -> i32 { 5 }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
@@ -30,11 +32,12 @@ pub mod macos {
         #[serde(default = "default_trial_credits")] pub trial_credits_remaining: i32,
         #[serde(default)] pub trial_started: bool,
         #[serde(default)] pub inline_fix_enabled: bool,
+        #[serde(default = "legacy_trial_credit_limit")] pub trial_credit_limit: i32,
     }
 
     impl Default for ProState {
         fn default() -> Self {
-            ProState { mode: ProMode::Free, trial_credits_remaining: 5, trial_started: false, inline_fix_enabled: false }
+            ProState { mode: ProMode::Free, trial_credits_remaining: TRIAL_CREDIT_LIMIT, trial_started: false, inline_fix_enabled: false, trial_credit_limit: TRIAL_CREDIT_LIMIT }
         }
     }
 
@@ -57,9 +60,16 @@ pub mod macos {
             let Some(path) = Self::state_file_path(app) else { return Self::default(); };
             if !path.exists() { return Self::default(); }
             match std::fs::read_to_string(&path) {
-                Ok(json) => serde_json::from_str(&json).unwrap_or_else(|e| {
-                    eprintln!("[KeyFixer ProState] Parse error: {e}; using defaults"); Self::default()
-                }),
+                Ok(json) => {
+                    let mut state: Self = serde_json::from_str(&json).unwrap_or_else(|e| {
+                        eprintln!("[KeyFixer ProState] Parse error: {e}; using defaults"); Self::default()
+                    });
+                    if state.mode == ProMode::Trial && state.trial_credit_limit < TRIAL_CREDIT_LIMIT {
+                        state.trial_credits_remaining = TRIAL_CREDIT_LIMIT;
+                        state.trial_credit_limit = TRIAL_CREDIT_LIMIT;
+                    }
+                    state
+                },
                 Err(e) => { eprintln!("[KeyFixer ProState] Read error: {e}"); Self::default() }
             }
         }
@@ -173,8 +183,9 @@ pub mod macos {
         pub text: String,
     }
 
-    type PendingResponseMap = Arc<Mutex<HashMap<u64, mpsc::Sender<String>>>>;
-    pub static PENDING_CONVERSIONS: LazyLock<PendingResponseMap> =
+    struct ConversionResponse { fixed_text: String, sound_enabled: bool }
+    type PendingResponseMap = Arc<Mutex<HashMap<u64, mpsc::Sender<ConversionResponse>>>>;
+    static PENDING_CONVERSIONS: LazyLock<PendingResponseMap> =
         LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
     static INLINE_FIX_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -186,9 +197,9 @@ pub mod macos {
         }
     }
 
-    pub fn submit_conversion_response(id: u64, fixed_text: String) {
+    pub fn submit_conversion_response(id: u64, fixed_text: String, sound_enabled: bool) {
         if let Ok(mut map) = PENDING_CONVERSIONS.lock() {
-            if let Some(sender) = map.remove(&id) { let _ = sender.send(fixed_text); }
+            if let Some(sender) = map.remove(&id) { let _ = sender.send(ConversionResponse { fixed_text, sound_enabled }); }
         }
     }
 
@@ -381,7 +392,8 @@ pub mod macos {
         let mut guard = shared.lock().unwrap();
         if guard.mode == ProMode::Free {
             guard.mode = ProMode::Trial;
-            guard.trial_credits_remaining = 5;
+            guard.trial_credits_remaining = TRIAL_CREDIT_LIMIT;
+            guard.trial_credit_limit = TRIAL_CREDIT_LIMIT;
             guard.inline_fix_enabled = true;
             guard.trial_started = true;
             guard.save(app);
@@ -421,7 +433,8 @@ pub mod macos {
     pub fn dev_reset_trial_credits(app: &AppHandle, shared: &SharedProState) -> ProStateDto {
         let mut guard = shared.lock().unwrap();
         if guard.mode == ProMode::Trial {
-            guard.trial_credits_remaining = 5;
+            guard.trial_credits_remaining = TRIAL_CREDIT_LIMIT;
+            guard.trial_credit_limit = TRIAL_CREDIT_LIMIT;
             guard.save(app);
             eprintln!("{TAG} [DEV] Trial credits reset to 5");
         }
@@ -441,7 +454,8 @@ pub mod macos {
     pub fn reset_trial_for_testing(app: &AppHandle, shared: &SharedProState) -> ProStateDto {
         let mut guard = shared.lock().unwrap();
         guard.mode = ProMode::Trial;
-        guard.trial_credits_remaining = 5;
+        guard.trial_credits_remaining = TRIAL_CREDIT_LIMIT;
+        guard.trial_credit_limit = TRIAL_CREDIT_LIMIT;
         guard.inline_fix_enabled = true;
         guard.trial_started = true;
         guard.save(app);
@@ -612,7 +626,7 @@ pub mod macos {
         };
 
         let request_id = rand_id();
-        let (tx, rx) = mpsc::channel::<String>();
+        let (tx, rx) = mpsc::channel::<ConversionResponse>();
         if let Ok(mut map) = PENDING_CONVERSIONS.lock() { map.insert(request_id, tx); }
 
         if let Err(e) = app.emit("inline-convert-request", InlineConvertPayload { id: request_id, text: selected_text.clone() }) {
@@ -622,13 +636,14 @@ pub mod macos {
         }
         eprintln!("{TAG} INLINE_FIX_CONVERSION_REQUESTED");
 
-        let fixed_text = match rx.recv_timeout(CONVERSION_TIMEOUT) {
-            Ok(t) if !t.is_empty() => t,
+        let response = match rx.recv_timeout(CONVERSION_TIMEOUT) {
+            Ok(response) if !response.fixed_text.is_empty() => response,
             _ => {
                 if let Ok(mut map) = PENDING_CONVERSIONS.lock() { map.remove(&request_id); }
                 return InlineFixResult::ConversionFailed;
             }
         };
+        let fixed_text = response.fixed_text;
         eprintln!("{TAG} INLINE_FIX_CONVERSION_RESPONSE");
 
         if fixed_text == selected_text {
@@ -660,7 +675,9 @@ pub mod macos {
             return InlineFixResult::TargetChanged;
         }
         eprintln!("{TAG} INLINE_FIX_SUCCESS:{}ms", start_time.elapsed().as_millis());
-        std::thread::spawn(|| { let _ = std::process::Command::new("afplay").arg("/System/Library/Sounds/Tink.aiff").output(); });
+        if response.sound_enabled {
+            std::thread::spawn(|| { let _ = std::process::Command::new("afplay").arg("/System/Library/Sounds/Tink.aiff").output(); });
+        }
         InlineFixResult::Success { _converted_len: fixed_text.len() }
     }
 

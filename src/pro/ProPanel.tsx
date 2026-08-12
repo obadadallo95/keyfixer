@@ -9,7 +9,7 @@ import { listen } from '@tauri-apps/api/event';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const TOTAL_TRIAL_CREDITS = 5;
+const TOTAL_TRIAL_CREDITS = 25;
 
 const FREE_STATE: ProStateDto = {
   mode: 'free',
@@ -26,9 +26,9 @@ const T = {
     tryPro: 'Try Pro Free',
     unlockPro: 'Unlock Pro',
     inlineFix: 'Inline Fix',
-    resetTest: '↺ Recharge (5)',
+    resetTest: '↺ Recharge (25)',
     resetFree: '↺ Fresh Free',
-    rechargeSuccess: 'Recharged 5 credits!',
+    rechargeSuccess: 'Recharged 25 credits!',
     // Accessibility modal
     axTitle: 'Accessibility Permission Required',
     axDesc: 'KeyFixer needs macOS Accessibility permission to read and replace selected text directly in other applications.',
@@ -43,15 +43,15 @@ const T = {
     axDone: 'Done & Close',
     // Trial modal
     trialTitle: 'Try KeyFixer Pro',
-    trialDesc: 'Enjoy 5 free instant Inline Fixes — select mistyped text in any application and press ⌥⌘K to convert it instantly.',
+    trialDesc: 'Enjoy 25 free instant Inline Fixes — select mistyped text in any application and press ⌥⌘K to convert it instantly.',
     trialF1: 'Fix text instantly inside any application',
     trialF2: 'No copy-pasting or switching windows needed',
     trialF3: 'Works system-wide seamlessly on macOS',
-    trialStart: 'Start Free Trial (5 Fixes)',
+    trialStart: 'Start Free Trial (25 Fixes)',
     trialLater: 'Maybe Later',
     // Upgrade modal
     upgradeTitle: 'Trial Ended',
-    upgradeDesc: 'You have used all 5 trial credits. Upgrade to KeyFixer Pro for unlimited system-wide inline fixes.',
+    upgradeDesc: 'You have used all 25 trial credits. Upgrade to KeyFixer Pro for unlimited system-wide inline fixes.',
     upgradeF1: 'Unlimited Inline Fixes with ⌥⌘K',
     upgradeF2: 'Works across all apps and browsers',
     upgradeF3: 'One-time license with lifetime updates',
@@ -74,9 +74,9 @@ const T = {
     tryPro: '✨ تجربة Pro مجاناً',
     unlockPro: 'تفعيل نسخة Pro',
     inlineFix: 'التصحيح المباشر',
-    resetTest: '↺ شحن (5)',
+    resetTest: '↺ شحن (25)',
     resetFree: '↺ إعادة ضبط البداية',
-    rechargeSuccess: 'تم شحن 5 محاولات!',
+    rechargeSuccess: 'تم شحن 25 محاولة!',
     // Accessibility modal
     axTitle: 'إذن تسهيلات الاستخدام مطلوب',
     axDesc: 'يحتاج تطبيق KeyFixer إلى إذن تسهيلات الاستخدام (Accessibility) لقراءة النص المحدد وتصحيحه تلقائياً داخل التطبيقات الأخرى.',
@@ -91,15 +91,15 @@ const T = {
     axDone: 'تم التفعيل والإغلاق',
     // Trial modal
     trialTitle: 'جرّب KeyFixer Pro',
-    trialDesc: 'احصل على 5 محاولات تصحيح مجانية — حدد أي نص مكتوب باللغة الخاطئة واضغط ⌥⌘K ليتم تصحيحه مكانه فوراً في أي برنامج.',
+    trialDesc: 'احصل على 25 محاولة تصحيح مجانية — حدد أي نص مكتوب باللغة الخاطئة واضغط ⌥⌘K ليتم تصحيحه مكانه فوراً في أي برنامج.',
     trialF1: 'تصحيح مباشر وفوري داخل أي برنامج أو محرر',
     trialF2: 'بدون الحاجة لنسخ أو لصق أو تبديل النوافذ',
     trialF3: 'يعمل على مستوى نظام macOS بالكامل',
-    trialStart: 'ابدأ التجربة المجانية (5 محاولات)',
+    trialStart: 'ابدأ التجربة المجانية (25 محاولة)',
     trialLater: 'ربما لاحقاً',
     // Upgrade modal
     upgradeTitle: 'انتهت المحاولات التجريبية',
-    upgradeDesc: 'لقد استهلكت 5 محاولات تجريبية بنجاح. قم بالترقية إلى KeyFixer Pro للاستمتاع بتصحيح غير محدود.',
+    upgradeDesc: 'لقد استهلكت 25 محاولة تجريبية بنجاح. قم بالترقية إلى KeyFixer Pro للاستمتاع بتصحيح غير محدود.',
     upgradeF1: 'تصحيح فوري غير محدود باختصار ⌥⌘K',
     upgradeF2: 'يعمل في جميع التطبيقات والمتصفحات',
     upgradeF3: 'ترخيص دائم مع كافة التحديثات القادمة',

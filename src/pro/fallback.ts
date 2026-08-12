@@ -40,7 +40,7 @@ export const FreeProBridge: ProRuntimeBridge = {
   async requestPostEventPermission() { return true; },
   async openPostEventSettings() {},
   async restartKeyFixer() {},
-  async submitConversionResponse(_id: number, _text: string) {},
+  async submitConversionResponse(_id: number, _text: string, _soundEnabled?: boolean) {},
   async loadProProduct() { return FallbackProduct; },
   async getProEntitlement() { return FallbackEntitlement; },
   async purchasePro(): Promise<PurchaseResult> {

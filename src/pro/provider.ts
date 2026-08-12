@@ -90,9 +90,9 @@ export const ProductionProBridge: ProRuntimeBridge = {
     }
   },
 
-  async submitConversionResponse(id: number, text: string): Promise<void> {
+  async submitConversionResponse(id: number, text: string, soundEnabled = false): Promise<void> {
     try {
-      await invoke('submit_conversion_response', { id, fixedText: text });
+      await invoke('submit_conversion_response', { id, fixedText: text, soundEnabled });
     } catch {
       console.warn('INLINE_FIX_RESPONSE_SUBMIT_FAILED');
     }
@@ -133,4 +133,3 @@ export const ProductionProBridge: ProRuntimeBridge = {
 
 export const ProProvider = ProductionProBridge;
 export { ProPanel };
-
