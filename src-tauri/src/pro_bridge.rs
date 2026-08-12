@@ -68,16 +68,23 @@ pub fn run_inline_fix(app: &AppHandle) {
 
 // ── Accessibility ─────────────────────────────────────────────────────────────
 
-pub fn check_accessibility() -> bool {
+pub fn check_post_event_access() -> bool {
     #[cfg(all(feature = "pro", target_os = "macos"))]
-    { return inline_fix::macos::check_accessibility(); }
+    { return inline_fix::macos::check_post_event_access(); }
     #[cfg(not(all(feature = "pro", target_os = "macos")))]
-    { true }
+    { return true; }
 }
 
-pub fn open_accessibility_settings() {
+pub fn request_post_event_access() -> bool {
     #[cfg(all(feature = "pro", target_os = "macos"))]
-    { inline_fix::macos::open_accessibility_settings(); }
+    { return inline_fix::macos::request_post_event_access(); }
+    #[cfg(not(all(feature = "pro", target_os = "macos")))]
+    { return true; }
+}
+
+pub fn open_post_event_settings() {
+    #[cfg(all(feature = "pro", target_os = "macos"))]
+    { inline_fix::macos::open_post_event_settings(); }
     #[cfg(not(all(feature = "pro", target_os = "macos")))]
     {}
 }

@@ -56,24 +56,40 @@ export const ProductionProBridge: ProRuntimeBridge = {
     } catch {}
   },
 
-  async checkAccessibility(): Promise<boolean> {
+  async checkPostEventPermission(): Promise<boolean> {
     try {
-      return await invoke<boolean>('check_accessibility');
-    } catch {
-      return true;
+      return await invoke('check_post_event_permission');
+    } catch (e) {
+      console.warn('check_post_event_permission failed:', e);
+      return false;
     }
   },
 
-  async openAccessibilitySettings(): Promise<void> {
+  async requestPostEventPermission(): Promise<boolean> {
     try {
-      await invoke('open_accessibility_settings');
-    } catch {}
+      return await invoke('request_post_event_permission');
+    } catch (e) {
+      console.warn('request_post_event_permission failed:', e);
+      return false;
+    }
   },
+
+  async openPostEventSettings(): Promise<void> {
+    try {
+      await invoke('open_post_event_settings');
+    } catch (e) {
+      console.warn('open_post_event_settings failed:', e);
+    }
+  },
+
+
 
   async submitConversionResponse(id: number, text: string): Promise<void> {
     try {
-      await invoke('submit_conversion_response', { id, text });
-    } catch {}
+      await invoke('submit_conversion_response', { id, fixed_text: text });
+    } catch {
+      console.warn('INLINE_FIX_RESPONSE_SUBMIT_FAILED');
+    }
   },
 
   async loadProProduct(): Promise<StoreProduct | null> {

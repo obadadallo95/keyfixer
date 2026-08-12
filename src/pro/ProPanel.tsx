@@ -197,12 +197,12 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
   }, [bridge]);
 
   // ── Accessibility Check ──────────────────────────────────────────────────
-  const checkAccessibility = useCallback(async (delayMs = 0): Promise<boolean> => {
+  const checkPostEventPermission = useCallback(async (delayMs = 0): Promise<boolean> => {
     if (mountedRef.current) setIsCheckingAccess(true);
     try {
       if (delayMs > 0) await new Promise<void>(r => setTimeout(r, delayMs));
       if (!mountedRef.current) return false;
-      const trusted = await bridge.checkAccessibility();
+      const trusted = await bridge.checkPostEventPermission();
       if (mountedRef.current) {
         setHasAccessibility(trusted);
         if (trusted) {
@@ -223,31 +223,31 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
   // ── Modal-Scoped Polling (Active ONLY when modal is shown) ────────────────
   useEffect(() => {
     if (!showAccessibilityModal) return;
-    checkAccessibility(200);
+    checkPostEventPermission(200);
     const interval = setInterval(() => {
-      if (mountedRef.current) checkAccessibility(0);
+      if (mountedRef.current) checkPostEventPermission(0);
     }, 1200);
     return () => clearInterval(interval);
-  }, [showAccessibilityModal, checkAccessibility]);
+  }, [showAccessibilityModal, checkPostEventPermission]);
 
   // ── Window Focus Listener for immediate permission check ─────────────────
   useEffect(() => {
     if (!showAccessibilityModal) return;
-    const handleFocus = () => { checkAccessibility(400); };
+    const handleFocus = () => { checkPostEventPermission(400); };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [showAccessibilityModal, checkAccessibility]);
+  }, [showAccessibilityModal, checkPostEventPermission]);
 
   // ── Mount & Rust Event Listeners ──────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
     loadState();
     loadProduct();
-    checkAccessibility(0);
+    checkPostEventPermission(0);
 
     const unlisteners: (() => void)[] = [];
 
-    listen<void>('show-accessibility-onboarding', () => {
+    listen<void>('show-post-event-onboarding', () => {
       if (mountedRef.current) setShowAccessibilityModal(true);
     }).then(fn => unlisteners.push(fn));
 
@@ -290,7 +290,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
         } catch (_) {}
       });
     };
-  }, [loadState, loadProduct, checkAccessibility]);
+  }, [loadState, loadProduct, checkPostEventPermission]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -303,10 +303,10 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
       if (!mountedRef.current) return;
       setState(dto);
       setUiState(derived(dto));
-      const trusted = await checkAccessibility(100);
+      const trusted = await checkPostEventPermission(100);
       if (!trusted) setShowAccessibilityModal(true);
     } catch {}
-  }, [bridge, checkAccessibility]);
+  }, [bridge, checkPostEventPermission]);
 
   const handleToggleInlineFix = useCallback(async (enabled: boolean) => {
     try {
@@ -316,9 +316,9 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
   }, [bridge]);
 
   const handleOpenAccessibility = useCallback(async () => {
-    await bridge.openAccessibilitySettings();
-    setTimeout(() => { if (mountedRef.current) checkAccessibility(600); }, 1500);
-  }, [bridge, checkAccessibility]);
+    await bridge.openPostEventSettings();
+    setTimeout(() => { if (mountedRef.current) checkPostEventPermission(600); }, 1500);
+  }, [bridge, checkPostEventPermission]);
 
   // ── Real Purchase Handler (TASK 9B) ───────────────────────────────────────
   const handlePurchase = useCallback(async () => {
@@ -655,7 +655,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
             </button>
 
             <button
-              onClick={() => checkAccessibility(500)}
+              onClick={() => checkPostEventPermission(500)}
               disabled={isCheckingAccess}
               style={styles.secondaryBtn}
             >

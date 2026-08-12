@@ -114,22 +114,28 @@ compile_error!("Mac App Store release build must not include debug assertions / 
 
 mod pro_bridge;
 
-/// Check macOS Accessibility permission status silently
+/// Check macOS PostEvent permission status silently
 #[tauri::command]
-fn check_accessibility_permission() -> bool {
-    pro_bridge::check_accessibility()
+fn check_post_event_permission() -> bool {
+    pro_bridge::check_post_event_access()
 }
 
-/// Open macOS System Settings directly to Accessibility panel
+/// Request macOS PostEvent permission
+#[tauri::command]
+fn request_post_event_permission() -> bool {
+    pro_bridge::request_post_event_access()
+}
+
+/// Open macOS System Settings directly to Privacy panel
 #[command]
-fn open_accessibility_settings() -> Result<(), String> {
-    pro_bridge::open_accessibility_settings();
+fn open_post_event_settings() -> Result<(), String> {
+    pro_bridge::open_post_event_settings();
     Ok(())
 }
 
 /// Submit response for inline conversion request from webview
 #[command]
-fn inline_convert_response(id: u64, fixed_text: String) {
+fn submit_conversion_response(id: u64, fixed_text: String) {
     pro_bridge::submit_conversion_response(id, fixed_text);
 }
 
@@ -251,12 +257,13 @@ pub fn run() {
             open_support_page,
             hide_window,
             play_feedback_sound,
-            inline_convert_response,
+            submit_conversion_response,
             get_pro_state,
             activate_trial,
             set_inline_fix_preference,
-            check_accessibility_permission,
-            open_accessibility_settings,
+            check_post_event_permission,
+            request_post_event_permission,
+            open_post_event_settings,
             #[cfg(not(feature = "appstore"))]
             reset_trial_for_testing,
             #[cfg(not(feature = "appstore"))]
@@ -279,12 +286,13 @@ pub fn run() {
             open_support_page,
             hide_window,
             play_feedback_sound,
-            inline_convert_response,
+            submit_conversion_response,
             get_pro_state,
             activate_trial,
             set_inline_fix_preference,
-            check_accessibility_permission,
-            open_accessibility_settings,
+            check_post_event_permission,
+            request_post_event_permission,
+            open_post_event_settings,
             #[cfg(not(feature = "appstore"))]
             reset_trial_for_testing,
             #[cfg(not(feature = "appstore"))]

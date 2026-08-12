@@ -71,11 +71,14 @@ export interface ProRuntimeBridge {
    */
   setInlineFixPreference(enabled: boolean): Promise<void>;
 
-  /** Check macOS Accessibility permission */
-  checkAccessibility(): Promise<boolean>;
+  /** Check macOS PostEvent permission */
+  checkPostEventPermission(): Promise<boolean>;
 
-  /** Open macOS Accessibility Settings */
-  openAccessibilitySettings(): Promise<void>;
+  /** Request macOS PostEvent permission natively */
+  requestPostEventPermission(): Promise<boolean>;
+
+  /** Open macOS Privacy Settings */
+  openPostEventSettings(): Promise<void>;
 
   /** Submit conversion result back to Rust inline fix pipeline */
   submitConversionResponse(id: number, text: string): Promise<void>;

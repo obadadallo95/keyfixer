@@ -53,8 +53,9 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
       setInlineFixPreference: vi.fn().mockImplementation(async (enabled: boolean) => {
         currentState.inlineFixEnabled = enabled;
       }),
-      checkAccessibility: vi.fn().mockResolvedValue(true),
-      openAccessibilitySettings: vi.fn().mockResolvedValue(undefined),
+      checkPostEventPermission: vi.fn().mockResolvedValue(true),
+      requestPostEventPermission: vi.fn().mockResolvedValue(true),
+      openPostEventSettings: vi.fn().mockResolvedValue(undefined),
       submitConversionResponse: vi.fn().mockResolvedValue(undefined),
       loadProProduct: vi.fn().mockResolvedValue(null),
       getProEntitlement: vi.fn().mockResolvedValue({ paid: false, verificationStatus: 'NOT_PURCHASED' }),

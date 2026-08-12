@@ -136,11 +136,6 @@ pub mod macos {
         }
     }
 
-    #[link(name = "ApplicationServices", kind = "framework")]
-    extern "C" {
-        fn AXIsProcessTrusted() -> bool;
-        fn AXIsProcessTrustedWithOptions(options: *mut c_void) -> bool;
-    }
 
     #[link(name = "CoreGraphics", kind = "framework")]
     extern "C" {
@@ -385,44 +380,25 @@ pub mod macos {
         eprintln!("{TAG} inlineFixEnabled = {enabled}");
     }
 
-    pub fn check_accessibility() -> bool {
+    pub fn check_post_event_access() -> bool {
         unsafe {
-            // First check PostEvent access (required for synthesizing Cmd+C / Cmd+V)
-            if CGPreflightPostEventAccess() { return true; }
-            // Fallback to AXIsProcessTrusted
-            if AXIsProcessTrusted() { return true; }
-            AXIsProcessTrustedWithOptions(std::ptr::null_mut())
+            CGPreflightPostEventAccess()
         }
     }
 
-    pub fn prompt_and_check_accessibility() -> bool {
+    pub fn request_post_event_access() -> bool {
         unsafe {
-            // 1. Request PostEvent access via macOS CoreGraphics
-            if CGRequestPostEventAccess() { return true; }
-            if CGPreflightPostEventAccess() { return true; }
-
-            // 2. Also trigger standard AX prompt as fallback
-            let cls_nsdict = objc_getClass(b"NSDictionary\0".as_ptr() as *const _);
-            let sel_dict_with_obj = sel_registerName(b"dictionaryWithObject:forKey:\0".as_ptr() as *const _);
-            let cls_nsnum = objc_getClass(b"NSNumber\0".as_ptr() as *const _);
-            let sel_num_with_bool = sel_registerName(b"numberWithBool:\0".as_ptr() as *const _);
-            let msg_send_bool_obj: unsafe extern "C" fn(*mut c_void, *mut c_void, bool) -> *mut c_void =
-                std::mem::transmute(objc_msgSend as *const ());
-            let yes_num = msg_send_bool_obj(cls_nsnum, sel_num_with_bool, true);
-            let key_str = create_nsstring("AXTrustedCheckOptionPrompt");
-            let msg_send_dict: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
-                std::mem::transmute(objc_msgSend as *const ());
-            let dict = msg_send_dict(cls_nsdict, sel_dict_with_obj, yes_num, key_str);
-            AXIsProcessTrustedWithOptions(dict)
+            CGRequestPostEventAccess()
         }
     }
 
-    pub fn open_accessibility_settings() {
-        let _ = prompt_and_check_accessibility();
+    pub fn open_post_event_settings() {
+        let _ = request_post_event_access();
         let _ = std::process::Command::new("open")
             .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
             .spawn();
     }
+
 
     #[cfg(debug_assertions)]
     pub fn dev_reset_trial_credits(app: &AppHandle, shared: &SharedProState) -> ProStateDto {
@@ -482,10 +458,10 @@ pub mod macos {
         }
     }
 
-    fn show_accessibility_onboarding(app: &AppHandle) {
+    fn show_post_event_onboarding(app: &AppHandle) {
         if let Some(w) = app.get_webview_window("main") {
             let _ = w.unminimize(); let _ = w.show(); let _ = w.set_focus();
-            let _ = app.emit("show-accessibility-onboarding", ());
+            let _ = app.emit("show-post-event-onboarding", ());
         }
     }
 
@@ -519,9 +495,9 @@ pub mod macos {
 
         if !can_fix { eprintln!("{TAG} inlineFixEnabled=false — normal flow"); show_main_window(app); return; }
 
-        if !check_accessibility() {
-            eprintln!("{TAG} No accessibility — onboarding");
-            show_accessibility_onboarding(app); return;
+        if !check_post_event_access() {
+            eprintln!("{TAG} No PostEvent access — onboarding");
+            show_post_event_onboarding(app); return;
         }
 
         let result = perform_inline_fix(app, start_time);
@@ -743,8 +719,9 @@ pub mod macos {
         true
     }
 
+    static REQUEST_ID_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
     fn rand_id() -> u64 {
-        use std::time::SystemTime;
-        SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_nanos() as u64).unwrap_or(1)
+        REQUEST_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 }
