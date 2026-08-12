@@ -115,11 +115,8 @@ pub mod macos {
     const VK_ANSI_C: u16 = 0x08;
     const VK_ANSI_V: u16 = 0x09;
     const CG_EVENT_FLAG_COMMAND: u64 = 0x0010_0000;
-    const CG_EVENT_FLAG_ALTERNATE: u64 = 0x0008_0000;
-    const CG_EVENT_SOURCE_STATE_COMBINED_SESSION: i32 = 0;
-    const CG_EVENT_SOURCE_STATE_HID_SYSTEM: i32 = 1;
-    const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_millis(2_000);
-    const MODIFIER_SETTLE_TIME: Duration = Duration::from_millis(30);
+    const CG_ANNOTATED_SESSION_EVENT_TAP: u32 = 2;
+    const SHORTCUT_RELEASE_SETTLE_TIME: Duration = Duration::from_millis(10);
     const CONVERSION_TIMEOUT: Duration = Duration::from_millis(1_500);
 
     pub type SharedProState = Arc<Mutex<ProState>>;
@@ -135,7 +132,6 @@ pub mod macos {
     enum InlineFixResult {
         Success { _converted_len: usize },
         NoSelection,
-        ModifierReleaseTimeout,
         CopyKeystrokeFailed,
         ClipboardReadFailed,
         ConversionFailed,
@@ -161,8 +157,6 @@ pub mod macos {
         fn CGEventCreateKeyboardEvent(source: *mut c_void, virtual_key: u16, key_down: bool) -> *mut c_void;
         fn CGEventSetFlags(event: *mut c_void, flags: u64);
         fn CGEventPost(tap: u32, event: *mut c_void);
-        fn CGEventSourceKeyState(stateID: i32, keycode: u16) -> bool;
-        fn CGEventSourceFlagsState(stateID: i32) -> u64;
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -597,31 +591,11 @@ pub mod macos {
             return InlineFixResult::SelfFrontmost;
         }
 
-        // Released is the K-key release; Command/Option can still be held by the user.
-        // Require both sides and aggregate session flags to be clear for 3 samples.
-        let poll_start_modifiers = Instant::now();
-        let mut modifiers_released = false;
-        let mut stable_samples = 0_u8;
-
-        while poll_start_modifiers.elapsed() < MODIFIER_RELEASE_TIMEOUT {
-            if unsafe { shortcut_modifiers_released() } {
-                stable_samples += 1;
-                if stable_samples >= 3 {
-                    modifiers_released = true;
-                    break;
-                }
-            } else {
-                stable_samples = 0;
-            }
-            std::thread::sleep(Duration::from_millis(5));
-        }
-
-        if !modifiers_released {
-            return InlineFixResult::ModifierReleaseTimeout;
-        }
-        eprintln!("{TAG} INLINE_FIX_MODIFIERS_RELEASED");
-
-        std::thread::sleep(MODIFIER_SETTLE_TIME);
+        // The global shortcut's Released event means K was released. Command and
+        // Option may remain physically held; annotated-session events below carry
+        // explicit Command-only flags and never synthesize modifier key-up events.
+        eprintln!("{TAG} INLINE_FIX_K_RELEASED");
+        std::thread::sleep(SHORTCUT_RELEASE_SETTLE_TIME);
 
         let baseline = unsafe { get_pasteboard_change_count() };
 
@@ -705,7 +679,6 @@ pub mod macos {
             match self {
                 InlineFixResult::Success { .. } => "none",
                 InlineFixResult::NoSelection => "clipboard_timeout",
-                InlineFixResult::ModifierReleaseTimeout => "modifier_release_timeout",
                 InlineFixResult::CopyKeystrokeFailed => "copy_event",
                 InlineFixResult::ClipboardReadFailed => "clipboard_read",
                 InlineFixResult::ConversionFailed => "conversion",
@@ -716,16 +689,6 @@ pub mod macos {
                 InlineFixResult::SelfFrontmost => "self_frontmost",
             }
         }
-    }
-
-    unsafe fn shortcut_modifiers_released() -> bool {
-        let flags = CGEventSourceFlagsState(CG_EVENT_SOURCE_STATE_COMBINED_SESSION);
-        let aggregate_clear = flags & (CG_EVENT_FLAG_COMMAND | CG_EVENT_FLAG_ALTERNATE) == 0;
-        let physical_clear = !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 55)
-            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 54)
-            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 58)
-            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 61);
-        aggregate_clear && physical_clear
     }
 
     unsafe fn create_nsstring(s: &str) -> *mut c_void {
@@ -861,11 +824,11 @@ pub mod macos {
         }
         CGEventSetFlags(dn, flags);
         CGEventSetFlags(up, flags);
-        // Post keydown to HID event stream
-        CGEventPost(0, dn);
+        // Annotated-session posting preserves the explicit Command-only flags even
+        // while the user's physical Option/Command keys remain held after K release.
+        CGEventPost(CG_ANNOTATED_SESSION_EVENT_TAP, dn);
         std::thread::sleep(Duration::from_millis(12));
-        // Post keyup to HID event stream
-        CGEventPost(0, up);
+        CGEventPost(CG_ANNOTATED_SESSION_EVENT_TAP, up);
         CFRelease(dn);
         CFRelease(up);
         if !source.is_null() { CFRelease(source); }

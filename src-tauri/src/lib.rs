@@ -405,6 +405,10 @@ pub fn run() {
                         if shortcut == &handled_shortcut
                             && event.state() == ShortcutState::Released
                         {
+                            // The native global shortcut consumes the physical event before
+                            // WebView key handlers can observe it. Forward K release so the
+                            // interactive onboarding demo uses the real shortcut path.
+                            let _ = app.emit("global-shortcut-k-released", ());
                             let app_handle = app.clone();
                             // run_inline_fix internally checks state, preference, accessibility
                             std::thread::spawn(move || {

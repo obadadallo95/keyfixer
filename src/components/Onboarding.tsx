@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, Keyboard, LockKeyhole, Rocket, ShieldCheck } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { convertKeyboardLayout } from '../core/keyboard';
 
 export const ONBOARDING_STORAGE_KEY = 'keyfixer_onboarding_v1_complete';
 
 export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => void }) {
   const [step, setStep] = useState(0);
-  const [sample, setSample] = useState('lsgh');
+  const [sample, setSample] = useState('lnpfh f;');
   const [demoComplete, setDemoComplete] = useState(false);
+  const demoCompleteRef = useRef(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
 
   useEffect(() => {
@@ -17,16 +19,26 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
 
   useEffect(() => {
     if (step !== 1) return;
+    const completeDemo = () => {
+      if (demoCompleteRef.current) return;
+      demoCompleteRef.current = true;
+      setSample((current) => convertKeyboardLayout(current, { mode: 'auto', platform: 'mac' }).fixedText);
+      setDemoComplete(true);
+    };
     const handleShortcut = (event: KeyboardEvent) => {
       if (event.altKey && event.metaKey && event.code === 'KeyK') {
         event.preventDefault();
-        setSample(convertKeyboardLayout(sample, { mode: 'auto', platform: 'mac' }).fixedText);
-        setDemoComplete(true);
+        completeDemo();
       }
     };
-    window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
-  }, [sample, step]);
+    window.addEventListener('keyup', handleShortcut);
+    let unlisten: (() => void) | undefined;
+    listen<void>('global-shortcut-k-released', completeDemo).then((dispose) => { unlisten = dispose; }).catch(() => {});
+    return () => {
+      window.removeEventListener('keyup', handleShortcut);
+      unlisten?.();
+    };
+  }, [step]);
 
   const finish = async () => {
     await invoke('set_launch_at_login', { enabled: launchAtLogin }).catch(() => {});
@@ -75,7 +87,7 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
 
         {step === 1 && (
           <div className={`kf-onboarding-demo${demoComplete ? ' is-complete' : ''}`}>
-            <input value={sample} onChange={(event) => { setSample(event.target.value); setDemoComplete(false); }} dir="auto" aria-label="Inline Fix demo" />
+            <input value={sample} onChange={(event) => { setSample(event.target.value); demoCompleteRef.current = false; setDemoComplete(false); }} dir="auto" aria-label="Inline Fix demo" />
             <kbd>⌥⌘K</kbd>
             {demoComplete && <span><Check size={14} /> {copy.success}</span>}
           </div>

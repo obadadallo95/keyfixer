@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
-const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
+const { invoke, listen } = vi.hoisted(() => ({ invoke: vi.fn(), listen: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
+vi.mock('@tauri-apps/api/event', () => ({ listen }));
 
 import { Onboarding, ONBOARDING_STORAGE_KEY } from '../src/components/Onboarding';
 
@@ -15,6 +16,7 @@ describe('first-run onboarding', () => {
     invoke.mockReset().mockImplementation((command: string) =>
       command === 'is_launch_at_login_enabled' ? Promise.resolve(false) : Promise.resolve(undefined)
     );
+    listen.mockReset().mockResolvedValue(vi.fn());
   });
 
   it('teaches ⌥⌘K interactively and saves launch-at-login choice', async () => {
@@ -23,9 +25,16 @@ describe('first-run onboarding', () => {
 
     fireEvent.click(screen.getByText('Next'));
     const demo = screen.getByLabelText('Inline Fix demo') as HTMLInputElement;
+    expect(demo).toHaveValue('lnpfh f;');
     demo.select();
-    fireEvent.keyDown(window, { code: 'KeyK', altKey: true, metaKey: true });
+    fireEvent.keyUp(window, { code: 'KeyK', altKey: true, metaKey: true });
+    expect(demo).toHaveValue('مرحبا بك');
     expect(screen.getByText(/Perfect!/)).toBeInTheDocument();
+
+    const nativeShortcutHandler = listen.mock.calls.find(([event]) => event === 'global-shortcut-k-released')?.[1];
+    expect(nativeShortcutHandler).toBeTypeOf('function');
+    nativeShortcutHandler();
+    expect(demo).toHaveValue('مرحبا بك');
 
     fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByLabelText('Launch KeyFixer at login'));
