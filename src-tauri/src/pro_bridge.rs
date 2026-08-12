@@ -223,6 +223,7 @@ pub fn dev_simulate_paid(app: &AppHandle) -> bool {
 
 // ── TEMP: Testing reset — REMOVE BEFORE APP STORE SUBMISSION ──────────────────
 
+#[cfg(not(feature = "appstore"))]
 pub fn reset_trial_for_testing(app: &AppHandle) -> bool {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {
@@ -234,6 +235,7 @@ pub fn reset_trial_for_testing(app: &AppHandle) -> bool {
     { let _ = app; false }
 }
 
+#[cfg(not(feature = "appstore"))]
 pub fn reset_to_free_for_testing(app: &AppHandle) -> bool {
     #[cfg(all(feature = "pro", pro_private_exists, target_os = "macos"))]
     {

@@ -18,7 +18,7 @@ const loadedProModule = proModules[proPath];
 const activeBridge = loadedProModule?.ProductionProBridge || loadedProModule?.ProProvider;
 
 export const isProBuildAvailable = Boolean(
-  loadedProModule && activeBridge
+  import.meta.env.VITE_PRO_BUILD === 'true' && loadedProModule && activeBridge
 );
 
 export function getProBridge(): ProRuntimeBridge {

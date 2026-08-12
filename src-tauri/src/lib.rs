@@ -194,11 +194,13 @@ fn dev_simulate_paid(app: AppHandle) -> bool {
 }
 
 // ── TEMP: Testing-only reset — REMOVE BEFORE APP STORE SUBMISSION ────────────
+#[cfg(not(feature = "appstore"))]
 #[command]
 fn reset_trial_for_testing(app: AppHandle) -> bool {
     pro_bridge::reset_trial_for_testing(&app)
 }
 
+#[cfg(not(feature = "appstore"))]
 #[command]
 fn reset_to_free_for_testing(app: AppHandle) -> bool {
     pro_bridge::reset_to_free_for_testing(&app)
@@ -250,7 +252,9 @@ pub fn run() {
             set_inline_fix_preference,
             check_accessibility_permission,
             open_accessibility_settings,
+            #[cfg(not(feature = "appstore"))]
             reset_trial_for_testing,
+            #[cfg(not(feature = "appstore"))]
             reset_to_free_for_testing,
             storekit_load_pro_product,
             storekit_get_pro_entitlement,
@@ -275,7 +279,9 @@ pub fn run() {
             set_inline_fix_preference,
             check_accessibility_permission,
             open_accessibility_settings,
+            #[cfg(not(feature = "appstore"))]
             reset_trial_for_testing,
+            #[cfg(not(feature = "appstore"))]
             reset_to_free_for_testing,
             storekit_load_pro_product,
             storekit_get_pro_entitlement,

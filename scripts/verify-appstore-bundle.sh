@@ -223,6 +223,23 @@ if [[ "$BINARY_DEV_FOUND" == "false" ]]; then
   pass "No unexpected dev-server references found in binary"
 fi
 
+# -- Check 4.5: No DEV paid bypass commands embedded in binary -------
+section "Check 4.5 - No DEV paid bypass commands in binary"
+BYPASS_FOUND=false
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "reset_trial_for_testing" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  fail "Binary contains 'reset_trial_for_testing' (unexpected dev bypass command: ${_cnt} occurrences)."
+  BYPASS_FOUND=true
+fi
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "dev_simulate_paid" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  fail "Binary contains 'dev_simulate_paid' (unexpected dev bypass command: ${_cnt} occurrences)."
+  BYPASS_FOUND=true
+fi
+if [[ "$BYPASS_FOUND" == "false" ]]; then
+  pass "No DEV paid bypass commands found in binary"
+fi
+
 # ── Check 5: Bundle resource listing ────────────────────────────────────
 section "Check 5 – Bundle resource listing"
 echo "   Note: In Tauri v2, only icon.icns is expected in Contents/Resources/."
@@ -278,6 +295,18 @@ elif [[ "$SIGNATURE_OUTPUT" == *"CSSMERR_TP_NOT_TRUSTED"* ]]; then
   pass "Signature present (CSSMERR_TP_NOT_TRUSTED – Apple CA trust chain not in local keychain; Transporter validation still required)"
 else
   fail "Code signature verification failed: $SIGNATURE_OUTPUT"
+fi
+
+# ── Check 7.5: StoreKit Linkage ─────────────────────────────────────────────
+section "Check 7.5 – StoreKit linkage"
+set +e
+LINKAGE_OUTPUT="$(otool -L "$BINARY_PATH" 2>/dev/null)"
+set -e
+
+if echo "$LINKAGE_OUTPUT" | grep -q "StoreKit.framework"; then
+  pass "StoreKit framework is linked"
+else
+  fail "StoreKit.framework linkage missing in App Store build!"
 fi
 
 # ── Check 8: App Sandbox entitlement ──────────────────────────────────────

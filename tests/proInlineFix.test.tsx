@@ -56,6 +56,10 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
       checkAccessibility: vi.fn().mockResolvedValue(true),
       openAccessibilitySettings: vi.fn().mockResolvedValue(undefined),
       submitConversionResponse: vi.fn().mockResolvedValue(undefined),
+      loadProProduct: vi.fn().mockResolvedValue(null),
+      getProEntitlement: vi.fn().mockResolvedValue({ paid: false, verificationStatus: 'NOT_PURCHASED' }),
+      purchasePro: vi.fn().mockResolvedValue({ status: 'FAILED' }),
+      restorePurchases: vi.fn().mockResolvedValue({ status: 'NOT_FOUND' }),
     };
   });
 

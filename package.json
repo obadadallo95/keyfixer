@@ -15,7 +15,7 @@
     "build:pro:mac": "VITE_PRO_BUILD=true tsc -b && VITE_PRO_BUILD=true vite build --config vite.config.desktop.ts && node -e \"require('fs').copyFileSync('dist-desktop/index-desktop.html', 'dist-desktop/index.html')\" && tauri build --bundles app --features pro",
     "preflight:desktop": "node scripts/check-desktop-build.mjs",
     "build:appstore:clean": "rm -rf dist-desktop",
-    "build:appstore:prepare": "npm run build:appstore:clean && npm run build:desktop && npm run preflight:desktop",
+    "build:appstore:prepare": "npm run build:appstore:clean && VITE_PRO_BUILD=true npm run build:desktop && VITE_PRO_BUILD=true npm run preflight:desktop",
     "build:appstore:tauri": "tauri build --bundles app --config src-tauri/tauri.appstore.conf.json --features appstore",
     "build:appstore": "npm run build:appstore:prepare && npm run build:appstore:tauri && npm run verify:appstore:postbuild",
     "verify:appstore:postbuild": "bash scripts/verify-appstore-bundle.sh --stage postbuild",

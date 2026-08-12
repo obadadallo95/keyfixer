@@ -34,7 +34,7 @@ core-graphics = "0.24"
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 pro = []
-appstore = []
+appstore = ["pro"]
 
 [profile.release]
 panic = "abort"

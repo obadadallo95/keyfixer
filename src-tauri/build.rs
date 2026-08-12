@@ -15,8 +15,17 @@ fn main() {
     let storekit_swift = Path::new("../pro-private/native/KeyFixerStoreKit.swift");
     println!("cargo:rerun-if-changed=../pro-private/native/KeyFixerStoreKit.swift");
 
+    if env::var("CARGO_FEATURE_APPSTORE").is_ok() {
+        if !pro_inline_fix.exists() {
+            panic!("App Store build requested but pro-private/native/inline_fix.rs is missing!");
+        }
+        if !storekit_swift.exists() {
+            panic!("App Store build requested but pro-private/native/KeyFixerStoreKit.swift is missing!");
+        }
+    }
+
     #[cfg(target_os = "macos")]
-    if storekit_swift.exists() {
+    if env::var("CARGO_FEATURE_APPSTORE").is_ok() {
         println!("cargo:rustc-cfg=storekit_native_exists");
         let out_dir = env::var("OUT_DIR").unwrap();
         let lib_path = format!("{}/libkeyfixer_storekit.a", out_dir);
@@ -31,16 +40,17 @@ fn main() {
                 &lib_path,
                 "../pro-private/native/KeyFixerStoreKit.swift",
             ])
-            .status();
+            .status()
+            .expect("Failed to execute swiftc compiler");
 
-        if let Ok(st) = status {
-            if st.success() {
-                println!("cargo:rustc-link-search=native={}", out_dir);
-                println!("cargo:rustc-link-lib=static=keyfixer_storekit");
-                println!("cargo:rustc-link-lib=framework=StoreKit");
-                println!("cargo:rustc-link-lib=framework=Foundation");
-                println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
-            }
+        if status.success() {
+            println!("cargo:rustc-link-search=native={}", out_dir);
+            println!("cargo:rustc-link-lib=static=keyfixer_storekit");
+            println!("cargo:rustc-link-lib=framework=StoreKit");
+            println!("cargo:rustc-link-lib=framework=Foundation");
+            println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+        } else {
+            panic!("StoreKit Swift compilation failed!");
         }
     }
 
