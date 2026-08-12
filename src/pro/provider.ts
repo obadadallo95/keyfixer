@@ -92,7 +92,7 @@ export const ProductionProBridge: ProRuntimeBridge = {
 
   async submitConversionResponse(id: number, text: string): Promise<void> {
     try {
-      await invoke('submit_conversion_response', { id, fixed_text: text });
+      await invoke('submit_conversion_response', { id, fixedText: text });
     } catch {
       console.warn('INLINE_FIX_RESPONSE_SUBMIT_FAILED');
     }
