@@ -13,6 +13,7 @@ import { getProBridge, getProPanel } from '../pro/bridge';
 import { LegalViewerModal } from './LegalViewerModal';
 import { LegalDocId } from '../legal/legalContent';
 import './DesktopApp.css';
+import { Onboarding, ONBOARDING_STORAGE_KEY } from './Onboarding';
 
 const FONT_SYS = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
 const FONT_MONO = '"SF Mono", ui-monospace, Menlo, monospace';
@@ -207,6 +208,7 @@ export function DesktopApp() {
   const [mode, setMode] = useState<ConversionMode>('auto');
   const [copied, setCopied] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true');
   const [selectedLegalDoc, setSelectedLegalDoc] = useState<LegalDocId>('privacy');
   const [appVersion, setAppVersion] = useState('1.1.0');
   const [workflowState, setWorkflowState] = useState<'idle' | 'resultReady'>('idle');
@@ -215,6 +217,12 @@ export function DesktopApp() {
     return localStorage.getItem('keyfixer_sound_enabled') === 'true';
   });
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    tauriEvent.listen('show-onboarding', () => setShowOnboarding(true)).then((fn) => { unlisten = fn; }).catch(() => {});
+    return () => unlisten?.();
+  }, []);
 
   useEffect(() => {
     const handleOpenDoc = (e: Event) => {
@@ -498,6 +506,7 @@ export function DesktopApp() {
       )}
 
       {/* ── LEGAL VIEWER MODAL ── */}
+      {showOnboarding && <Onboarding isRTL={isRTL} onDone={() => setShowOnboarding(false)} />}
       <LegalViewerModal
         isOpen={showLegalModal}
         onClose={() => setShowLegalModal(false)}
@@ -731,6 +740,14 @@ export function DesktopApp() {
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
             >
               <ShieldCheck size={12} /> {isRTL ? 'القانونية' : 'Legal'}
+            </button>
+            <span>&bull;</span>
+            <button
+              type="button"
+              onClick={() => setShowOnboarding(true)}
+              style={{ padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
+            >
+              {isRTL ? 'دليل الاستخدام' : 'Guide'}
             </button>
           </div>
 

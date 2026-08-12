@@ -55,6 +55,8 @@ const T = {
     upgradeF1: 'Unlimited Inline Fixes with ⌥⌘K',
     upgradeF2: 'Works across all apps and browsers',
     upgradeF3: 'One-time license with lifetime updates',
+    upgradeF4: 'All correction happens locally on your Mac',
+    upgradeF5: 'Your selected text is never uploaded or stored',
     upgradeCta: 'Get KeyFixer Pro',
     upgradeNot: 'Not Now',
     // Purchase states & messages (TASK 9B)
@@ -72,7 +74,7 @@ const T = {
   },
   ar: {
     tryPro: '✨ تجربة Pro مجاناً',
-    unlockPro: 'تفعيل نسخة Pro',
+    unlockPro: 'الترقية إلى Pro',
     inlineFix: 'التصحيح المباشر',
     resetTest: '↺ شحن (25)',
     resetFree: '↺ إعادة ضبط البداية',
@@ -102,8 +104,10 @@ const T = {
     upgradeDesc: 'لقد استهلكت 25 محاولة تجريبية بنجاح. قم بالترقية إلى KeyFixer Pro للاستمتاع بتصحيح غير محدود.',
     upgradeF1: 'تصحيح فوري غير محدود باختصار ⌥⌘K',
     upgradeF2: 'يعمل في جميع التطبيقات والمتصفحات',
-    upgradeF3: 'ترخيص دائم مع كافة التحديثات القادمة',
-    upgradeCta: 'الحصول على KeyFixer Pro',
+    upgradeF3: 'شراء مرة واحدة مع تحديثات مستقبلية',
+    upgradeF4: 'تتم معالجة النص محلياً على جهازك',
+    upgradeF5: 'لا يتم رفع النص المحدد أو تخزينه',
+    upgradeCta: 'الترقية إلى KeyFixer Pro',
     upgradeNot: 'ليس الآن',
     // Purchase states & messages (TASK 9B)
     purchaseUnavailable: 'الشراء غير متاح مؤقتًا',
@@ -715,7 +719,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
           <p style={styles.modalBody}>{t.upgradeDesc}</p>
 
           <div style={styles.featureList}>
-            {[t.upgradeF1, t.upgradeF2, t.upgradeF3].map((f, i) => (
+            {[t.upgradeF1, t.upgradeF2, t.upgradeF3, t.upgradeF4, t.upgradeF5].map((f, i) => (
               <div key={i} style={styles.featureRow}>
                 <CheckCircle2 size={13} style={{ color: '#10B981', flexShrink: 0 }} />
                 <span>{f}</span>

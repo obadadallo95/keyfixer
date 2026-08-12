@@ -1,8 +1,8 @@
 use tauri::{
     command,
-    menu::{Menu, MenuItem},
+    menu::{CheckMenuItem, Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+    AppHandle, Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -80,6 +80,70 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
 #[command]
 fn restart_keyfixer(app: AppHandle) {
     app.restart();
+}
+
+#[cfg(target_os = "macos")]
+mod login_item {
+    use std::ffi::{c_char, c_void};
+
+    #[link(name = "ServiceManagement", kind = "framework")]
+    extern "C" {}
+
+    #[link(name = "objc", kind = "dylib")]
+    extern "C" {
+        fn objc_getClass(name: *const c_char) -> *mut c_void;
+        fn sel_registerName(name: *const c_char) -> *mut c_void;
+        fn objc_msgSend(receiver: *mut c_void, selector: *mut c_void, ...) -> *mut c_void;
+    }
+
+    unsafe fn service() -> *mut c_void {
+        let class = objc_getClass(b"SMAppService\0".as_ptr().cast());
+        if class.is_null() { return std::ptr::null_mut(); }
+        let selector = sel_registerName(b"mainAppService\0".as_ptr().cast());
+        let call: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        call(class, selector)
+    }
+
+    pub fn is_enabled() -> bool {
+        unsafe {
+            let service = service();
+            if service.is_null() { return false; }
+            let selector = sel_registerName(b"status\0".as_ptr().cast());
+            let call: unsafe extern "C" fn(*mut c_void, *mut c_void) -> isize =
+                std::mem::transmute(objc_msgSend as *const ());
+            call(service, selector) == 1
+        }
+    }
+
+    pub fn set_enabled(enabled: bool) -> Result<(), String> {
+        unsafe {
+            let service = service();
+            if service.is_null() { return Err("Login items require macOS 13 or later".into()); }
+            let selector_name = if enabled { b"registerAndReturnError:\0".as_slice() } else { b"unregisterAndReturnError:\0".as_slice() };
+            let selector = sel_registerName(selector_name.as_ptr().cast());
+            let call: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut *mut c_void) -> bool =
+                std::mem::transmute(objc_msgSend as *const ());
+            let mut error: *mut c_void = std::ptr::null_mut();
+            if call(service, selector, &mut error) { Ok(()) } else { Err("macOS could not update the Login Item setting".into()) }
+        }
+    }
+}
+
+#[command]
+fn is_launch_at_login_enabled() -> bool {
+    #[cfg(target_os = "macos")]
+    { login_item::is_enabled() }
+    #[cfg(not(target_os = "macos"))]
+    { false }
+}
+
+#[command]
+fn set_launch_at_login(enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    { login_item::set_enabled(enabled) }
+    #[cfg(not(target_os = "macos"))]
+    { let _ = enabled; Err("Launch at login is currently available on macOS only".into()) }
 }
 
 /// Hide the application window
@@ -260,6 +324,8 @@ pub fn run() {
             expand_window,
             close_app,
             restart_keyfixer,
+            is_launch_at_login_enabled,
+            set_launch_at_login,
             start_drag,
             open_support_page,
             hide_window,
@@ -290,6 +356,8 @@ pub fn run() {
             expand_window,
             close_app,
             restart_keyfixer,
+            is_launch_at_login_enabled,
+            set_launch_at_login,
             start_drag,
             open_support_page,
             hide_window,
@@ -365,7 +433,16 @@ pub fn run() {
                 "إظهار KeyFixer".to_string()
             };
             let show_i = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            let login_i = CheckMenuItem::with_id(
+                app,
+                "launch_at_login",
+                "تشغيل عند تسجيل الدخول",
+                true,
+                login_item::is_enabled(),
+                None::<&str>,
+            )?;
+            let guide_i = MenuItem::with_id(app, "guide", "دليل الاستخدام", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &guide_i, &login_i, &quit_i])?;
 
             let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-icon@2x.png"))
                 .unwrap();
@@ -390,6 +467,17 @@ pub fn run() {
                     }
                     "show" => {
                         toggle_main_window(app);
+                    }
+                    "guide" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = app.emit("show-onboarding", ());
+                        }
+                    }
+                    "launch_at_login" => {
+                        let enabled = !login_item::is_enabled();
+                        let _ = login_item::set_enabled(enabled);
                     }
                     _ => {}
                 })

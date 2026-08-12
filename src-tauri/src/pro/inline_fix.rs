@@ -542,6 +542,9 @@ pub mod macos {
         let result = perform_inline_fix(app, start_time);
         if !result.is_success() {
             eprintln!("{TAG} INLINE_FIX_FAILED:{}", result.failure_stage());
+            if matches!(result, InlineFixResult::NoSelection | InlineFixResult::ClipboardReadFailed) {
+                unsafe { show_no_selection_notification(); }
+            }
         }
 
         if result.is_success() {
@@ -716,6 +719,32 @@ pub mod macos {
         let f: unsafe extern "C" fn(*mut c_void, *mut c_void, *const c_char) -> *mut c_void =
             std::mem::transmute(objc_msgSend as *const ());
         f(cls, sel, c_str.as_ptr())
+    }
+
+    unsafe fn show_no_selection_notification() {
+        let notification_class = objc_getClass(b"NSUserNotification\0".as_ptr().cast());
+        let center_class = objc_getClass(b"NSUserNotificationCenter\0".as_ptr().cast());
+        if notification_class.is_null() || center_class.is_null() { return; }
+
+        let alloc = sel_registerName(b"alloc\0".as_ptr().cast());
+        let init = sel_registerName(b"init\0".as_ptr().cast());
+        let set_title = sel_registerName(b"setTitle:\0".as_ptr().cast());
+        let set_body = sel_registerName(b"setInformativeText:\0".as_ptr().cast());
+        let default_center = sel_registerName(b"defaultUserNotificationCenter\0".as_ptr().cast());
+        let deliver = sel_registerName(b"deliverNotification:\0".as_ptr().cast());
+
+        let call0: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let call1: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+
+        let notification = call0(call0(notification_class, alloc), init);
+        if notification.is_null() { return; }
+        call1(notification, set_title, create_nsstring("KeyFixer"));
+        call1(notification, set_body, create_nsstring("حدّد النص أولاً، ثم اضغط ⌥⌘K"));
+        let center = call0(center_class, default_center);
+        if !center.is_null() { call1(center, deliver, notification); }
+        CFRelease(notification);
     }
 
     unsafe fn nsstring_to_string(ns_str: *mut c_void) -> Option<String> {

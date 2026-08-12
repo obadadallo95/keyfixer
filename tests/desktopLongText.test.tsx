@@ -32,6 +32,7 @@ describe('DesktopApp long-text editor layout', () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('keyfixer_ui_language', 'en');
+    localStorage.setItem('keyfixer_onboarding_v1_complete', 'true');
     setDarkMode(false);
   });
 

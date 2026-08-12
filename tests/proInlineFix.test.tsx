@@ -156,7 +156,7 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
     });
 
     // Click Unlock Pro in Arabic
-    fireEvent.click(screen.getByText('تفعيل نسخة Pro'));
+    fireEvent.click(screen.getByText('الترقية إلى Pro'));
     expect(screen.getByText('انتهت المحاولات التجريبية')).toBeInTheDocument();
 
     // Verify Arabic legal links
