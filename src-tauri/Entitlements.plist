@@ -8,5 +8,7 @@
     <string>D84FNM2R2N.com.obadadallo.keyfixer</string>
     <key>com.apple.developer.team-identifier</key>
     <string>D84FNM2R2N</string>
+    <key>com.apple.security.network.client</key>
+    <true/>
 </dict>
 </plist>
