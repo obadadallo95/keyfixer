@@ -2,6 +2,7 @@
 pub mod macos {
     use std::ffi::{c_char, c_void, CStr, CString};
     use std::sync::{Arc, LazyLock, Mutex, mpsc};
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::collections::HashMap;
     use std::time::{Duration, Instant};
     use tauri::{AppHandle, Emitter, Manager};
@@ -104,7 +105,12 @@ pub mod macos {
     const VK_ANSI_C: u16 = 0x08;
     const VK_ANSI_V: u16 = 0x09;
     const CG_EVENT_FLAG_COMMAND: u64 = 0x0010_0000;
-    const CG_HID_EVENT_TAP: u32 = 0;
+    const CG_EVENT_FLAG_ALTERNATE: u64 = 0x0008_0000;
+    const CG_EVENT_SOURCE_STATE_COMBINED_SESSION: i32 = 0;
+    const CG_EVENT_SOURCE_STATE_HID_SYSTEM: i32 = 1;
+    const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_millis(2_000);
+    const MODIFIER_SETTLE_TIME: Duration = Duration::from_millis(30);
+    const CONVERSION_TIMEOUT: Duration = Duration::from_millis(1_500);
 
     pub type SharedProState = Arc<Mutex<ProState>>;
 
@@ -119,7 +125,7 @@ pub mod macos {
     enum InlineFixResult {
         Success { _converted_len: usize },
         NoSelection,
-        AccessibilityDenied,
+        ModifierReleaseTimeout,
         CopyKeystrokeFailed,
         ClipboardReadFailed,
         ConversionFailed,
@@ -146,6 +152,7 @@ pub mod macos {
         fn CGEventSetFlags(event: *mut c_void, flags: u64);
         fn CGEventPost(tap: u32, event: *mut c_void);
         fn CGEventSourceKeyState(stateID: i32, keycode: u16) -> bool;
+        fn CGEventSourceFlagsState(stateID: i32) -> u64;
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -169,6 +176,15 @@ pub mod macos {
     type PendingResponseMap = Arc<Mutex<HashMap<u64, mpsc::Sender<String>>>>;
     pub static PENDING_CONVERSIONS: LazyLock<PendingResponseMap> =
         LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
+    static INLINE_FIX_RUNNING: AtomicBool = AtomicBool::new(false);
+
+    struct InlineFixRunGuard;
+
+    impl Drop for InlineFixRunGuard {
+        fn drop(&mut self) {
+            INLINE_FIX_RUNNING.store(false, Ordering::Release);
+        }
+    }
 
     pub fn submit_conversion_response(id: u64, fixed_text: String) {
         if let Ok(mut map) = PENDING_CONVERSIONS.lock() {
@@ -421,7 +437,7 @@ pub mod macos {
         ProStateDto::from(&*guard)
     }
 
-    // TEMP: available in all builds for testing — REMOVE BEFORE APP STORE
+    #[cfg(not(feature = "appstore"))]
     pub fn reset_trial_for_testing(app: &AppHandle, shared: &SharedProState) -> ProStateDto {
         let mut guard = shared.lock().unwrap();
         guard.mode = ProMode::Trial;
@@ -437,6 +453,7 @@ pub mod macos {
         dto
     }
 
+    #[cfg(not(feature = "appstore"))]
     pub fn reset_to_free_for_testing(app: &AppHandle, shared: &SharedProState) -> ProStateDto {
         let mut guard = shared.lock().unwrap();
         guard.mode = ProMode::Free;
@@ -475,33 +492,43 @@ pub mod macos {
 
     pub fn run_inline_fix(app: &AppHandle) {
         let start_time = Instant::now();
-        eprintln!("{TAG} Shortcut fired");
+        eprintln!("{TAG} INLINE_FIX_SHORTCUT");
+        if INLINE_FIX_RUNNING.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).is_err() {
+            eprintln!("{TAG} INLINE_FIX_FAILED:busy");
+            return;
+        }
+        let _run_guard = InlineFixRunGuard;
 
         let shared = match get_shared_state() {
             Some(s) => s,
-            None => { eprintln!("{TAG} ProState not initialized"); show_main_window(app); return; }
+            None => { eprintln!("{TAG} INLINE_FIX_FAILED:state_uninitialized"); return; }
         };
 
         let (ui, can_fix) = {
             let g = shared.lock().unwrap();
             (g.ui_state(), g.can_attempt_inline_fix())
         };
-        eprintln!("{TAG} UiState={:?} canFix={can_fix}", ui);
+        eprintln!("{TAG} INLINE_FIX_STATE:{ui:?}:enabled={can_fix}");
 
         match ui {
-            UiState::Free => { eprintln!("{TAG} FREE — normal flow"); show_main_window(app); return; }
+            UiState::Free => { show_main_window(app); return; }
             UiState::TrialExhausted => { eprintln!("{TAG} EXHAUSTED — upgrade"); show_upgrade_modal(app); return; }
             UiState::TrialActive | UiState::Paid => {}
         }
 
-        if !can_fix { eprintln!("{TAG} inlineFixEnabled=false — normal flow"); show_main_window(app); return; }
+        if !can_fix { show_main_window(app); return; }
 
-        if !check_post_event_access() {
-            eprintln!("{TAG} No PostEvent access — onboarding");
+        let post_event_allowed = check_post_event_access();
+        eprintln!("{TAG} INLINE_FIX_PERMISSION:{post_event_allowed}");
+        if !post_event_allowed {
+            eprintln!("{TAG} INLINE_FIX_FAILED:permission");
             show_post_event_onboarding(app); return;
         }
 
         let result = perform_inline_fix(app, start_time);
+        if !result.is_success() {
+            eprintln!("{TAG} INLINE_FIX_FAILED:{}", result.failure_stage());
+        }
 
         if result.is_success() {
             let mut guard = shared.lock().unwrap();
@@ -531,45 +558,44 @@ pub mod macos {
     fn perform_inline_fix(app: &AppHandle, start_time: Instant) -> InlineFixResult {
         let (target_pid, target_bundle) = match unsafe { get_frontmost_app() } {
             Some(t) => t,
-            None => { show_main_window(app); return InlineFixResult::NoSelection; }
+            None => return InlineFixResult::NoSelection,
         };
         if target_bundle == "com.obadadallo.keyfixer" {
-            show_main_window(app); return InlineFixResult::SelfFrontmost;
+            return InlineFixResult::SelfFrontmost;
         }
-        eprintln!("{TAG} Target: PID={target_pid} Bundle='{target_bundle}'");
 
-        // Wait for physical shortcut keys (Option/Command) to settle
+        // Released is the K-key release; Command/Option can still be held by the user.
+        // Require both sides and aggregate session flags to be clear for 3 samples.
         let poll_start_modifiers = Instant::now();
         let mut modifiers_released = false;
-        
-        while poll_start_modifiers.elapsed() < Duration::from_millis(500) {
-            unsafe {
-                let l_cmd = CGEventSourceKeyState(1, 55);
-                let r_cmd = CGEventSourceKeyState(1, 54);
-                let l_opt = CGEventSourceKeyState(1, 58);
-                let r_opt = CGEventSourceKeyState(1, 61);
-                
-                if !l_cmd && !r_cmd && !l_opt && !r_opt {
+        let mut stable_samples = 0_u8;
+
+        while poll_start_modifiers.elapsed() < MODIFIER_RELEASE_TIMEOUT {
+            if unsafe { shortcut_modifiers_released() } {
+                stable_samples += 1;
+                if stable_samples >= 3 {
                     modifiers_released = true;
                     break;
                 }
+            } else {
+                stable_samples = 0;
             }
             std::thread::sleep(Duration::from_millis(5));
         }
 
         if !modifiers_released {
-            eprintln!("{TAG} Timeout waiting for physical modifiers to be released");
-            show_main_window(app);
-            return InlineFixResult::NoSelection; // Or a specific timeout result
+            return InlineFixResult::ModifierReleaseTimeout;
         }
+        eprintln!("{TAG} INLINE_FIX_MODIFIERS_RELEASED");
 
-        std::thread::sleep(Duration::from_millis(30));
+        std::thread::sleep(MODIFIER_SETTLE_TIME);
 
         let baseline = unsafe { get_pasteboard_change_count() };
 
         if !unsafe { synthesize_keystroke(VK_ANSI_C, CG_EVENT_FLAG_COMMAND) } {
             return InlineFixResult::CopyKeystrokeFailed;
         }
+        eprintln!("{TAG} INLINE_FIX_COPY_POSTED");
 
         let mut changed = false;
         let poll_start = Instant::now();
@@ -577,26 +603,33 @@ pub mod macos {
             if unsafe { get_pasteboard_change_count() } > baseline { changed = true; break; }
             std::thread::sleep(Duration::from_millis(5));
         }
-        if !changed { show_main_window(app); return InlineFixResult::NoSelection; }
+        if !changed { return InlineFixResult::NoSelection; }
+        eprintln!("{TAG} INLINE_FIX_CLIPBOARD_CHANGED");
 
         let selected_text = match unsafe { get_pasteboard_text() } {
             Some(t) if !t.trim().is_empty() => t,
-            _ => { show_main_window(app); return InlineFixResult::ClipboardReadFailed; }
+            _ => return InlineFixResult::ClipboardReadFailed,
         };
-        eprintln!("{TAG} Read {} chars", selected_text.len());
 
         let request_id = rand_id();
         let (tx, rx) = mpsc::channel::<String>();
         if let Ok(mut map) = PENDING_CONVERSIONS.lock() { map.insert(request_id, tx); }
 
         if let Err(e) = app.emit("inline-convert-request", InlineConvertPayload { id: request_id, text: selected_text.clone() }) {
-            eprintln!("{TAG} Emit error: {e}"); return InlineFixResult::ConversionFailed;
+            if let Ok(mut map) = PENDING_CONVERSIONS.lock() { map.remove(&request_id); }
+            eprintln!("{TAG} INLINE_FIX_FAILED:conversion_emit:{e}");
+            return InlineFixResult::ConversionFailed;
         }
+        eprintln!("{TAG} INLINE_FIX_CONVERSION_REQUESTED");
 
-        let fixed_text = match rx.recv_timeout(Duration::from_millis(250)) {
+        let fixed_text = match rx.recv_timeout(CONVERSION_TIMEOUT) {
             Ok(t) if !t.is_empty() => t,
-            _ => { eprintln!("{TAG} Conversion failed/timeout"); return InlineFixResult::ConversionFailed; }
+            _ => {
+                if let Ok(mut map) = PENDING_CONVERSIONS.lock() { map.remove(&request_id); }
+                return InlineFixResult::ConversionFailed;
+            }
         };
+        eprintln!("{TAG} INLINE_FIX_CONVERSION_RESPONSE");
 
         if fixed_text == selected_text {
             eprintln!("{TAG} Text already correct ({}ms)", start_time.elapsed().as_millis());
@@ -620,10 +653,43 @@ pub mod macos {
         if !unsafe { synthesize_keystroke(VK_ANSI_V, CG_EVENT_FLAG_COMMAND) } {
             return InlineFixResult::PasteKeystrokeFailed;
         }
+        eprintln!("{TAG} INLINE_FIX_PASTE_POSTED");
 
-        eprintln!("{TAG} Success! '{target_bundle}' PID={target_pid} in {}ms", start_time.elapsed().as_millis());
+        std::thread::sleep(Duration::from_millis(50));
+        if unsafe { get_frontmost_app() }.as_ref().map(|(p,_)| *p) != Some(target_pid) {
+            return InlineFixResult::TargetChanged;
+        }
+        eprintln!("{TAG} INLINE_FIX_SUCCESS:{}ms", start_time.elapsed().as_millis());
         std::thread::spawn(|| { let _ = std::process::Command::new("afplay").arg("/System/Library/Sounds/Tink.aiff").output(); });
         InlineFixResult::Success { _converted_len: fixed_text.len() }
+    }
+
+    impl InlineFixResult {
+        fn failure_stage(&self) -> &'static str {
+            match self {
+                InlineFixResult::Success { .. } => "none",
+                InlineFixResult::NoSelection => "clipboard_timeout",
+                InlineFixResult::ModifierReleaseTimeout => "modifier_release_timeout",
+                InlineFixResult::CopyKeystrokeFailed => "copy_event",
+                InlineFixResult::ClipboardReadFailed => "clipboard_read",
+                InlineFixResult::ConversionFailed => "conversion",
+                InlineFixResult::TargetChanged => "target_changed",
+                InlineFixResult::PasteWriteFailed => "clipboard_write",
+                InlineFixResult::PasteKeystrokeFailed => "paste_event",
+                InlineFixResult::AlreadyCorrect => "already_correct",
+                InlineFixResult::SelfFrontmost => "self_frontmost",
+            }
+        }
+    }
+
+    unsafe fn shortcut_modifiers_released() -> bool {
+        let flags = CGEventSourceFlagsState(CG_EVENT_SOURCE_STATE_COMBINED_SESSION);
+        let aggregate_clear = flags & (CG_EVENT_FLAG_COMMAND | CG_EVENT_FLAG_ALTERNATE) == 0;
+        let physical_clear = !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 55)
+            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 54)
+            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 58)
+            && !CGEventSourceKeyState(CG_EVENT_SOURCE_STATE_HID_SYSTEM, 61);
+        aggregate_clear && physical_clear
     }
 
     unsafe fn create_nsstring(s: &str) -> *mut c_void {

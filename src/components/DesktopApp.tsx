@@ -371,10 +371,14 @@ export function DesktopApp() {
               mode: stateRef.current.conversionMode,
               platform: stateRef.current.keyboardPlatform,
             });
-            proBridge.submitConversionResponse(id, result.fixedText).catch(() => {});
+            proBridge.submitConversionResponse(id, result.fixedText).catch(() => {
+              console.warn('INLINE_FIX_FAILED:conversion_response');
+            });
           }
         );
-      } catch (err) {}
+      } catch {
+        console.warn('INLINE_FIX_FAILED:conversion_listener');
+      }
     };
     setupInlineListener();
     return () => {
@@ -449,7 +453,7 @@ export function DesktopApp() {
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
-      className={isWindows ? 'desktop-app--windows' : undefined}
+      className={`desktop-app${isWindows ? ' desktop-app--windows' : ''}`}
       style={{
         width: '100vw',
         height: '100vh',
@@ -504,8 +508,8 @@ export function DesktopApp() {
 
       {/* ── MAIN CONTENT ── */}
       <div
-        className={isWindows ? 'kf-main-content' : undefined}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isWindows ? 20 : 24, gap: isWindows ? 16 : 20 }}
+        className="kf-main-content"
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isWindows ? 20 : 24, gap: isWindows ? 16 : 20, minHeight: 0, overflow: 'hidden' }}
       >
         {isWindows && (
           <header className="kf-windows-intro">
@@ -525,7 +529,7 @@ export function DesktopApp() {
         )}
         
         {/* Controls Row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div className="kf-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           {isWindows && <span className="kf-controls-label">{isRTL ? 'اتجاه التحويل' : 'Conversion direction'}</span>}
           
           {/* Conversion Mode Segmented Control */}
@@ -610,10 +614,10 @@ export function DesktopApp() {
         </div>
 
         {/* Editor Split View */}
-        <div className={isWindows ? 'kf-editors' : undefined} style={{ flex: 1, display: 'flex', gap: isWindows ? 14 : 20, minHeight: 0 }}>
+        <div className="kf-editors" style={{ flex: 1, display: 'flex', gap: isWindows ? 14 : 20, minHeight: 0, overflow: 'hidden' }}>
           
           {/* INPUT AREA */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="kf-editor-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, minHeight: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: isWindows ? 'none' : 'uppercase', letterSpacing: isWindows ? 0 : '0.05em' }}>
                 {isRTL ? 'النص الأصلي' : 'Input'}
@@ -633,7 +637,7 @@ export function DesktopApp() {
               </button>
             </div>
             <textarea
-              className={isWindows ? 'kf-editor' : undefined}
+              className="kf-editor kf-editor-input"
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -650,7 +654,13 @@ export function DesktopApp() {
                 border: `1px solid ${T.border}`,
                 borderRadius: isWindows ? 7 : 10,
                 color: T.text1,
+                WebkitTextFillColor: T.text1,
+                caretColor: T.text1,
                 resize: 'none',
+                minWidth: 0,
+                minHeight: 0,
+                overflow: 'auto',
+                boxSizing: 'border-box',
                 outline: 'none',
                 boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
                 transition: 'border-color 0.2s',
@@ -661,7 +671,7 @@ export function DesktopApp() {
           </div>
 
           {/* OUTPUT AREA */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="kf-editor-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0, minHeight: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: T.text2, textTransform: isWindows ? 'none' : 'uppercase', letterSpacing: isWindows ? 0 : '0.05em' }}>
                 {isRTL ? 'النتيجة' : 'Output'}
@@ -671,7 +681,7 @@ export function DesktopApp() {
               </span>
             </div>
             <div
-              className={isWindows ? 'kf-editor' : undefined}
+              className="kf-editor kf-editor-output"
               dir="auto"
               style={{
                 flex: 1,
@@ -683,7 +693,14 @@ export function DesktopApp() {
                 border: `1px solid ${output ? T.accent : T.border}`,
                 borderRadius: isWindows ? 7 : 10,
                 color: output ? T.text1 : T.text2,
+                WebkitTextFillColor: output ? T.text1 : T.text2,
                 overflowY: 'auto',
+                overflowX: 'hidden',
+                overflowWrap: 'anywhere',
+                whiteSpace: 'pre-wrap',
+                minWidth: 0,
+                minHeight: 0,
+                boxSizing: 'border-box',
                 boxShadow: showGlow ? `0 0 15px ${T.focus}` : 'inset 0 1px 4px rgba(0,0,0,0.1)',
                 transition: 'box-shadow 0.3s ease, border-color 0.2s, background-color 0.2s',
                 userSelect: 'text',
@@ -695,9 +712,9 @@ export function DesktopApp() {
         </div>
 
         {/* Footer Actions */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
+        <div className="kf-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8 }}>
           {/* Developer Info */}
-          <div className={isWindows ? 'kf-footer-meta' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: isWindows ? 1 : 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
+          <div className="kf-footer-meta" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: T.text2, opacity: isWindows ? 1 : 0.6, letterSpacing: '0.02em', userSelect: 'none' }}>
             <span>KeyFixer v{appVersion}</span>
             <span>&bull;</span>
             <span title="Global shortcut">{platform === 'windows' ? 'Ctrl+Alt+K' : '⌥⌘K'}</span>

@@ -1,3 +1,30 @@
+.desktop-app {
+  overflow: hidden;
+}
+
+.desktop-app .kf-main-content,
+.desktop-app .kf-editors,
+.desktop-app .kf-editor-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.desktop-app .kf-controls,
+.desktop-app .kf-footer {
+  flex-shrink: 0;
+}
+
+.desktop-app .kf-editor {
+  width: 100%;
+  max-width: 100%;
+}
+
+.desktop-app textarea.kf-editor::placeholder {
+  color: var(--kf-text-secondary);
+  -webkit-text-fill-color: var(--kf-text-secondary);
+  opacity: 0.82;
+}
+
 .desktop-app--windows {
   --kf-accent: #b45309;
   --kf-accent-hover: #92400e;
@@ -180,5 +207,34 @@
 
   .desktop-app--windows .kf-footer-meta {
     gap: 4px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .desktop-app .kf-main-content {
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+
+  .desktop-app .kf-controls {
+    flex-wrap: wrap;
+  }
+
+  .desktop-app .kf-editors {
+    flex-direction: column;
+    gap: 12px !important;
+  }
+
+  .desktop-app .kf-editor-panel {
+    flex-basis: 0;
+  }
+
+  .desktop-app .kf-footer {
+    gap: 12px;
+  }
+
+  .desktop-app .kf-footer-meta {
+    min-width: 0;
+    flex-wrap: wrap;
   }
 }
