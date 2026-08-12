@@ -226,6 +226,11 @@ async fn open_support_page(app: AppHandle) -> Result<(), String> {
     }
 }
 
+#[command]
+fn log_fatal_startup_error(error_type: String, message: String, phase: String, timestamp: i64) {
+    eprintln!("[FATAL STARTUP ERROR] Phase: {}, Type: {}, Timestamp: {}, Message: {}", phase, error_type, timestamp, message);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default();
@@ -260,6 +265,7 @@ pub fn run() {
             storekit_get_pro_entitlement,
             storekit_purchase_pro,
             storekit_restore_purchases,
+            log_fatal_startup_error,
         ]);
 
     // Debug handler (includes DEV-ONLY commands)
@@ -289,6 +295,7 @@ pub fn run() {
             storekit_restore_purchases,
             dev_reset_trial_credits,
             dev_simulate_paid,
+            log_fatal_startup_error,
         ]);
 
     let app = app

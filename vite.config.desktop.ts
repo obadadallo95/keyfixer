@@ -4,13 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { defineConfig } from 'vite';
 
-if (process.env.VITE_PRO_BUILD === 'true') {
-  if (!fs.existsSync(path.resolve(__dirname, 'pro-private/frontend/provider.ts'))) {
-    console.error("❌ VITE_PRO_BUILD is true but pro-private/frontend/provider.ts is missing. Failing build.");
-    process.exit(1);
-  }
-}
-
 /**
  * Separate Vite config for the Tauri desktop build.
  * Port 5174 avoids collision with the web dev server on 5173.

@@ -23,7 +23,12 @@
     </style>
   </head>
   <body>
-    <div id="desktop-root"></div>
+    <div id="desktop-root">
+      <div id="startup-fallback" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #888;">
+        <h2>KeyFixer</h2>
+        <p>Starting…</p>
+      </div>
+    </div>
     <script type="module" src="/src/desktop-main.tsx"></script>
   </body>
 </html>
