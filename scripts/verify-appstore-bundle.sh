@@ -240,6 +240,15 @@ if [[ "$BYPASS_FOUND" == "false" ]]; then
   pass "No DEV paid bypass commands found in binary"
 fi
 
+# -- Check 4.6: PRO MARKER embedded in binary -------
+section "Check 4.6 - PRO MARKER embedded in binary"
+_cnt=$(strings -arch arm64 "$BINARY_PATH" 2>/dev/null | grep -c "ACTIVE_PRO_BUILD_MARKER_9921" || true)
+if [[ "$_cnt" -gt 0 ]]; then
+  pass "PRO MARKER 'ACTIVE_PRO_BUILD_MARKER_9921' found in binary (${_cnt} occurrences)"
+else
+  fail "PRO MARKER NOT FOUND in binary. Frontend was likely built without VITE_PRO_BUILD=true!"
+fi
+
 # ── Check 5: Bundle resource listing ────────────────────────────────────
 section "Check 5 – Bundle resource listing"
 echo "   Note: In Tauri v2, only icon.icns is expected in Contents/Resources/."
