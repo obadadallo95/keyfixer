@@ -35,7 +35,7 @@ const T = {
     axStep1: 'Click "Open Settings" below',
     axStep2: 'Find KeyFixer in the list and toggle the switch ON',
     axStep3: 'If already listed, click the (-) minus button to remove the old build, then re-add KeyFixer',
-    axStep4: 'Return here and click "Check Again" or "Done"',
+    axStep4: 'Return here and restart KeyFixer so the fresh process can read the new permission',
     axOpen: 'Open Settings',
     axCheck: 'Check Again',
     axChecking: 'Checking permission…',
@@ -85,7 +85,7 @@ const T = {
     axStep1: 'اضغط على زر "فتح الإعدادات" أدناه',
     axStep2: 'ابحث عن KeyFixer في القائمة وفعّل المفتاح',
     axStep3: 'إذا كان موجوداً مسبقاً، حدده واضغط زر الناقص (-) لحذفه ثم أعد إضافته لربط النسخة الجديدة',
-    axStep4: 'عد إلى هنا واضغط "فحص مجددًا" أو "تم التفعيل والإغلاق"',
+    axStep4: 'عد إلى هنا وأعد تشغيل KeyFixer حتى تقرأ العملية الجديدة الصلاحية',
     axOpen: 'فتح الإعدادات',
     axCheck: 'فحص مجددًا',
     axChecking: 'جارٍ التحقق من الإذن…',
@@ -157,6 +157,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
 
   const [showTrialWelcome, setShowTrialWelcome] = useState(false);
   const [showAccessibilityModal, setShowAccessibilityModal] = useState(false);
+  const [permissionSettingsOpened, setPermissionSettingsOpened] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const mountedRef = useRef(true);
@@ -315,8 +316,19 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
   }, [bridge]);
 
   const handleOpenAccessibility = useCallback(async () => {
+    setPermissionSettingsOpened(true);
     await bridge.openPostEventSettings();
     setTimeout(() => { if (mountedRef.current) checkPostEventPermission(600); }, 1500);
+  }, [bridge, checkPostEventPermission]);
+
+  const handleRecheckPermission = useCallback(async () => {
+    setIsCheckingAccess(true);
+    try {
+      await bridge.requestPostEventPermission();
+      await checkPostEventPermission(350);
+    } finally {
+      if (mountedRef.current) setIsCheckingAccess(false);
+    }
   }, [bridge, checkPostEventPermission]);
 
   // ── Real Purchase Handler (TASK 9B) ───────────────────────────────────────
@@ -661,7 +673,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
                 </button>
 
                 <button
-                  onClick={() => checkPostEventPermission(500)}
+                  onClick={handleRecheckPermission}
                   disabled={isCheckingAccess}
                   style={styles.secondaryBtn}
                 >
@@ -672,6 +684,13 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
                   )}
                   <span>{isCheckingAccess ? t.axChecking : t.axCheck}</span>
                 </button>
+
+                {permissionSettingsOpened && (
+                  <button onClick={() => bridge.restartKeyFixer()} style={styles.primaryBtn} data-testid="restart-after-permission-button">
+                    <RefreshCw size={14} />
+                    <span>{isRTL ? 'إعادة تشغيل KeyFixer لتطبيق الصلاحية' : 'Restart KeyFixer to apply permission'}</span>
+                  </button>
+                )}
               </>
             )}
 

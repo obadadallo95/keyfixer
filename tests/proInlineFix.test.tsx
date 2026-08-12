@@ -172,6 +172,34 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
     expect(handleOpenLegal).toHaveBeenCalledWith('privacy');
   });
 
+  it('re-requests PostEvent and always offers restart after opening Settings', async () => {
+    currentState = {
+      mode: 'trial', uiState: 'TRIAL_ACTIVE', trialCreditsRemaining: 25,
+      trialStarted: true, inlineFixEnabled: true,
+    };
+    mockBridge.checkPostEventPermission = vi.fn().mockResolvedValue(false);
+
+    render(<ProPanel bridge={mockBridge} isRTL={false} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+    fireEvent.click(screen.getByTitle('Accessibility permission missing (click to grant)'));
+    fireEvent.click(screen.getByText('Open Settings'));
+
+    expect(mockBridge.openPostEventSettings).toHaveBeenCalledOnce();
+    expect(screen.getByTestId('restart-after-permission-button')).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Check Again'));
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(mockBridge.requestPostEventPermission).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('restart-after-permission-button'));
+    expect(mockBridge.restartKeyFixer).toHaveBeenCalledOnce();
+  });
+
   // ── TASK 9B Real Purchase Flow Tests ──────────────────────────────────────────
 
   describe('Real Purchase Flow (TASK 9B)', () => {

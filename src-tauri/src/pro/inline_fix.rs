@@ -423,9 +423,25 @@ pub mod macos {
 
     pub fn open_post_event_settings() {
         let _ = request_post_event_access();
-        let _ = std::process::Command::new("open")
-            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-            .spawn();
+        unsafe {
+            let workspace_class = objc_getClass(b"NSWorkspace\0".as_ptr().cast());
+            let url_class = objc_getClass(b"NSURL\0".as_ptr().cast());
+            if workspace_class.is_null() || url_class.is_null() { return; }
+            let shared_workspace = sel_registerName(b"sharedWorkspace\0".as_ptr().cast());
+            let url_with_string = sel_registerName(b"URLWithString:\0".as_ptr().cast());
+            let open_url = sel_registerName(b"openURL:\0".as_ptr().cast());
+            let call0: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            let call1: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                std::mem::transmute(objc_msgSend as *const ());
+            let workspace = call0(workspace_class, shared_workspace);
+            let url = call1(
+                url_class,
+                url_with_string,
+                create_nsstring("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"),
+            );
+            if !workspace.is_null() && !url.is_null() { let _ = call1(workspace, open_url, url); }
+        }
     }
 
 
