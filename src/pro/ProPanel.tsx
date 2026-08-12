@@ -205,11 +205,6 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
       const trusted = await bridge.checkPostEventPermission();
       if (mountedRef.current) {
         setHasAccessibility(trusted);
-        if (trusted) {
-          setTimeout(() => {
-            if (mountedRef.current) setShowAccessibilityModal(false);
-          }, 350);
-        }
       }
       return trusted;
     } catch {
@@ -649,23 +644,32 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
 
           {/* Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-            <button onClick={handleOpenAccessibility} style={styles.primaryBtn}>
-              <ExternalLink size={14} />
-              <span>{t.axOpen}</span>
-            </button>
+            {hasAccessibility === true ? (
+              <button onClick={() => bridge.restartKeyFixer()} style={styles.primaryBtn}>
+                <RefreshCw size={14} />
+                <span>{isRTL ? 'إعادة تشغيل KeyFixer' : 'Restart KeyFixer'}</span>
+              </button>
+            ) : (
+              <>
+                <button onClick={handleOpenAccessibility} style={styles.primaryBtn}>
+                  <ExternalLink size={14} />
+                  <span>{t.axOpen}</span>
+                </button>
 
-            <button
-              onClick={() => checkPostEventPermission(500)}
-              disabled={isCheckingAccess}
-              style={styles.secondaryBtn}
-            >
-              {isCheckingAccess ? (
-                <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
-              ) : (
-                <ShieldCheck size={13} />
-              )}
-              <span>{isCheckingAccess ? t.axChecking : t.axCheck}</span>
-            </button>
+                <button
+                  onClick={() => checkPostEventPermission(500)}
+                  disabled={isCheckingAccess}
+                  style={styles.secondaryBtn}
+                >
+                  {isCheckingAccess ? (
+                    <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+                  ) : (
+                    <ShieldCheck size={13} />
+                  )}
+                  <span>{isCheckingAccess ? t.axChecking : t.axCheck}</span>
+                </button>
+              </>
+            )}
 
             {/* Small Link for Accessibility Disclosure */}
             <div style={{ marginTop: 2, textAlign: 'center' }}>

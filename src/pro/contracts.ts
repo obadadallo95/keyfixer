@@ -80,6 +80,9 @@ export interface ProRuntimeBridge {
   /** Open macOS Privacy Settings */
   openPostEventSettings(): Promise<void>;
 
+  /** Restart the application */
+  restartKeyFixer(): Promise<void>;
+
   /** Submit conversion result back to Rust inline fix pipeline */
   submitConversionResponse(id: number, text: string): Promise<void>;
 

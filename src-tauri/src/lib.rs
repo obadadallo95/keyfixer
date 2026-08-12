@@ -76,6 +76,12 @@ async fn start_drag(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Restart the application completely
+#[command]
+fn restart_keyfixer(app: AppHandle) {
+    app.restart();
+}
+
 /// Hide the application window
 #[command]
 async fn hide_window(app: AppHandle) -> Result<(), String> {
@@ -253,6 +259,7 @@ pub fn run() {
             collapse_window,
             expand_window,
             close_app,
+            restart_keyfixer,
             start_drag,
             open_support_page,
             hide_window,
@@ -282,6 +289,7 @@ pub fn run() {
             collapse_window,
             expand_window,
             close_app,
+            restart_keyfixer,
             start_drag,
             open_support_page,
             hide_window,

@@ -77,12 +77,18 @@ export const ProductionProBridge: ProRuntimeBridge = {
   async openPostEventSettings(): Promise<void> {
     try {
       await invoke('open_post_event_settings');
-    } catch (e) {
-      console.warn('open_post_event_settings failed:', e);
+    } catch (error) {
+      console.error('[PRO] Failed to open settings:', error);
     }
   },
 
-
+  async restartKeyFixer(): Promise<void> {
+    try {
+      await invoke('restart_keyfixer');
+    } catch (error) {
+      console.error('[PRO] Failed to restart KeyFixer:', error);
+    }
+  },
 
   async submitConversionResponse(id: number, text: string): Promise<void> {
     try {
