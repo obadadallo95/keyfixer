@@ -117,6 +117,7 @@ pub mod macos {
     const CG_EVENT_FLAG_COMMAND: u64 = 0x0010_0000;
     const CG_ANNOTATED_SESSION_EVENT_TAP: u32 = 2;
     const SHORTCUT_RELEASE_SETTLE_TIME: Duration = Duration::from_millis(10);
+    const CLIPBOARD_RESTORE_DELAY: Duration = Duration::from_millis(150);
     const CONVERSION_TIMEOUT: Duration = Duration::from_millis(1_500);
 
     pub type SharedProState = Arc<Mutex<ProState>>;
@@ -188,6 +189,39 @@ pub mod macos {
     impl Drop for InlineFixRunGuard {
         fn drop(&mut self) {
             INLINE_FIX_RUNNING.store(false, Ordering::Release);
+        }
+    }
+
+    /// Owns copies of every NSPasteboardItem that existed before Inline Fix.
+    /// Restoration is conditional so a clipboard update made by the user or
+    /// another app while conversion is running is never overwritten.
+    struct ClipboardRestoreGuard {
+        snapshot: Vec<*mut c_void>,
+        expected_change_count: Option<i64>,
+    }
+
+    impl ClipboardRestoreGuard {
+        unsafe fn capture() -> Self {
+            Self { snapshot: snapshot_pasteboard_items(), expected_change_count: None }
+        }
+
+        fn expect(&mut self, change_count: i64) {
+            self.expected_change_count = Some(change_count);
+        }
+    }
+
+    impl Drop for ClipboardRestoreGuard {
+        fn drop(&mut self) {
+            unsafe {
+                if self.expected_change_count == Some(get_pasteboard_change_count()) {
+                    if restore_pasteboard_items(&self.snapshot) {
+                        eprintln!("{TAG} INLINE_FIX_CLIPBOARD_RESTORED");
+                    }
+                } else if self.expected_change_count.is_some() {
+                    eprintln!("{TAG} INLINE_FIX_CLIPBOARD_RESTORE_SKIPPED_CHANGED");
+                }
+                release_pasteboard_items(&mut self.snapshot);
+            }
         }
     }
 
@@ -597,6 +631,7 @@ pub mod macos {
         eprintln!("{TAG} INLINE_FIX_K_RELEASED");
         std::thread::sleep(SHORTCUT_RELEASE_SETTLE_TIME);
 
+        let mut clipboard_guard = unsafe { ClipboardRestoreGuard::capture() };
         let baseline = unsafe { get_pasteboard_change_count() };
 
         if !unsafe { synthesize_keystroke(VK_ANSI_C, CG_EVENT_FLAG_COMMAND) } {
@@ -611,6 +646,7 @@ pub mod macos {
             std::thread::sleep(Duration::from_millis(5));
         }
         if !changed { return InlineFixResult::NoSelection; }
+        clipboard_guard.expect(unsafe { get_pasteboard_change_count() });
         eprintln!("{TAG} INLINE_FIX_CLIPBOARD_CHANGED");
 
         let selected_text = match unsafe { get_pasteboard_text() } {
@@ -651,6 +687,7 @@ pub mod macos {
         if !unsafe { set_pasteboard_text(&fixed_text) } {
             return InlineFixResult::PasteWriteFailed;
         }
+        clipboard_guard.expect(unsafe { get_pasteboard_change_count() });
 
         if unsafe { get_frontmost_app() }.as_ref().map(|(p,_)| *p) != Some(target_pid) {
             eprintln!("{TAG} Target changed after write"); return InlineFixResult::TargetChanged;
@@ -663,7 +700,9 @@ pub mod macos {
         }
         eprintln!("{TAG} INLINE_FIX_PASTE_POSTED");
 
-        std::thread::sleep(Duration::from_millis(50));
+        // Give the target enough time to consume Cmd+V before restoring the
+        // previous clipboard. The guard restores only if nobody changed it.
+        std::thread::sleep(CLIPBOARD_RESTORE_DELAY);
         if unsafe { get_frontmost_app() }.as_ref().map(|(p,_)| *p) != Some(target_pid) {
             return InlineFixResult::TargetChanged;
         }
@@ -767,6 +806,66 @@ pub mod macos {
         let f_isize: unsafe extern "C" fn(*mut c_void, *mut c_void) -> isize =
             std::mem::transmute(objc_msgSend as *const ());
         f_isize(pb, sel_cc) as i64
+    }
+
+    unsafe fn general_pasteboard() -> *mut c_void {
+        let cls = objc_getClass(b"NSPasteboard\0".as_ptr() as *const _);
+        let sel = sel_registerName(b"generalPasteboard\0".as_ptr() as *const _);
+        let call: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        call(cls, sel)
+    }
+
+    unsafe fn snapshot_pasteboard_items() -> Vec<*mut c_void> {
+        let pb = general_pasteboard();
+        if pb.is_null() { return Vec::new(); }
+        let call0: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let call_index: unsafe extern "C" fn(*mut c_void, *mut c_void, usize) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let call_count: unsafe extern "C" fn(*mut c_void, *mut c_void) -> usize =
+            std::mem::transmute(objc_msgSend as *const ());
+        let items = call0(pb, sel_registerName(b"pasteboardItems\0".as_ptr().cast()));
+        if items.is_null() { return Vec::new(); }
+        let count = call_count(items, sel_registerName(b"count\0".as_ptr().cast()));
+        let mut snapshot = Vec::with_capacity(count);
+        for index in 0..count {
+            let item = call_index(items, sel_registerName(b"objectAtIndex:\0".as_ptr().cast()), index);
+            if !item.is_null() {
+                let copied = call0(item, sel_registerName(b"copy\0".as_ptr().cast()));
+                if !copied.is_null() { snapshot.push(copied); }
+            }
+        }
+        snapshot
+    }
+
+    unsafe fn restore_pasteboard_items(snapshot: &[*mut c_void]) -> bool {
+        let pb = general_pasteboard();
+        if pb.is_null() { return false; }
+        let call0: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let call1: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        let array_class = objc_getClass(b"NSMutableArray\0".as_ptr().cast());
+        let array = call0(call0(array_class, sel_registerName(b"alloc\0".as_ptr().cast())), sel_registerName(b"init\0".as_ptr().cast()));
+        if array.is_null() { return false; }
+        for &item in snapshot {
+            call1(array, sel_registerName(b"addObject:\0".as_ptr().cast()), item);
+        }
+        call0(pb, sel_registerName(b"clearContents\0".as_ptr().cast()));
+        let write: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> bool =
+            std::mem::transmute(objc_msgSend as *const ());
+        let restored = snapshot.is_empty()
+            || write(pb, sel_registerName(b"writeObjects:\0".as_ptr().cast()), array);
+        call0(array, sel_registerName(b"release\0".as_ptr().cast()));
+        restored
+    }
+
+    unsafe fn release_pasteboard_items(snapshot: &mut Vec<*mut c_void>) {
+        let release = sel_registerName(b"release\0".as_ptr().cast());
+        let call0: unsafe extern "C" fn(*mut c_void, *mut c_void) -> *mut c_void =
+            std::mem::transmute(objc_msgSend as *const ());
+        for item in snapshot.drain(..) { call0(item, release); }
     }
 
     unsafe fn get_pasteboard_text() -> Option<String> {

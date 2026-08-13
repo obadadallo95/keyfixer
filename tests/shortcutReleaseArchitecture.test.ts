@@ -18,4 +18,13 @@ describe('macOS Inline Fix shortcut release architecture', () => {
     expect(native).toContain('synthesize_keystroke(VK_ANSI_V, CG_EVENT_FLAG_COMMAND)');
     expect(native).not.toContain('CG_EVENT_FLAG_ALTERNATE');
   });
+
+  it('preserves the complete clipboard without overwriting concurrent changes', () => {
+    expect(native).toContain('snapshot_pasteboard_items()');
+    expect(native).toContain('pasteboardItems');
+    expect(native).toContain('writeObjects:');
+    expect(native).toContain('CLIPBOARD_RESTORE_DELAY: Duration = Duration::from_millis(150)');
+    expect(native).toContain('self.expected_change_count == Some(get_pasteboard_change_count())');
+    expect(native).toContain('INLINE_FIX_CLIPBOARD_RESTORE_SKIPPED_CHANGED');
+  });
 });
