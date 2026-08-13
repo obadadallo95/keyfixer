@@ -13,7 +13,7 @@
     "shortDescription": "Fix text typed with the wrong Arabic or English keyboard layout.",
     "longDescription": "KeyFixer is a private, offline macOS utility that converts text typed with the wrong Arabic or English keyboard layout.",
     "macOS": {
-      "bundleVersion": "14",
+      "bundleVersion": "15",
       "entitlements": "./Entitlements.plist",
       "minimumSystemVersion": "12.0",
       "signingIdentity": "3rd Party Mac Developer Application: Obada Dallo (D84FNM2R2N)",

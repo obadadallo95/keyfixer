@@ -22,6 +22,9 @@ describe('macOS Inline Fix shortcut release architecture', () => {
   it('preserves the complete clipboard without overwriting concurrent changes', () => {
     expect(native).toContain('snapshot_pasteboard_items()');
     expect(native).toContain('pasteboardItems');
+    expect(native).toContain('dataForType:');
+    expect(native).toContain('setData:forType:');
+    expect(native).not.toContain('sel_registerName(b"copy\\0"');
     expect(native).toContain('writeObjects:');
     expect(native).toContain('CLIPBOARD_RESTORE_DELAY: Duration = Duration::from_millis(150)');
     expect(native).toContain('self.expected_change_count == Some(get_pasteboard_change_count())');

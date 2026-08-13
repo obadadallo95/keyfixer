@@ -832,8 +832,54 @@ pub mod macos {
         for index in 0..count {
             let item = call_index(items, sel_registerName(b"objectAtIndex:\0".as_ptr().cast()), index);
             if !item.is_null() {
-                let copied = call0(item, sel_registerName(b"copy\0".as_ptr().cast()));
-                if !copied.is_null() { snapshot.push(copied); }
+                // NSPasteboardItem does not conform to NSCopying. Materialize every
+                // declared representation into a new item before Cmd+C clears the
+                // source pasteboard. This preserves text, rich text, images, files,
+                // and custom types without relying on a lazy data provider.
+                let item_class = objc_getClass(b"NSPasteboardItem\0".as_ptr().cast());
+                let saved_item = call0(
+                    call0(item_class, sel_registerName(b"alloc\0".as_ptr().cast())),
+                    sel_registerName(b"init\0".as_ptr().cast()),
+                );
+                if saved_item.is_null() { continue; }
+                let types = call0(item, sel_registerName(b"types\0".as_ptr().cast()));
+                let type_count = if types.is_null() {
+                    0
+                } else {
+                    call_count(types, sel_registerName(b"count\0".as_ptr().cast()))
+                };
+                let data_for_type: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void) -> *mut c_void =
+                    std::mem::transmute(objc_msgSend as *const ());
+                let set_data: unsafe extern "C" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> bool =
+                    std::mem::transmute(objc_msgSend as *const ());
+                let mut saved_any = false;
+                for type_index in 0..type_count {
+                    let pasteboard_type = call_index(
+                        types,
+                        sel_registerName(b"objectAtIndex:\0".as_ptr().cast()),
+                        type_index,
+                    );
+                    let data = data_for_type(
+                        item,
+                        sel_registerName(b"dataForType:\0".as_ptr().cast()),
+                        pasteboard_type,
+                    );
+                    if !data.is_null()
+                        && set_data(
+                            saved_item,
+                            sel_registerName(b"setData:forType:\0".as_ptr().cast()),
+                            data,
+                            pasteboard_type,
+                        )
+                    {
+                        saved_any = true;
+                    }
+                }
+                if saved_any {
+                    snapshot.push(saved_item);
+                } else {
+                    call0(saved_item, sel_registerName(b"release\0".as_ptr().cast()));
+                }
             }
         }
         snapshot
