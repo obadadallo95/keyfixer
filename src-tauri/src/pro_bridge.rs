@@ -174,7 +174,7 @@ pub fn storekit_restore_purchases(app: &AppHandle) -> serde_json::Value {
     #[cfg(all(feature = "pro", target_os = "macos"))]
     {
         let res = inline_fix::macos::storekit_restore_purchases(app);
-        return serde_json::to_value(res).unwrap_or(serde_json::json!({
+        return serde_json::to_value(res).unwrap_or_else(|_| serde_json::json!({
             "status": "FAILED",
             "entitlement": {
                 "paid": false,

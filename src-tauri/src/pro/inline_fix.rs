@@ -259,6 +259,15 @@ pub mod macos {
         pub error_message: Option<String>,
     }
 
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct RestorePurchasesResult {
+        pub status: String,
+        pub entitlement: StoreEntitlement,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub error_message: Option<String>,
+    }
+
     #[cfg(all(feature = "pro", storekit_native_exists, target_os = "macos"))]
     extern "C" {
         fn keyfixer_storekit_init_listener(callback: extern "C" fn(bool));
@@ -387,32 +396,38 @@ pub mod macos {
         }
     }
 
-    pub fn storekit_restore_purchases(app: &AppHandle) -> StoreEntitlement {
+    pub fn storekit_restore_purchases(app: &AppHandle) -> RestorePurchasesResult {
         #[cfg(all(feature = "pro", storekit_native_exists, target_os = "macos"))]
         {
             let ptr = unsafe { keyfixer_storekit_restore_purchases_json() };
-            if let Some(entitlement) = unsafe { parse_swift_json::<StoreEntitlement>(ptr) } {
+            if let Some(result) = unsafe { parse_swift_json::<RestorePurchasesResult>(ptr) } {
                 if let Some(shared) = get_shared_state() {
                     let mut guard = shared.lock().unwrap();
-                    if entitlement.paid && entitlement.verification_status == "VERIFIED" {
+                    if result.entitlement.paid && result.entitlement.verification_status == "VERIFIED" {
                         guard.mode = ProMode::Paid;
-                    } else if guard.mode == ProMode::Paid {
+                    } else if result.status != "FAILED" && guard.mode == ProMode::Paid {
+                        // A completed authoritative sync may remove a revoked or
+                        // missing entitlement. A failed sync must never downgrade.
                         guard.mode = ProMode::Free;
                     }
                     guard.save(app);
                     let dto = ProStateDto::from(&*guard);
                     let _ = app.emit("pro-state-changed", dto);
                 }
-                return entitlement;
+                return result;
             }
         }
         let _ = app;
-        StoreEntitlement {
-            paid: false,
-            product_id: None,
-            purchase_date: None,
-            revocation_date: None,
-            verification_status: "NOT_PURCHASED".to_string(),
+        RestorePurchasesResult {
+            status: "FAILED".to_string(),
+            entitlement: StoreEntitlement {
+                paid: false,
+                product_id: None,
+                purchase_date: None,
+                revocation_date: None,
+                verification_status: "NOT_PURCHASED".to_string(),
+            },
+            error_message: Some("Failed to parse StoreKit restore result".to_string()),
         }
     }
 

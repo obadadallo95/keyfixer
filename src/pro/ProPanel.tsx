@@ -169,6 +169,20 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
     else onStatusChange?.('free');
   }, [uiState, onStatusChange]);
 
+  // StoreKit's native transaction listener can confirm Pro before the purchase
+  // command finishes returning to the WebView. Close the upgrade modal as soon
+  // as that verified paid state arrives instead of leaving the user waiting.
+  useEffect(() => {
+    if (uiState === 'PAID' && showUpgradeModal) {
+      setShowUpgradeModal(false);
+      setPurchaseError(null);
+      setPurchaseSuccessToast(true);
+      setTimeout(() => {
+        if (mountedRef.current) setPurchaseSuccessToast(false);
+      }, 3000);
+    }
+  }, [uiState, showUpgradeModal]);
+
   // ── Load State from Rust ─────────────────────────────────────────────────
   const loadState = useCallback(async () => {
     try {
@@ -389,8 +403,7 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
       const res = await bridge.restorePurchases();
       if (!mountedRef.current) return;
 
-      if (res.status === 'RESTORED') {
-        if (res.entitlement.paid && res.entitlement.verificationStatus === 'VERIFIED') {
+      if (res.entitlement.paid && res.entitlement.verificationStatus === 'VERIFIED') {
           await loadState();
           if (mountedRef.current) {
             setShowUpgradeModal(false);
@@ -403,7 +416,6 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
               if (mountedRef.current) setRestoreNotice(null);
             }, 4000);
           }
-        }
       } else if (res.status === 'NOT_FOUND') {
         setRestoreNotice({
           type: 'info',

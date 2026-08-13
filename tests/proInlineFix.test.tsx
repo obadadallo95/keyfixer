@@ -560,6 +560,40 @@ describe('ProPanel Lifecycle & Legal Integration Tests (TASK 8C)', () => {
       expect(res.entitlement.paid).toBe(true); // Retains verified entitlement
     });
 
+    it('treats FAILED sync with an existing VERIFIED entitlement as restored', async () => {
+      const onStatusChange = vi.fn();
+      mockBridge.restorePurchases = vi.fn().mockImplementation(async () => {
+        currentState = {
+          mode: 'paid', uiState: 'PAID', trialCreditsRemaining: 0,
+          trialStarted: true, inlineFixEnabled: true,
+        };
+        return {
+          status: 'FAILED',
+          entitlement: {
+            paid: true,
+            productId: 'com.obadadallo.keyfixer.pro.lifetime',
+            purchaseDate: '2026-08-08T01:00:00Z',
+            revocationDate: null,
+            verificationStatus: 'VERIFIED',
+          },
+          errorMessage: 'AppStore.sync network timeout',
+        };
+      });
+      mockBridge.getProState = vi.fn().mockImplementation(async () => currentState);
+
+      render(<ProPanel bridge={mockBridge} isRTL={false} onStatusChange={onStatusChange} />);
+      await act(async () => { await vi.advanceTimersByTimeAsync(50); });
+      const restoreBtn = screen.getByTestId('restore-purchases-button-exhausted');
+      await act(async () => {
+        fireEvent.click(restoreBtn);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      expect(screen.getByTestId('restore-success-toast')).toHaveTextContent('KeyFixer Pro restored');
+      expect(screen.queryByTestId('restore-error-banner')).toBeNull();
+      expect(onStatusChange).toHaveBeenCalledWith('pro');
+    });
+
     it('handles Arabic Restore Purchases UI and localized Arabic messages', async () => {
       mockBridge.restorePurchases = vi.fn().mockResolvedValue({
         status: 'NOT_FOUND',
