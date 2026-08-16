@@ -286,12 +286,14 @@ export function LegalViewerModal({ isOpen, onClose, initialDoc = 'privacy', lang
 
   return (
     <div
+      className="kf-modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
         background: 'rgba(0, 0, 0, 0.72)',
-        backdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -301,14 +303,15 @@ export function LegalViewerModal({ isOpen, onClose, initialDoc = 'privacy', lang
       onClick={onClose}
     >
       <div
+        className="kf-modal-card"
         style={{
           width: 'min(780px, 96vw)',
           height: 'min(640px, 90vh)',
           background: bgModal,
           color: textPrimary,
-          borderRadius: 14,
+          borderRadius: 16,
           border: `1px solid ${borderCol}`,
-          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+          boxShadow: '0 28px 90px rgba(0,0,0,0.65), 0 0 40px rgba(245,158,11,0.06)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

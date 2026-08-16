@@ -6,6 +6,7 @@ use tauri::{AppHandle, Manager};
 mod inline_fix;
 
 #[cfg(all(feature = "pro", target_os = "macos"))]
+#[allow(unused_imports)]
 pub use inline_fix::macos::{SharedProState, ProStateDto};
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -22,7 +23,7 @@ pub fn init_pro_state(app: &AppHandle) {
 
 // ── State queries ─────────────────────────────────────────────────────────────
 
-pub fn get_pro_state_dto(app: &AppHandle) -> Option<serde_json::Value> {
+pub fn get_pro_state_dto(_app: &AppHandle) -> Option<serde_json::Value> {
     #[cfg(all(feature = "pro", target_os = "macos"))]
     {
         // app.state() panics if not managed; use inner PRO_STATE instead
@@ -31,7 +32,7 @@ pub fn get_pro_state_dto(app: &AppHandle) -> Option<serde_json::Value> {
         return serde_json::to_value(dto).ok();
     }
     #[cfg(not(all(feature = "pro", target_os = "macos")))]
-    { let _ = app; None }
+    { None }
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@
    KeyFixer provides free keyboard-layout text correction inside the main application window without restrictions or purchase requirements.
 
 2. **On-Device Trial for Inline Fix:**
-   KeyFixer includes a trial for the **Inline Fix** feature (`⌥⌘K`), which allows 5 successful direct text corrections in third-party applications. Trial credits are consumed only after a successful Inline Fix operation. When the 5 trial credits are exhausted, Inline Fix is locked and the user is prompted to unlock KeyFixer Pro Lifetime.
+   KeyFixer includes a trial for the **Inline Fix** feature (`⌥⌘K`), which allows 25 successful direct text corrections in third-party applications. Trial credits are consumed only after a successful Inline Fix operation. When the 25 trial credits are exhausted, Inline Fix is locked and the user is prompted to unlock KeyFixer Pro Lifetime.
 
 3. **KeyFixer Pro Lifetime (In-App Purchase):**
    - **Product ID:** `com.obadadallo.keyfixer.pro.lifetime`

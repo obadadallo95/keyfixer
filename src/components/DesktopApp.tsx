@@ -458,6 +458,56 @@ export function DesktopApp() {
     setInput('');
   }, []);
 
+  // ── Keyboard-First Shortcuts (Esc to dismiss, Cmd+Enter to copy, Cmd+1/2/3 to switch) ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Escape: Close modal or dismiss window
+      if (e.key === 'Escape') {
+        if (showLegalModal) {
+          setShowLegalModal(false);
+          return;
+        }
+        if (showOnboarding) {
+          setShowOnboarding(false);
+          return;
+        }
+        invoke('hide_window').catch(() => {});
+        return;
+      }
+
+      // 2. Cmd+Enter / Ctrl+Enter: Quick Copy & Dismiss
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      if (isCmdOrCtrl && e.key === 'Enter') {
+        if (output && output.length > 0) {
+          e.preventDefault();
+          doCopy();
+          setTimeout(() => {
+            invoke('hide_window').catch(() => {});
+          }, 240);
+        }
+        return;
+      }
+
+      // 3. Cmd+1 / Cmd+2 / Cmd+3: Mode Switch
+      if (isCmdOrCtrl && (e.key === '1' || e.key === '2' || e.key === '3')) {
+        e.preventDefault();
+        if (e.key === '1') setMode('auto');
+        else if (e.key === '2') setMode('en2ar');
+        else if (e.key === '3') setMode('ar2en');
+        return;
+      }
+
+      // 4. Shift+Cmd+Delete / Shift+Cmd+Backspace: Clear Input
+      if (isCmdOrCtrl && (e.key === 'Backspace' || e.key === 'Delete') && e.shiftKey) {
+        e.preventDefault();
+        doClear();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showLegalModal, showOnboarding, output, doCopy, doClear]);
+
   return (
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
@@ -552,11 +602,13 @@ export function DesktopApp() {
             {(['auto', 'en2ar', 'ar2en'] as ConversionMode[]).map((m) => {
               const label = m === 'auto' ? t.autoMode : m === 'en2ar' ? t.enToArMode : t.arToEnMode;
               const active = mode === m;
+              const shortcutHint = m === 'auto' ? (isWindows ? 'Ctrl+1' : '⌘1') : m === 'en2ar' ? (isWindows ? 'Ctrl+2' : '⌘2') : (isWindows ? 'Ctrl+3' : '⌘3');
               return (
                 <button
-                  className={isWindows ? `kf-segment${active ? ' kf-segment--active' : ''}` : undefined}
+                  className={isWindows ? `kf-segment${active ? ' kf-segment--active' : ''}` : `kf-segment-btn${active ? ' kf-segment-btn--active' : ''}`}
                   key={m}
                   onClick={() => setMode(m)}
+                  title={`${label} (${shortcutHint})`}
                   style={{
                     padding: '6px 14px',
                     fontSize: 12,
@@ -566,8 +618,8 @@ export function DesktopApp() {
                     border: 'none',
                     borderRadius: 6,
                     cursor: 'pointer',
-                    boxShadow: active && !isWindows ? '0 1px 4px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(0,0,0,0.05)' : 'none',
-                    transition: 'all 0.2s',
+                    boxShadow: active && !isWindows ? '0 1px 3px rgba(0,0,0,0.14), 0 0.5px 1px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
                 >
                   {label}
@@ -755,6 +807,7 @@ export function DesktopApp() {
             className={isWindows ? 'kf-copy-button' : undefined}
             onClick={doCopy}
             disabled={!output}
+            title={output ? (isWindows ? (isRTL ? 'نسخ النص المصحح (Ctrl+Enter)' : 'Copy Fixed Text (Ctrl+Enter)') : (isRTL ? 'نسخ النص المصحح (⌘ + Enter)' : 'Copy Fixed Text (⌘ + Enter)')) : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '10px 24px',

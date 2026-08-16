@@ -317,6 +317,7 @@ pub mod macos {
             *guard = Some(app.clone());
         }
 
+        #[allow(unused_mut)]
         let mut state = ProState::load(app);
 
         // ── StoreKit 2 Startup Entitlement Verification ───────────────────────

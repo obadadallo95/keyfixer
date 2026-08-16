@@ -273,12 +273,12 @@ export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPane
     }).then(fn => unlisteners.push(fn));
 
     listen<{ remaining: number }>('inline-fix-succeeded', ({ payload }) => {
-      if (!mountedRef.current) return;
-      setState(prev => {
-        const next = { ...prev, trialCreditsRemaining: payload.remaining };
-        setUiState(derived(next));
-        return next;
-      });
+      if (mountedRef.current) {
+        setState(prev => ({ ...prev, trialCreditsRemaining: payload.remaining }));
+        if (payload.remaining <= 0) {
+          setUiState('TRIAL_EXHAUSTED');
+        }
+      }
     }).then(fn => unlisteners.push(fn));
 
     listen<void>('trial-exhausted', () => {
@@ -936,8 +936,8 @@ function Modal({
   isRTL?: boolean;
 }) {
   return (
-    <div style={styles.overlay} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div style={styles.card}>
+    <div className="kf-modal-overlay" style={styles.overlay} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="kf-modal-card" style={styles.card}>
         <button
           onClick={onClose}
           style={{

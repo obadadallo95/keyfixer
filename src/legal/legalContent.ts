@@ -141,7 +141,7 @@ These Terms of Use ("Terms") govern your use of **KeyFixer for macOS** ("Softwar
 
 ## 2. Product Structure & License
 1. **Free Basic Tier:** KeyFixer provides free keyboard-layout text conversion within the main application window without requiring payment.
-2. **Limited Local Pro Trial:** KeyFixer includes a limited local trial of the **Inline Fix** feature (currently configured as 5 successful Inline Fix operations) for evaluating direct in-app text correction.
+2. **Limited Local Pro Trial:** KeyFixer includes a limited local trial of the **Inline Fix** feature (currently configured as 25 successful Inline Fix operations) for evaluating direct in-app text correction.
 3. **KeyFixer Pro Lifetime (In-App Purchase):**
    - KeyFixer Pro Lifetime is a one-time purchase with no recurring subscription fees. It unlocks unlimited use of the included Pro functionality while KeyFixer remains supported and operational on compatible macOS versions. It does not guarantee compatibility with future operating-system changes outside the developer's control.
 
@@ -197,7 +197,7 @@ For any inquiries regarding these Terms:
 
 ## 2. هيكل المنتج والترخيص
 1. **الميزات المجانية الأساسية:** يوفر KeyFixer تصحيح تخطيط لوحة المفاتيح مجاناً داخل نافذة التطبيق الرئيسية دون الحاجة لأي دفع.
-2. **الفترة التجريبية المحلية المحدودة:** يتضمن KeyFixer تجربة محلية محدودة لميزة **التصحيح المباشر (Inline Fix)** (تتضمن حالياً 5 عمليات تصحيح مباشر ناجحة) لتجربة التصحيح الفوري داخل التطبيقات الأخرى.
+2. **الفترة التجريبية المحلية المحدودة:** يتضمن KeyFixer تجربة محلية محدودة لميزة **التصحيح المباشر (Inline Fix)** (تتضمن حالياً 25 عملية تصحيح مباشر ناجحة) لتجربة التصحيح الفوري داخل التطبيقات الأخرى.
 3. **KeyFixer Pro مدى الحياة (شراء داخل التطبيق):**
    - KeyFixer Pro مدى الحياة هو شراء لمرة واحدة دون رسوم اشتراك متكررة، ويتيح الاستخدام غير المحدود لميزات Pro المشمولة ما دام KeyFixer مدعومًا وقابلًا للتشغيل على إصدارات macOS المتوافقة. ولا يشكل ذلك ضمانًا بالتوافق مع تغييرات مستقبلية في نظام التشغيل تكون خارج سيطرة المطور.
 
