@@ -556,7 +556,7 @@ export function DesktopApp() {
       )}
 
       {/* ── LEGAL VIEWER MODAL ── */}
-      {showOnboarding && <Onboarding isRTL={isRTL} onDone={() => setShowOnboarding(false)} />}
+      {showOnboarding && <Onboarding isRTL={isRTL} platform={platform} onDone={() => setShowOnboarding(false)} />}
       <LegalViewerModal
         isOpen={showLegalModal}
         onClose={() => setShowLegalModal(false)}
@@ -634,6 +634,7 @@ export function DesktopApp() {
               <ProPanelComponent
                 bridge={proBridge}
                 isRTL={isRTL}
+                platform={platform}
                 onStatusChange={handleProStatusChange}
                 onOpenLegal={(doc) => {
                   setSelectedLegalDoc(doc);

@@ -6,7 +6,9 @@ import { convertKeyboardLayout } from '../core/keyboard';
 
 export const ONBOARDING_STORAGE_KEY = 'keyfixer_onboarding_v1_complete';
 
-export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => void }) {
+export function Onboarding({ isRTL, platform = 'mac', onDone }: { isRTL: boolean; platform?: 'mac' | 'windows'; onDone: () => void }) {
+  const isWindows = platform === 'windows';
+  const shortcutLabel = isWindows ? 'Ctrl+Alt+K' : '⌥⌘K';
   const [step, setStep] = useState(0);
   const [sample, setSample] = useState('lnpfh f;');
   const [demoComplete, setDemoComplete] = useState(false);
@@ -22,11 +24,14 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
     const completeDemo = () => {
       if (demoCompleteRef.current) return;
       demoCompleteRef.current = true;
-      setSample((current) => convertKeyboardLayout(current, { mode: 'auto', platform: 'mac' }).fixedText);
+      setSample((current) => convertKeyboardLayout(current, { mode: 'auto', platform: isWindows ? 'windows' : 'mac' }).fixedText);
       setDemoComplete(true);
     };
     const handleShortcut = (event: KeyboardEvent) => {
-      if (event.altKey && event.metaKey && event.code === 'KeyK') {
+      const isMatch = isWindows
+        ? (event.ctrlKey && event.altKey && event.code === 'KeyK')
+        : (event.altKey && event.metaKey && event.code === 'KeyK');
+      if (isMatch) {
         event.preventDefault();
         completeDemo();
       }
@@ -38,7 +43,7 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
       window.removeEventListener('keyup', handleShortcut);
       unlisten?.();
     };
-  }, [step]);
+  }, [step, isWindows]);
 
   const finish = async () => {
     await invoke('set_launch_at_login', { enabled: launchAtLogin }).catch(() => {});
@@ -54,23 +59,33 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
   const copy = isRTL ? {
     skip: 'تخطي', next: 'التالي', finish: 'ابدأ باستخدام KeyFixer',
     title1: 'اكتب بلغتك، حتى لو كان التخطيط خاطئاً',
-    body1: 'KeyFixer يصحح النص العربي والإنجليزي محلياً على جهازك، بدون رفع النص أو تخزينه.',
+    body1: isWindows
+      ? 'KeyFixer يصحح النص العربي والإنجليزي محلياً على جهازك، بدون رفع النص أو تخزينه.'
+      : 'KeyFixer يصحح النص العربي والإنجليزي محلياً على جهاز الماك، بدون رفع النص أو تخزينه.',
     title2: 'جرّب الاختصار الآن',
-    body2: 'ضع المؤشر في المثال، حدّد النص، ثم اضغط ⌥⌘K. يبدأ التصحيح عند رفع إصبعك عن K.',
+    body2: `ضع المؤشر في المثال، حدّد النص، ثم اضغط ${shortcutLabel}. يبدأ التصحيح عند رفع إصبعك عن K.`,
     success: 'ممتاز! هكذا يعمل التصحيح المباشر داخل أي تطبيق.',
     title3: 'جاهز دائماً عندما تحتاجه',
-    body3: 'فعّل التشغيل عند تسجيل الدخول ليبقى KeyFixer متاحاً من شريط القوائم بدون فتح النافذة.',
-    login: 'تشغيل KeyFixer عند تسجيل الدخول', privacy: 'المعالجة محلية ولا تتم مشاركة النصوص.',
+    body3: isWindows
+      ? 'فعّل التشغيل التلقائي ليبقى KeyFixer متاحاً من شريط المهام (System Tray) بدون إبقاء النافذة مفتوحة.'
+      : 'فعّل التشغيل عند تسجيل الدخول ليبقى KeyFixer متاحاً من شريط القوائم بدون فتح النافذة.',
+    login: isWindows ? 'تشغيل KeyFixer عند بدء تشغيل Windows' : 'تشغيل KeyFixer عند تسجيل الدخول',
+    privacy: 'المعالجة محلية ولا تتم مشاركة النصوص.',
   } : {
     skip: 'Skip', next: 'Next', finish: 'Start using KeyFixer',
     title1: 'Type in your language—even on the wrong layout',
-    body1: 'KeyFixer corrects Arabic and English text locally on your Mac. Your text is never uploaded or stored.',
+    body1: isWindows
+      ? 'KeyFixer corrects Arabic and English text locally on your PC. Your text is never uploaded or stored.'
+      : 'KeyFixer corrects Arabic and English text locally on your Mac. Your text is never uploaded or stored.',
     title2: 'Try the shortcut',
-    body2: 'Focus and select the sample, then press ⌥⌘K. Correction starts when you release K.',
+    body2: `Focus and select the sample, then press ${shortcutLabel}. Correction starts when you release K.`,
     success: 'Perfect! Inline Fix works the same way inside other applications.',
     title3: 'Ready whenever you need it',
-    body3: 'Launch KeyFixer at login so it remains available from the menu bar without keeping the window open.',
-    login: 'Launch KeyFixer at login', privacy: 'Processing stays local and your text is never shared.',
+    body3: isWindows
+      ? 'Launch KeyFixer on startup so it remains available from the System Tray without keeping the window open.'
+      : 'Launch KeyFixer at login so it remains available from the menu bar without keeping the window open.',
+    login: isWindows ? 'Launch KeyFixer on Windows startup' : 'Launch KeyFixer at login',
+    privacy: 'Processing stays local and your text is never shared.',
   };
 
   const icons = [<Rocket size={30} />, <Keyboard size={30} />, <ShieldCheck size={30} />];
@@ -78,8 +93,8 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
   const bodies = [copy.body1, copy.body2, copy.body3];
 
   return (
-    <div className="kf-onboarding-overlay" dir={isRTL ? 'rtl' : 'ltr'} data-testid="onboarding">
-      <section className="kf-onboarding-card">
+    <div className={`kf-onboarding-overlay${isWindows ? ' kf-onboarding-windows' : ''}`} dir={isRTL ? 'rtl' : 'ltr'} data-testid="onboarding">
+      <section className={`kf-onboarding-card${isWindows ? ' kf-onboarding-card-windows' : ''}`}>
         <button className="kf-onboarding-skip" onClick={skip}>{copy.skip}</button>
         <div className="kf-onboarding-icon">{icons[step]}</div>
         <h2>{titles[step]}</h2>
@@ -88,7 +103,7 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
         {step === 1 && (
           <div className={`kf-onboarding-demo${demoComplete ? ' is-complete' : ''}`}>
             <input value={sample} onChange={(event) => { setSample(event.target.value); demoCompleteRef.current = false; setDemoComplete(false); }} dir="auto" aria-label="Inline Fix demo" />
-            <kbd>⌥⌘K</kbd>
+            <kbd>{shortcutLabel}</kbd>
             {demoComplete && <span><Check size={14} /> {copy.success}</span>}
           </div>
         )}
@@ -96,7 +111,7 @@ export function Onboarding({ isRTL, onDone }: { isRTL: boolean; onDone: () => vo
         {step === 2 && (
           <div className="kf-onboarding-options">
             <label>
-              <input type="checkbox" checked={launchAtLogin} onChange={(event) => setLaunchAtLogin(event.target.checked)} />
+              <input type="checkbox" checked={launchAtLogin} aria-label={copy.login} onChange={(event) => setLaunchAtLogin(event.target.checked)} />
               <span>{copy.login}</span>
             </label>
             <div><LockKeyhole size={15} /> <span>{copy.privacy}</span></div>

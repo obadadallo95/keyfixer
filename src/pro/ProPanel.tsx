@@ -19,110 +19,107 @@ const FREE_STATE: ProStateDto = {
   inlineFixEnabled: false,
 };
 
-// ── i18n Translations ─────────────────────────────────────────────────────────
+function getProTranslations(isRTL: boolean, isWindows: boolean) {
+  const shortcut = isWindows ? 'Ctrl+Alt+K' : '⌥⌘K';
+  const osName = isWindows ? 'Windows' : 'macOS';
+  const deviceName = isWindows ? (isRTL ? 'جهاز الويندوز' : 'your PC') : (isRTL ? 'جهاز الماك' : 'your Mac');
+  const storeName = isWindows ? (isRTL ? 'متجر مايكروسوفت' : 'Microsoft Store') : (isRTL ? 'App Store' : 'App Store');
+  const accountName = isWindows ? (isRTL ? 'حساب مايكروسوفت' : 'Microsoft Account') : (isRTL ? 'حساب Apple' : 'Apple Account');
 
-const T = {
-  en: {
-    tryPro: 'Try Pro Free',
-    unlockPro: 'Unlock Pro',
-    inlineFix: 'Inline Fix',
-    resetTest: '↺ Recharge (25)',
-    resetFree: '↺ Fresh Free',
-    rechargeSuccess: 'Recharged 25 credits!',
-    // Accessibility modal
-    axTitle: 'Accessibility Permission Required',
-    axDesc: 'KeyFixer needs macOS Accessibility permission to read and replace selected text directly in other applications.',
-    axStep1: 'Click "Open Settings" below',
-    axStep2: 'Find KeyFixer in the list and toggle the switch ON',
-    axStep3: 'If already listed, click the (-) minus button to remove the old build, then re-add KeyFixer',
-    axStep4: 'Return here and restart KeyFixer so the fresh process can read the new permission',
-    axOpen: 'Open Settings',
-    axCheck: 'Check Again',
-    axChecking: 'Checking permission…',
-    axGranted: 'Permission granted successfully!',
-    axDone: 'Done & Close',
-    // Trial modal
-    trialTitle: 'Try KeyFixer Pro',
-    trialDesc: 'Enjoy 25 free instant Inline Fixes — select mistyped text in any application and press ⌥⌘K to convert it instantly.',
-    trialF1: 'Fix text instantly inside any application',
-    trialF2: 'No copy-pasting or switching windows needed',
-    trialF3: 'Works system-wide seamlessly on macOS',
-    trialStart: 'Start Free Trial (25 Fixes)',
-    trialLater: 'Maybe Later',
-    // Upgrade modal
-    upgradeTitle: 'Trial Ended',
-    upgradeDesc: 'You have used all 25 trial credits. Upgrade to KeyFixer Pro for unlimited system-wide inline fixes.',
-    upgradeF1: 'Unlimited Inline Fixes with ⌥⌘K',
-    upgradeF2: 'Works across all apps and browsers',
-    upgradeF3: 'One-time license with lifetime updates',
-    upgradeF4: 'All correction happens locally on your Mac',
-    upgradeF5: 'Your selected text is never uploaded or stored',
-    upgradeCta: 'Get KeyFixer Pro',
-    upgradeNot: 'Not Now',
-    // Purchase states & messages (TASK 9B)
-    purchaseUnavailable: 'Purchase temporarily unavailable',
-    purchasePending: 'Purchase pending approval',
-    purchasePendingDesc: 'Your purchase is pending approval with Apple. KeyFixer Pro will unlock automatically once confirmed.',
-    purchaseFailed: "Purchase couldn't be completed. Please try again.",
-    purchaseSuccess: 'KeyFixer Pro unlocked',
-    // Restore Purchases messages (TASK 9C)
-    restoreBtn: 'Restore Purchases',
-    restoring: 'Restoring…',
-    restoreSuccess: 'KeyFixer Pro restored',
-    restoreNotFound: 'No KeyFixer Pro purchase was found for this Apple Account.',
-    restoreFailed: "Couldn't restore purchases. Please try again.",
-  },
-  ar: {
-    tryPro: '✨ تجربة Pro مجاناً',
-    unlockPro: 'الترقية إلى Pro',
-    inlineFix: 'التصحيح المباشر',
-    resetTest: '↺ شحن (25)',
-    resetFree: '↺ إعادة ضبط البداية',
-    rechargeSuccess: 'تم شحن 25 محاولة!',
-    // Accessibility modal
-    axTitle: 'إذن تسهيلات الاستخدام مطلوب',
-    axDesc: 'يحتاج تطبيق KeyFixer إلى إذن تسهيلات الاستخدام (Accessibility) لقراءة النص المحدد وتصحيحه تلقائياً داخل التطبيقات الأخرى.',
-    axStep1: 'اضغط على زر "فتح الإعدادات" أدناه',
-    axStep2: 'ابحث عن KeyFixer في القائمة وفعّل المفتاح',
-    axStep3: 'إذا كان موجوداً مسبقاً، حدده واضغط زر الناقص (-) لحذفه ثم أعد إضافته لربط النسخة الجديدة',
-    axStep4: 'عد إلى هنا وأعد تشغيل KeyFixer حتى تقرأ العملية الجديدة الصلاحية',
-    axOpen: 'فتح الإعدادات',
-    axCheck: 'فحص مجددًا',
-    axChecking: 'جارٍ التحقق من الإذن…',
-    axGranted: 'تم منح الإذن بنجاح!',
-    axDone: 'تم التفعيل والإغلاق',
-    // Trial modal
-    trialTitle: 'جرّب KeyFixer Pro',
-    trialDesc: 'احصل على 25 محاولة تصحيح مجانية — حدد أي نص مكتوب باللغة الخاطئة واضغط ⌥⌘K ليتم تصحيحه مكانه فوراً في أي برنامج.',
-    trialF1: 'تصحيح مباشر وفوري داخل أي برنامج أو محرر',
-    trialF2: 'بدون الحاجة لنسخ أو لصق أو تبديل النوافذ',
-    trialF3: 'يعمل على مستوى نظام macOS بالكامل',
-    trialStart: 'ابدأ التجربة المجانية (25 محاولة)',
-    trialLater: 'ربما لاحقاً',
-    // Upgrade modal
-    upgradeTitle: 'انتهت المحاولات التجريبية',
-    upgradeDesc: 'لقد استهلكت 25 محاولة تجريبية بنجاح. قم بالترقية إلى KeyFixer Pro للاستمتاع بتصحيح غير محدود.',
-    upgradeF1: 'تصحيح فوري غير محدود باختصار ⌥⌘K',
-    upgradeF2: 'يعمل في جميع التطبيقات والمتصفحات',
-    upgradeF3: 'شراء مرة واحدة مع تحديثات مستقبلية',
-    upgradeF4: 'تتم معالجة النص محلياً على جهازك',
-    upgradeF5: 'لا يتم رفع النص المحدد أو تخزينه',
-    upgradeCta: 'الترقية إلى KeyFixer Pro',
-    upgradeNot: 'ليس الآن',
-    // Purchase states & messages (TASK 9B)
-    purchaseUnavailable: 'الشراء غير متاح مؤقتًا',
-    purchasePending: 'عملية الشراء بانتظار الموافقة',
-    purchasePendingDesc: 'عملية الشراء بانتظار موافقة Apple. سيتم تفعيل KeyFixer Pro تلقائيًا فور تأكيدها.',
-    purchaseFailed: 'تعذر إكمال عملية الشراء. حاول مرة أخرى.',
-    purchaseSuccess: 'تم تفعيل KeyFixer Pro',
-    // Restore Purchases messages (TASK 9C)
-    restoreBtn: 'استعادة المشتريات',
-    restoring: 'جارٍ الاستعادة…',
-    restoreSuccess: 'تمت استعادة KeyFixer Pro',
-    restoreNotFound: 'لم يتم العثور على شراء KeyFixer Pro مرتبط بحساب Apple هذا.',
-    restoreFailed: 'تعذر استعادة المشتريات. حاول مرة أخرى.',
-  },
-};
+  if (isRTL) {
+    return {
+      tryPro: '✨ تجربة Pro مجاناً',
+      unlockPro: 'الترقية إلى Pro',
+      inlineFix: 'التصحيح المباشر',
+      resetTest: '↺ شحن (25)',
+      resetFree: '↺ إعادة ضبط البداية',
+      rechargeSuccess: 'تم شحن 25 محاولة!',
+      axTitle: 'إذن تسهيلات الاستخدام مطلوب',
+      axDesc: 'يحتاج تطبيق KeyFixer إلى إذن تسهيلات الاستخدام (Accessibility) لقراءة النص المحدد وتصحيحه تلقائياً داخل التطبيقات الأخرى.',
+      axStep1: 'اضغط على زر "فتح الإعدادات" أدناه',
+      axStep2: 'ابحث عن KeyFixer في القائمة وفعّل المفتاح',
+      axStep3: 'إذا كان موجوداً مسبقاً، حدده واضغط زر الناقص (-) لحذفه ثم أعد إضافته لربط النسخة الجديدة',
+      axStep4: 'عد إلى هنا وأعد تشغيل KeyFixer حتى تقرأ العملية الجديدة الصلاحية',
+      axOpen: 'فتح الإعدادات',
+      axCheck: 'فحص مجددًا',
+      axChecking: 'جارٍ التحقق من الإذن…',
+      axGranted: 'تم منح الإذن بنجاح!',
+      axDone: 'تم التفعيل والإغلاق',
+      trialTitle: 'جرّب KeyFixer Pro',
+      trialDesc: `احصل على 25 محاولة تصحيح مجانية — حدد أي نص مكتوب باللغة الخاطئة واضغط ${shortcut} ليتم تصحيحه مكانه فوراً في أي برنامج.`,
+      trialF1: 'تصحيح مباشر وفوري داخل أي برنامج أو محرر',
+      trialF2: 'بدون الحاجة لنسخ أو لصق أو تبديل النوافذ',
+      trialF3: `يعمل على مستوى نظام ${osName} بالكامل`,
+      trialStart: 'ابدأ التجربة المجانية (25 محاولة)',
+      trialLater: 'ربما لاحقاً',
+      upgradeTitle: 'انتهت المحاولات التجريبية',
+      upgradeDesc: 'لقد استهلكت 25 محاولة تجريبية بنجاح. قم بالترقية إلى KeyFixer Pro للاستمتاع بتصحيح غير محدود.',
+      upgradeF1: `تصحيح فوري غير محدود باختصار ${shortcut}`,
+      upgradeF2: 'يعمل في جميع التطبيقات والمتصفحات',
+      upgradeF3: `شراء لمرة واحدة مع تحديثات مدى الحياة عبر ${storeName}`,
+      upgradeF4: `تتم معالجة النص محلياً بالكامل على ${deviceName}`,
+      upgradeF5: 'لا يتم رفع النص المحدد أو تخزينه أبدًا',
+      upgradeCta: 'الترقية إلى KeyFixer Pro',
+      upgradeNot: 'ليس الآن',
+      purchaseUnavailable: 'الشراء غير متاح مؤقتًا',
+      purchasePending: 'عملية الشراء بانتظار الموافقة',
+      purchasePendingDesc: `عملية الشراء بانتظار الموافقة عبر ${storeName}. سيتم تفعيل KeyFixer Pro تلقائيًا فور تأكيدها.`,
+      purchaseFailed: 'تعذر إكمال عملية الشراء. حاول مرة أخرى.',
+      purchaseSuccess: 'تم تفعيل KeyFixer Pro',
+      restoreBtn: isWindows ? 'التحقق من الترخيص' : 'استعادة المشتريات',
+      restoring: isWindows ? 'جارٍ فحص المتجر…' : 'جارٍ الاستعادة…',
+      restoreSuccess: 'تم تفعيل KeyFixer Pro بنجاح',
+      restoreNotFound: `لم يتم العثور على شراء KeyFixer Pro مرتبط بـ ${accountName} هذا.`,
+      restoreFailed: 'تعذر التحقق من المشتريات. حاول مرة أخرى.',
+    };
+  } else {
+    return {
+      tryPro: 'Try Pro Free',
+      unlockPro: 'Unlock Pro',
+      inlineFix: 'Inline Fix',
+      resetTest: '↺ Recharge (25)',
+      resetFree: '↺ Fresh Free',
+      rechargeSuccess: 'Recharged 25 credits!',
+      axTitle: 'Accessibility Permission Required',
+      axDesc: 'KeyFixer needs macOS Accessibility permission to read and replace selected text directly in other applications.',
+      axStep1: 'Click "Open Settings" below',
+      axStep2: 'Find KeyFixer in the list and toggle the switch ON',
+      axStep3: 'If already listed, click the (-) minus button to remove the old build, then re-add KeyFixer',
+      axStep4: 'Return here and restart KeyFixer so the fresh process can read the new permission',
+      axOpen: 'Open Settings',
+      axCheck: 'Check Again',
+      axChecking: 'Checking permission…',
+      axGranted: 'Permission granted successfully!',
+      axDone: 'Done & Close',
+      trialTitle: 'Try KeyFixer Pro',
+      trialDesc: `Enjoy 25 free instant Inline Fixes — select mistyped text in any application and press ${shortcut} to convert it instantly.`,
+      trialF1: 'Fix text instantly inside any application',
+      trialF2: 'No copy-pasting or switching windows needed',
+      trialF3: `Works system-wide seamlessly on ${osName}`,
+      trialStart: 'Start Free Trial (25 Fixes)',
+      trialLater: 'Maybe Later',
+      upgradeTitle: 'Trial Ended',
+      upgradeDesc: 'You have used all 25 trial credits. Upgrade to KeyFixer Pro for unlimited system-wide inline fixes.',
+      upgradeF1: `Unlimited Inline Fixes with ${shortcut}`,
+      upgradeF2: 'Works across all apps and browsers',
+      upgradeF3: `One-time lifetime license via ${storeName}`,
+      upgradeF4: `All correction happens locally on ${deviceName}`,
+      upgradeF5: 'Your selected text is never uploaded or stored',
+      upgradeCta: 'Get KeyFixer Pro',
+      upgradeNot: 'Not Now',
+      purchaseUnavailable: 'Purchase temporarily unavailable',
+      purchasePending: 'Purchase pending approval',
+      purchasePendingDesc: `Your purchase is pending approval with ${storeName}. KeyFixer Pro will unlock automatically once confirmed.`,
+      purchaseFailed: "Purchase couldn't be completed. Please try again.",
+      purchaseSuccess: 'KeyFixer Pro unlocked',
+      restoreBtn: isWindows ? 'Check Store License' : 'Restore Purchases',
+      restoring: isWindows ? 'Checking Store…' : 'Restoring…',
+      restoreSuccess: 'KeyFixer Pro restored',
+      restoreNotFound: `No KeyFixer Pro purchase was found for this ${accountName}.`,
+      restoreFailed: "Couldn't restore purchases. Please try again.",
+    };
+  }
+}
 
 // ── Helper: Derive UI State ──────────────────────────────────────────────────
 
@@ -135,8 +132,9 @@ function derived(dto: ProStateDto): UiState {
 
 // ── Main ProPanel Component ──────────────────────────────────────────────────
 
-export function ProPanel({ bridge, isRTL, onStatusChange, onOpenLegal }: ProPanelProps) {
-  const t = isRTL ? T.ar : T.en;
+export function ProPanel({ bridge, isRTL, platform = 'mac', onStatusChange, onOpenLegal }: ProPanelProps) {
+  const isWindows = platform === 'windows';
+  const t = getProTranslations(isRTL, isWindows);
 
   const [state, setState] = useState<ProStateDto>(FREE_STATE);
   const [uiState, setUiState] = useState<UiState>('FREE');

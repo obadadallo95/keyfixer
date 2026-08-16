@@ -106,6 +106,7 @@ export interface ProRuntimeBridge {
 export interface ProPanelProps {
   bridge: ProRuntimeBridge;
   isRTL: boolean;
+  platform?: 'mac' | 'windows';
   /** Called when the effective Pro status changes for the header badge */
   onStatusChange?: (status: 'pro' | 'trial' | 'free') => void;
   /** Open a legal document in the legal viewer modal */
