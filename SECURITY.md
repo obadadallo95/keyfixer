@@ -1,12 +1,35 @@
-# Security Policy
+# Security & Privacy Policy
 
-## Supported Versions
-Only the latest version of KeyFixer receives security updates.
+KeyFixer is built with a **security-first, zero-trust data model**.
 
-## Reporting a Vulnerability
-If you discover a security vulnerability within KeyFixer, please report it via GitHub Issues or contact the maintainer directly. 
+---
 
-## Principles
-- KeyFixer must remain 100% offline. No user text should ever be transmitted.
-- KeyFixer must request the minimum necessary Chrome Extension permissions.
-- We do not accept contributions that introduce remote APIs, analytics, or external trackers.
+## 🔒 Privacy & Architecture Principles
+
+- **100% Client-Side Execution**: All keyboard layout transformations occur locally in device RAM.
+- **Zero Network Transmission**: KeyFixer does not communicate with external servers, cloud databases, or telemetry APIs.
+- **No Text Logging**: Text entered into KeyFixer is never written to disk, indexed, or stored in persistent browser storage.
+- **Sandboxed Extensions & Apps**: Follows strict Manifest V3 rules for Chrome and App Sandbox constraints on macOS.
+
+---
+
+## 🛡️ Supported Versions
+
+Only the latest release of KeyFixer receives active security and compatibility patches.
+
+| Version | Supported |
+| :--- | :---: |
+| `1.3.x` | ✅ Yes |
+| `< 1.3.0` | ❌ No (Please upgrade) |
+
+---
+
+## 🚨 Reporting a Vulnerability
+
+If you discover a security vulnerability or privacy violation, please report it responsibly:
+
+1. **Email Contact**: Send details directly to the maintainer via the [Official Contact Form](https://obadadallo.web.app/contact/).
+2. **GitHub Security Advisory**: Open a private advisory on GitHub if applicable.
+3. **Response Window**: Security reports will be acknowledged within 48 hours, and a remediation timeline will be provided.
+
+Please do not open public GitHub issues for sensitive security vulnerabilities until a patch has been published.

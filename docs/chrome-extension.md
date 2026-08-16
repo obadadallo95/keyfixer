@@ -1,45 +1,61 @@
-# Chrome Extension Documentation
+# Chrome Extension Documentation (v1.3.1)
 
-KeyFixer includes a bilingual Manifest V3 extension for correcting Arabic and English keyboard-layout mistakes. Text conversion happens locally and the extension makes no network requests.
+KeyFixer includes a Manifest V3 bilingual extension for Google Chrome, Microsoft Edge, Brave, and other Chromium-based browsers to instantly correct text typed with the wrong keyboard layout.
 
-## User interface
+---
 
-- The popup follows Chrome's compact utility pattern and supports light and dark system themes.
-- Arabic or English is selected from Chrome's UI language on first use. A manual language choice is stored locally.
-- The popup includes local Privacy, Terms, and Developer views. Only the developer contact button opens the official support page.
-- Typed and corrected text exists in the popup session only and is never placed in extension storage.
+## 🛒 Chrome Web Store Listing
 
-## Architecture
+- **Direct Link**: [**KeyFixer on Chrome Web Store**](https://chromewebstore.google.com/detail/bgleifjaplnanbncododdkgkpaieeafg?utm_source=item-share-cb)
+- **Extension ID**: `bgleifjaplnanbncododdkgkpaieeafg`
+- **Category**: Productivity / Tools
+- **Pricing**: 100% Free
 
-1. **Popup (`extension/src/popup.ts`, `popup.html`, `popup.css`)**
-   - Converts pasted or typed text immediately.
-   - Stores only keyboard, conversion-mode, and interface-language preferences.
-   - Provides bilingual legal and developer information without network access.
+---
 
-2. **Background service worker (`extension/src/background.ts`)**
-   - Registers localized actions for selected text.
-   - Converts the selection locally.
-   - Injects the page helper only after the user explicitly chooses a KeyFixer context-menu action.
+## ⚡ User Interface & Experience
 
-3. **On-demand page helper (`extension/src/content.ts`)**
-   - Replaces a selection in an active input, textarea, or content-editable field.
-   - Falls back to copying the corrected text when replacement is unavailable.
-   - Displays a localized confirmation toast.
+- **Popup HUD (`extension/src/popup.ts`, `popup.html`, `popup.css`)**:
+  - Responsive compact interface with instant dual textarea conversion as you type or paste.
+  - Automatic light/dark mode adaptation matching browser preferences.
+  - Embedded bilingual legal disclosures and developer information.
+  - Ephemeral in-memory text storage (text is never saved to extension storage or transmitted anywhere).
 
-## Minimum permissions
+- **Context Menu Integration**:
+  - Right-click selected text on any webpage to reveal KeyFixer actions:
+    - `Fix Keyboard Layout`: Replaces the mistyped text directly in-place.
+    - `Fix & Copy`: Converts the text and copies the result directly to the clipboard.
 
-- `contextMenus`: add the two user-invoked actions for selected text.
-- `storage`: remember keyboard, conversion-mode, and language preferences locally.
-- `clipboardWrite`: copy a corrected result after a user request or replacement fallback.
-- `activeTab`: grant temporary access to the current page only after the user chooses a KeyFixer action.
-- `scripting`: inject the page helper during that temporary, user-initiated access.
+- **Smart DOM In-Place Replacement (`extension/src/content.ts`)**:
+  - Seamlessly replaces text in standard `<input>`, `<textarea>`, and rich `contenteditable` elements.
+  - Interoperable with modern frontend frameworks (React, Vue, Angular) by dispatching native property setters and synthetic `InputEvent` dispatches.
+  - Displays an unobtrusive, temporary status toast on successful replacement or copy.
 
-The extension declares no host permissions and has no persistent `<all_urls>` content script. It cannot continuously read pages or browsing history.
+---
 
-## Building and loading unpacked
+## 🔒 Minimum Permissions Model
+
+| Permission | Justification |
+| :--- | :--- |
+| `contextMenus` | Registers user-facing right-click menu items for selected text. |
+| `storage` | Stores user interface language and default conversion direction locally. |
+| `clipboardWrite` | Copies converted text to clipboard upon user request. |
+| `activeTab` | Grants temporary execution permission on the active tab *only after* explicit user interaction. |
+| `scripting` | Executes the replacement helper script on the current page during user-initiated actions. |
+
+> [!IMPORTANT]
+> KeyFixer declares **NO host permissions** (`<all_urls>` is excluded). The extension cannot monitor browsing activity, read background traffic, or access pages without direct user action.
+
+---
+
+## 🛠️ Building the Extension
 
 ```bash
+# Build production extension artifact in extension/dist/
 npm run build:extension
 ```
 
-Then open `chrome://extensions`, enable Developer Mode, choose **Load unpacked**, and select `extension/dist/`.
+### Loading Unpacked for Development:
+1. Open `chrome://extensions` in Chrome or Edge.
+2. Enable **Developer mode** in the top right corner.
+3. Click **Load unpacked** and select the `extension/dist/` directory.

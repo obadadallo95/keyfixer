@@ -1,21 +1,59 @@
 # Contributing to KeyFixer
 
-Thank you for considering contributing to KeyFixer!
+Thank you for your interest in contributing to **KeyFixer**! We welcome bug reports, layout improvement suggestions, documentation fixes, and pull requests.
 
-## Setup
-1. Clone the repository.
-2. Run `npm install` to install dependencies.
-3. Use `npm run dev` for web app development.
-4. Use `npm run build:extension` for extension development.
+---
 
-## Tests
-All new features or bug fixes must include tests. Run tests with:
-`npm run test`
+## 🧭 Code of Conduct & Core Principles
 
-## Keyboard Map Changes
-If you find an inaccuracy in a keyboard map (Windows or macOS), please provide documentation or a clear reproduction step. Modify the maps inside `src/core/keyboard/layouts/`. Ensure all tests still pass, or update them accordingly.
+1. **100% Offline Guarantee**: We strictly reject any PRs that introduce network calls, analytics SDKs, user telemetry, or remote API dependencies.
+2. **Minimal Permissions**: The Chrome Extension must never request broad host permissions (e.g. `<all_urls>`).
+3. **Clean Code & Testing**: All new features or layout adjustments must be accompanied by automated Vitest tests.
 
-## Pull Requests
-- Keep PRs focused on a single change.
-- Ensure `npm run lint` and `npm run typecheck` pass.
-- Provide clear descriptions of the change.
+---
+
+## 🛠️ Local Development Workflow
+
+1. **Fork and clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/keyfixer.git
+   cd keyfixer
+   ```
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Run local development servers**:
+   ```bash
+   npm run dev              # Web App
+   npm run dev:desktop      # Desktop Frontend
+   npm run build:extension  # Build Chrome Extension
+   ```
+4. **Run the test suite**:
+   ```bash
+   npm run test:run
+   ```
+
+---
+
+## ⌨️ Adding or Modifying Keyboard Layouts
+
+All keyboard mapping tables live in `src/core/keyboard/layouts/`:
+- `windowsArabic101.ts`: Windows PC Arabic 101 layout.
+- `macArabic.ts`: Apple macOS Arabic layout.
+
+When proposing mapping changes:
+1. Provide reference documentation or physical keyboard layout photos.
+2. Ensure diacritics (Tashkeel) and ligatures (`لا`, `لأ`, `لإ`, `لآ`) remain intact.
+3. Update or add corresponding test cases in `tests/keyboardLayoutConverter.test.ts`.
+
+---
+
+## 📬 Pull Request Guidelines
+
+1. **Branch Naming**: Use clear branch names like `fix/ligature-mapping`, `feat/azerty-layout`, `docs/windows-guide`.
+2. **Validation Checklist**:
+   - [ ] `npm run version:check` passes.
+   - [ ] `npm run typecheck` and `npm run typecheck:extension` pass.
+   - [ ] `npm run test:run` passes (all 106+ tests).
+3. **Descriptive PR**: Explain what was changed, why the change is necessary, and steps to test.

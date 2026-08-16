@@ -1,74 +1,50 @@
-# Windows Desktop Application
+# Windows Desktop Application (v1.3.1)
 
-KeyFixer includes a Windows desktop application that builds as a native executable with an NSIS installer via Tauri.
+KeyFixer for Windows is a native desktop application built with **Tauri v2** and **Rust**, distributed both as a packaged Win32 MSIX app on the **Microsoft Store** and as a standalone NSIS installer.
 
-## Build Requirements
+---
 
-- Rust (latest stable)
-- Node.js 22.x
-- Windows 10/11 for native compilation (or a suitable cross-compilation environment)
+## 🛒 Microsoft Store Release
 
-## Building for Windows
+KeyFixer is published and verified on the **Microsoft Store**:
 
-Run the following command to build the Windows NSIS installer:
+- **Store Link**: [**Get KeyFixer on Microsoft Store**](https://apps.microsoft.com/detail/9pk3g83gp41d?ocid=webpdpshare)
+- **Product ID**: `9PK3G83GP41D`
+- **Package Identity**: `ObadaDallo.KeyFixer`
+- **Supported OS**: Windows 10 (version 1809+, build 17763+) and Windows 11 (build 22000+)
 
-```bash
+---
+
+## ⚡ Features & System Behavior
+
+- **Global Shortcut (`Ctrl + Alt + K`)**: Toggle the KeyFixer window instantly from any active Windows application.
+- **Windows Arabic 101 Mapping**: Automatically applies the standard PC Windows Arabic 101 physical layout mapping for text transformations.
+- **System Tray Integration**: Lives silently in the Windows Taskbar notification area (System Tray). Clicking toggles window visibility; right-clicking reveals the native context menu.
+- **Background Mode (Hide on Close)**: Clicking the window close button (`X`) minimizes KeyFixer silently to the tray rather than terminating the process.
+- **Windows 11 Native Theme**: Matches Windows light and dark mode automatically using Fluent design principles and dark slate glassmorphism.
+
+---
+
+## 🛠️ Building for Windows
+
+### 1. Build Requirements
+- **Node.js**: v22.x+
+- **Rust Toolchain**: `stable` (`x86_64-pc-windows-msvc`)
+- **Windows SDK**: Windows 10/11 SDK (for `MakeAppx.exe` and `SignTool.exe`)
+- **WebView2 Evergreen Runtime**: Pre-installed on Windows 10/11
+
+### 2. Standalone NSIS Installer
+```powershell
 npm install
 npm run build:desktop
 npm run build:windows
 ```
+*Output location:* `src-tauri/target/release/bundle/nsis/KeyFixer_1.3.1_x64-setup.exe`
 
-The resulting NSIS installer will be located at:
-`src-tauri/target/release/bundle/nsis/`
-
-## Features & Behavior
-
-- **Global Shortcut:** `Ctrl+Alt+K` toggles the application from anywhere.
-- **Keyboard Layout:** The Windows app automatically uses the **Windows Arabic 101** mapping for text conversions.
-- **System Tray:** A tray icon is provided. Clicking it toggles the main window. You can also right-click to show the window or quit the app.
-- **Background Mode:** Closing the window hides it in the background instead of quitting. Use the tray menu to quit fully.
-
-## Screenshots
-
-The Windows interface is designed for Windows 11 while preserving KeyFixer's amber accent and right-to-left Arabic workflow.
-
-### English to Arabic conversion
-
-The user can explicitly select the conversion direction when it is known.
-
-![KeyFixer for Windows converting English keyboard-layout text to Arabic](assets/windows/english-to-arabic.jpeg)
-
-### Automatic direction detection
-
-Auto Detect chooses the appropriate Arabic or English conversion direction from the entered text.
-
-![KeyFixer for Windows automatically detecting the keyboard-layout conversion direction](assets/windows/auto-detect.jpeg)
-
-### Privacy and terms
-
-The in-app privacy and terms dialog explains the local-only processing model and offers the support route.
-
-![KeyFixer for Windows privacy and terms dialog](assets/windows/privacy-and-terms.jpeg)
-
-## Microsoft Store
-
-KeyFixer is available on the Microsoft Store as a packaged Win32 MSIX application.
-
-The MSIX build is separate from the NSIS installer and uses a manual `MakeAppx.exe`
-workflow (Tauri v2 does not have a native MSIX bundle target).
-
-**Build command:**
-
-```bash
+### 3. Microsoft Store MSIX Package
+```powershell
 npm run build:windows:msix
 ```
+*Output location:* `src-tauri/target/release/bundle/msix/KeyFixer_1.3.1.0_x64.msix`
 
-**Output:** `src-tauri/target/release/bundle/msix/KeyFixer_1.1.1.0_x64.msix`
-
-**CI workflow:** `.github/workflows/microsoft-store-msix.yml`
-
-For full details — Partner Center identity values, signing instructions, local testing,
-Store upload steps, and version increment rules — see:
-
-→ [docs/microsoft-store-msix.md](microsoft-store-msix.md)
-
+For full MSIX packaging details, Partner Center identity configuration, and CI workflows, see [docs/microsoft-store-msix.md](microsoft-store-msix.md).

@@ -1,0 +1,36 @@
+name: 💡 Feature Request
+description: Propose a new feature, keyboard layout, or enhancement for KeyFixer
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make KeyFixer even better? We'd love to hear it!
+  - type: input
+    id: feature_title
+    attributes:
+      label: Feature Summary
+      description: A concise title for your feature proposal.
+      placeholder: Support French AZERTY ↔ Arabic layout
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem or limitation?
+      placeholder: I use a French AZERTY keyboard and currently the Arabic mapping assumes US QWERTY.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you've considered.

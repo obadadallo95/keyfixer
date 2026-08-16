@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 280" width="100%" height="100%">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08080C"/>
+      <stop offset="50%" stop-color="#0F0F14"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </linearGradient>
+
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1A24" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#12121A" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.4"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="glowGold" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+
+    <style>
+      @keyframes ambientGlow1 {
+        0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.15; }
+        50% { transform: translate(40px, 20px) scale(1.15); opacity: 0.25; }
+      }
+      @keyframes ambientGlow2 {
+        0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.12; }
+        50% { transform: translate(-30px, -15px) scale(1.2); opacity: 0.22; }
+      }
+      @keyframes pulseDot {
+        0%, 100% { opacity: 0.4; transform: scale(0.9); }
+        50% { opacity: 1; transform: scale(1.15); }
+      }
+      @keyframes typeEnToAr {
+        0%, 10% { opacity: 0; transform: translateY(4px); }
+        15%, 45% { opacity: 1; transform: translateY(0); }
+        50%, 100% { opacity: 0; transform: translateY(-4px); }
+      }
+      @keyframes typeArToEn {
+        0%, 50% { opacity: 0; transform: translateY(4px); }
+        55%, 90% { opacity: 1; transform: translateY(0); }
+        95%, 100% { opacity: 0; transform: translateY(-4px); }
+      }
+      @keyframes arrowSwap {
+        0%, 45% { transform: rotate(0deg); }
+        50%, 95% { transform: rotate(180deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes cursorBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+      @keyframes floatCard {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-3px); }
+      }
+
+      .glow-1 { animation: ambientGlow1 8s ease-in-out infinite; transform-origin: 200px 80px; }
+      .glow-2 { animation: ambientGlow2 9s ease-in-out infinite; transform-origin: 680px 200px; }
+      .pulse-dot { animation: pulseDot 2s ease-in-out infinite; transform-origin: center; }
+      .text-scene-1 { animation: typeEnToAr 9s ease-in-out infinite; }
+      .text-scene-2 { animation: typeArToEn 9s ease-in-out infinite; }
+      .arrow-rotator { animation: arrowSwap 9s cubic-bezier(0.4, 0, 0.2, 1) infinite; transform-origin: 440px 148px; }
+      .cursor { animation: cursorBlink 0.9s infinite; }
+      .animated-frame { animation: floatCard 6s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="880" height="280" rx="20" fill="url(#bgGrad)"/>
+  <rect width="880" height="280" rx="20" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.5"/>
+
+  <!-- Ambient Light Orbs -->
+  <circle cx="160" cy="70" r="140" fill="#F59E0B" filter="url(#glowGold)" class="glow-1"/>
+  <circle cx="720" cy="210" r="150" fill="#0284C7" filter="url(#glowCyan)" class="glow-2"/>
+
+  <!-- Background Decorative Grid Lines -->
+  <g opacity="0.04" stroke="#FFFFFF" stroke-width="1">
+    <line x1="40" y1="0" x2="40" y2="280"/>
+    <line x1="140" y1="0" x2="140" y2="280"/>
+    <line x1="240" y1="0" x2="240" y2="280"/>
+    <line x1="340" y1="0" x2="340" y2="280"/>
+    <line x1="440" y1="0" x2="440" y2="280"/>
+    <line x1="540" y1="0" x2="540" y2="280"/>
+    <line x1="640" y1="0" x2="640" y2="280"/>
+    <line x1="740" y1="0" x2="740" y2="280"/>
+    <line x1="840" y1="0" x2="840" y2="280"/>
+    <line x1="0" y1="70" x2="880" y2="70"/>
+    <line x1="0" y1="140" x2="880" y2="140"/>
+    <line x1="0" y1="210" x2="880" y2="210"/>
+  </g>
+
+  <!-- Top Navigation & Branding Header -->
+  <g transform="translate(36, 26)">
+    <!-- App Logo Icon -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="46" height="46" rx="12" fill="#14141B" stroke="url(#goldGrad)" stroke-width="1.5"/>
+      <text x="11" y="32" font-family="'SF Pro Display', system-ui, sans-serif" font-size="20" font-weight="900" fill="url(#goldGrad)">ع</text>
+      <text x="24" y="31" font-family="'SF Pro Display', system-ui, sans-serif" font-size="16" font-weight="800" fill="url(#goldGrad)">A</text>
+    </g>
+
+    <!-- Wordmark & Tagline -->
+    <text x="58" y="27" font-family="'SF Pro Display', -apple-system, system-ui, sans-serif" font-size="24" font-weight="800" letter-spacing="-0.02em">
+      <tspan fill="#FFFFFF">Key</tspan><tspan fill="url(#goldGrad)">Fixer</tspan>
+      <tspan dx="8" font-size="13" font-weight="600" fill="#94A3B8">v1.3.1</tspan>
+    </text>
+    <text x="58" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="11.5" font-weight="500" fill="#64748B">
+      Privacy-First Arabic ⇄ English Keyboard Layout Switcher
+    </text>
+
+    <!-- Status Badges on the right -->
+    <g transform="translate(450, 6)">
+      <!-- 100% Offline Badge -->
+      <rect x="0" y="0" width="134" height="26" rx="13" fill="#0A2E1C" fill-opacity="0.7" stroke="#10B981" stroke-opacity="0.4" stroke-width="1"/>
+      <circle cx="14" cy="13" r="4" fill="#10B981" class="pulse-dot"/>
+      <text x="25" y="17" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#34D399">100% Local &amp; Private</text>
+
+      <!-- Store Availability Badges -->
+      <rect x="142" y="0" width="102" height="26" rx="13" fill="#032B45" fill-opacity="0.7" stroke="#0284C7" stroke-opacity="0.4" stroke-width="1"/>
+      <text x="193" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#38BDF8">Microsoft Store</text>
+
+      <rect x="252" y="0" width="98" height="26" rx="13" fill="#382202" fill-opacity="0.7" stroke="#F59E0B" stroke-opacity="0.4" stroke-width="1"/>
+      <text x="301" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#FBBF24">Chrome Store</text>
+    </g>
+  </g>
+
+  <!-- Main Interactive Live Conversion Showcase (Glassmorphic Window) -->
+  <g class="animated-frame" transform="translate(36, 88)" filter="url(#dropShadow)">
+    <!-- Container Card -->
+    <rect width="808" height="154" rx="16" fill="url(#cardGrad)" stroke="url(#borderGrad)" stroke-width="1.2"/>
+
+    <!-- Dual Split Window Panels -->
+    <!-- Left Panel: Input -->
+    <g transform="translate(18, 16)">
+      <rect width="360" height="122" rx="10" fill="#0A0A10" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      
+      <!-- Panel Header -->
+      <g transform="translate(14, 22)">
+        <circle cx="4" cy="0" r="3" fill="#EF4444" opacity="0.8"/>
+        <circle cx="14" cy="0" r="3" fill="#F59E0B" opacity="0.8"/>
+        <circle cx="24" cy="0" r="3" fill="#10B981" opacity="0.8"/>
+        <text x="36" y="4" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#94A3B8" letter-spacing="0.05em">ORIGINAL (MISTYPED)</text>
+      </g>
+
+      <!-- Scene 1: Mistyped English -->
+      <g class="text-scene-1" transform="translate(16, 60)">
+        <text font-family="'SF Mono', 'Cascadia Mono', Consolas, monospace" font-size="15" font-weight="600" fill="#E2E8F0">
+          lh h[lg hg;jhf]<tspan class="cursor" fill="#F59E0B">|</tspan>
+        </text>
+        <text y="28" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#64748B">
+          Typed on EN layout with Arabic intent
+        </text>
+      </g>
+
+      <!-- Scene 2: Mistyped Arabic -->
+      <g class="text-scene-2" transform="translate(16, 60)">
+        <text font-family="'SF Mono', 'Cascadia Mono', Consolas, monospace" font-size="15" font-weight="600" fill="#E2E8F0">
+          اثممخ صخقmovement<tspan class="cursor" fill="#38BDF8">|</tspan>
+        </text>
+        <text y="28" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#64748B">
+          Typed on AR layout with English intent
+        </text>
+      </g>
+    </g>
+
+    <!-- Center Dynamic Converter Orb & Switcher -->
+    <g transform="translate(390, 62)">
+      <circle cx="14" cy="14" r="22" fill="#1E1E2C" stroke="url(#goldGrad)" stroke-width="1.5" filter="url(#dropShadow)"/>
+      <g class="arrow-rotator" transform="translate(0, 0)">
+        <!-- Bidirectional Arrows SVG Path -->
+        <path d="M 9 10 L 19 10 M 16 7 L 19 10 L 16 13" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M 19 18 L 9 18 M 12 15 L 9 18 L 12 21" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </g>
+      <text x="14" y="48" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" font-weight="800" fill="#F59E0B" letter-spacing="0.04em">AUTO</text>
+    </g>
+
+    <!-- Right Panel: Output Result -->
+    <g transform="translate(430, 16)">
+      <rect width="360" height="122" rx="10" fill="#0C1410" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1.2"/>
+      
+      <!-- Panel Header -->
+      <g transform="translate(14, 22)">
+        <rect x="0" y="-8" width="76" height="18" rx="4" fill="#059669" fill-opacity="0.2"/>
+        <text x="6" y="5" font-family="system-ui, sans-serif" font-size="10" font-weight="800" fill="#34D399" letter-spacing="0.05em">✓ FIXED (0ms)</text>
+      </g>
+
+      <!-- Scene 1 Output: Fixed Arabic -->
+      <g class="text-scene-1" transform="translate(16, 60)">
+        <text font-family="'SF Pro Display', 'Segoe UI', Tahoma, sans-serif" font-size="19" font-weight="700" fill="#FCD34D">
+          ما اجمل الكتابة
+        </text>
+        <text y="28" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#10B981">
+          ✓ Instantly Restored &amp; Ready to Paste
+        </text>
+      </g>
+
+      <!-- Scene 2 Output: Fixed English -->
+      <g class="text-scene-2" transform="translate(16, 60)">
+        <text font-family="'SF Mono', 'Cascadia Mono', Consolas, monospace" font-size="17" font-weight="700" fill="#38BDF8">
+          hello world
+        </text>
+        <text y="28" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#38BDF8">
+          ✓ Accurate QWERTY Mapping
+        </text>
+      </g>
+
+      <!-- Copy Action Pill Inside Output -->
+      <g transform="translate(242, 14)">
+        <rect width="104" height="22" rx="11" fill="#10B981" fill-opacity="0.15" stroke="#10B981" stroke-opacity="0.4" stroke-width="1"/>
+        <text x="52" y="15" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700" fill="#34D399">⌥⌘K / Ctrl+Alt+K</text>
+      </g>
+    </g>
+  </g>
+
+</svg>

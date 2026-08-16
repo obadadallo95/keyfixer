@@ -1,115 +1,173 @@
 /**
  * @file DownloadSection.tsx
- * @description Sleek, minimal download section emphasizing the macOS App Store release.
+ * @description Sleek, modern download section with official store badges for Microsoft Store, Chrome Web Store, and macOS.
  */
 
 import React from 'react';
 import { UILanguage } from '../types';
-import { Download, Chrome, Monitor, Apple, ExternalLink } from 'lucide-react';
+import { Chrome, Monitor, Apple, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface DownloadSectionProps {
   lang: UILanguage;
 }
 
-// ─── CONFIGURE RELEASE LINKS HERE ──────────────────────────────────────────
-const DOWNLOAD_LINKS = {
-  mac:       '', // e.g. 'https://apps.apple.com/us/app/keyfixer/...'
-  windows:   '', // e.g. 'https://github.com/obadadallo95/keyfixer/releases/latest/download/KeyFixer-Setup.exe'
-  chrome:    '', // e.g. 'https://chromewebstore.google.com/detail/keyfixer/...'
+// ─── OFFICIAL STORE & RELEASE LINKS ──────────────────────────────────────────
+export const DOWNLOAD_LINKS = {
+  microsoftStore: 'https://apps.microsoft.com/detail/9pk3g83gp41d?ocid=webpdpshare',
+  chromeWebStore: 'https://chromewebstore.google.com/detail/bgleifjaplnanbncododdkgkpaieeafg?utm_source=item-share-cb',
+  macReleases: 'https://github.com/obadadallo95/keyfixer/releases',
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
 const i18n = {
   en: {
-    macLabel: 'Mac App Store',
-    macSub: 'Free',
-    windows: 'Windows',
-    chrome: 'Chrome',
-    comingSoon: 'Soon',
-    soonOnMac: 'Soon on Mac App Store',
+    sectionBadge: 'Available Everywhere',
+    sectionTitle: 'Install KeyFixer on Your Devices',
+    sectionSub: 'Native performance, instant background shortcuts, and zero tracking.',
+    msStoreTitle: 'Microsoft Store',
+    msStoreSub: 'For Windows 10 & 11',
+    msStoreBadge: 'Verified',
+    chromeTitle: 'Chrome Web Store',
+    chromeSub: 'Extension for Chromium',
+    chromeBadge: 'Free Add-on',
+    macTitle: 'macOS Desktop',
+    macSub: 'Apple Silicon & Intel',
+    macBadge: 'In Review',
+    directDownload: 'GitHub Releases',
+    offlineNotice: '100% Offline • Zero Data Collection',
   },
   ar: {
-    macLabel: 'Mac App Store',
-    macSub: 'مجاني',
-    windows: 'ويندوز',
-    chrome: 'إضافة كروم',
-    comingSoon: 'قريباً',
-    soonOnMac: 'قريباً على Mac App Store',
+    sectionBadge: 'متاح على جميع منصاتك',
+    sectionTitle: 'حمّل KeyFixer على أجهزتك',
+    sectionSub: 'أداء فائق، اختصارات سريعة في الخلفية، وبدون أي تتبع نهائياً.',
+    msStoreTitle: 'Microsoft Store',
+    msStoreSub: 'لويندوز 10 و 11',
+    msStoreBadge: 'رسمي وموثق',
+    chromeTitle: 'سوق Chrome الإلكتروني',
+    chromeSub: 'إضافة لمتصفحات كروم',
+    chromeBadge: 'إضافة مجانية',
+    macTitle: 'تطبيق macOS',
+    macSub: 'معالجات Apple و Intel',
+    macBadge: 'قيد المراجعة',
+    directDownload: 'إصدارات GitHub',
+    offlineNotice: 'يعمل محلياً 100% • بدون جمع أي بيانات',
   },
 };
 
 export const DownloadSection: React.FC<DownloadSectionProps> = ({ lang }) => {
   const t = i18n[lang];
+  const isRTL = lang === 'ar';
 
   return (
-    <div className="w-full max-w-6xl mx-auto mt-4 pt-6 border-t border-white/[0.06] relative z-10 flex flex-col items-center gap-4">
+    <div className="w-full max-w-5xl mx-auto mt-8 pt-8 border-t border-white/[0.08] relative z-10 flex flex-col items-center gap-6">
       
-      {/* Primary Call to Action: macOS */}
-      <a
-        href={DOWNLOAD_LINKS.mac || '#'}
-        target={DOWNLOAD_LINKS.mac ? "_blank" : undefined}
-        rel="noopener noreferrer"
-        className={`group relative flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 shadow-xl overflow-hidden ${
-          DOWNLOAD_LINKS.mac 
-            ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20 hover:scale-105'
-            : 'bg-white/10 text-white cursor-default'
-        }`}
-      >
-        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-        <Apple className="w-6 h-6 relative z-10" />
-        <div className="flex flex-col items-start relative z-10">
-          {!DOWNLOAD_LINKS.mac ? (
-            <span className="text-sm font-bold leading-tight tracking-wide">{t.soonOnMac}</span>
-          ) : (
-            <>
-              <span className="text-sm font-bold leading-tight">{t.macLabel}</span>
-              <span className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{t.macSub}</span>
-            </>
-          )}
+      {/* Section Header */}
+      <div className="text-center flex flex-col items-center gap-1.5">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold tracking-wide uppercase">
+          <Sparkles className="w-3 h-3" />
+          <span>{t.sectionBadge}</span>
         </div>
-      </a>
+        <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+          {t.sectionTitle}
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-lg">
+          {t.sectionSub}
+        </p>
+      </div>
 
-      {/* Secondary Platforms */}
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs">
-        {/* Windows */}
-        {DOWNLOAD_LINKS.windows ? (
-          <a
-            href={DOWNLOAD_LINKS.windows}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/20 hover:border-[#0078D4]/60 hover:bg-[#0078D4]/20 text-slate-200 hover:text-white font-semibold transition-all shadow-md group"
-          >
-            <Monitor className="w-4 h-4 text-[#0078D4]" />
-            <span>{t.windows}</span>
-            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-          </a>
-        ) : (
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 text-slate-400 font-medium select-none shadow-sm">
-            <Monitor className="w-4 h-4 opacity-50" />
-            <span>{t.windows}</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
-          </span>
-        )}
+      {/* Platform Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full">
+        
+        {/* 1. Microsoft Store (Live) */}
+        <a
+          href={DOWNLOAD_LINKS.microsoftStore}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative flex flex-col justify-between p-4 rounded-2xl bg-gradient-to-b from-[#0078D4]/10 to-white/[0.02] border border-[#0078D4]/30 hover:border-[#0078D4]/70 hover:bg-[#0078D4]/15 transition-all duration-300 shadow-lg hover:shadow-[#0078D4]/10 hover:-translate-y-0.5 overflow-hidden"
+        >
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="p-2.5 rounded-xl bg-[#0078D4]/20 border border-[#0078D4]/30 text-[#38BDF8] group-hover:scale-110 group-hover:bg-[#0078D4]/30 transition-all">
+              <Monitor className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0078D4]/20 border border-[#0078D4]/40 text-[#38BDF8]">
+              {t.msStoreBadge}
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-white group-hover:text-[#38BDF8] transition-colors">
+                {t.msStoreTitle}
+              </h4>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-white opacity-60 group-hover:opacity-100 transition-all" />
+            </div>
+            <p className="text-[11.5px] text-slate-400 mt-0.5">
+              {t.msStoreSub}
+            </p>
+          </div>
+        </a>
 
-        {/* Chrome Extension */}
-        {DOWNLOAD_LINKS.chrome ? (
-          <a
-            href={DOWNLOAD_LINKS.chrome}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/20 hover:border-amber-500/60 hover:bg-amber-500/20 text-slate-200 hover:text-white font-semibold transition-all shadow-md group"
-          >
-            <Chrome className="w-4 h-4 text-amber-500" />
-            <span>{t.chrome}</span>
-            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
-          </a>
-        ) : (
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/10 text-slate-400 font-medium select-none shadow-sm">
-            <Chrome className="w-4 h-4 opacity-50" />
-            <span>{t.chrome}</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{t.comingSoon}</span>
-          </span>
-        )}
+        {/* 2. Chrome Web Store (Live) */}
+        <a
+          href={DOWNLOAD_LINKS.chromeWebStore}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative flex flex-col justify-between p-4 rounded-2xl bg-gradient-to-b from-amber-500/10 to-white/[0.02] border border-amber-500/30 hover:border-amber-500/70 hover:bg-amber-500/15 transition-all duration-300 shadow-lg hover:shadow-amber-500/10 hover:-translate-y-0.5 overflow-hidden"
+        >
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 group-hover:scale-110 group-hover:bg-amber-500/30 transition-all">
+              <Chrome className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300">
+              {t.chromeBadge}
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+                {t.chromeTitle}
+              </h4>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-white opacity-60 group-hover:opacity-100 transition-all" />
+            </div>
+            <p className="text-[11.5px] text-slate-400 mt-0.5">
+              {t.chromeSub}
+            </p>
+          </div>
+        </a>
+
+        {/* 3. macOS App */}
+        <a
+          href={DOWNLOAD_LINKS.macReleases}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative flex flex-col justify-between p-4 rounded-2xl bg-gradient-to-b from-slate-500/10 to-white/[0.02] border border-white/15 hover:border-white/40 hover:bg-white/[0.06] transition-all duration-300 shadow-lg hover:-translate-y-0.5 overflow-hidden"
+        >
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-slate-200 group-hover:scale-110 group-hover:bg-white/20 transition-all">
+              <Apple className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-slate-300">
+              {t.macBadge}
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+                {t.macTitle}
+              </h4>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-white opacity-60 group-hover:opacity-100 transition-all" />
+            </div>
+            <p className="text-[11.5px] text-slate-400 mt-0.5">
+              {t.macSub}
+            </p>
+          </div>
+        </a>
+
+      </div>
+
+      {/* Trust & Privacy Note */}
+      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        <span>{t.offlineNotice}</span>
       </div>
 
     </div>
