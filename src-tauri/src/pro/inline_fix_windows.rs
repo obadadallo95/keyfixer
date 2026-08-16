@@ -389,7 +389,7 @@ pub mod windows {
             // Read clipboard via Tauri clipboard manager
             let clipboard = app_clone.clipboard();
             let raw_text = match clipboard.read_text() {
-                Ok(Some(text)) if !text.trim().is_empty() => text,
+                Ok(text) if !text.trim().is_empty() => text,
                 _ => {
                     eprintln!("{TAG} No text copied or empty selection");
                     return;
@@ -436,7 +436,7 @@ pub mod windows {
             }
 
             // Write fixed text to clipboard
-            if clipboard.write_text(&fixed_text).is_err() {
+            if clipboard.write_text(fixed_text).is_err() {
                 eprintln!("{TAG} Failed to write to clipboard");
                 return;
             }
@@ -507,13 +507,17 @@ pub mod windows {
     // ── Microsoft Store Real WinRT Implementation ─────────────────────────────
     mod ms_store {
         use super::*;
-        use windows::core::{Interface, HSTRING};
+        use windows::core::{interface, Interface, HSTRING};
         use windows::Win32::Foundation::HWND;
-        use windows::Win32::System::WinRT::IInitializeWithWindow;
         use windows::Services::Store::{StoreContext, StorePurchaseStatus};
         use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
         use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
         use windows::Win32::Foundation::{CloseHandle, HANDLE};
+
+        #[interface("3e68d4bd-e01b-4d45-b16e-50474d45d83e")]
+        unsafe trait IInitializeWithWindow: windows::core::IUnknownImpl {
+            unsafe fn Initialize(&self, hwnd: HWND) -> windows::core::HRESULT;
+        }
 
         pub fn is_process_elevated() -> bool {
             unsafe {
@@ -555,45 +559,6 @@ pub mod windows {
             Ok(context)
         }
 
-        pub fn fetch_store_product(app: &AppHandle) -> Result<StoreProduct, String> {
-            let context = get_initialized_store_context(app)?;
-
-            let product_kinds = vec![HSTRING::from("Durable")];
-            let store_ids = vec![HSTRING::from(PRO_ADDON_STORE_ID)];
-
-            let op = context.GetStoreProductsAsync(&product_kinds, &store_ids)
-                .map_err(|e| format!("GetStoreProductsAsync failed: {e}"))?;
-
-            let result = op.get().map_err(|e| format!("GetStoreProductsAsync execution failed: {e}"))?;
-
-            if let Ok(extended_error) = result.ExtendedError() {
-                if extended_error.is_err() {
-                    return Err(format!("Store error: {:?}", extended_error));
-                }
-            }
-
-            let products = result.Products().map_err(|e| format!("Failed to read Products map: {e}"))?;
-            let store_id_hstring = HSTRING::from(PRO_ADDON_STORE_ID);
-
-            if products.HasKey(&store_id_hstring).unwrap_or(false) {
-                let prod = products.Lookup(&store_id_hstring).map_err(|e| format!("Lookup failed: {e}"))?;
-                let display_name = prod.Title().map(|t| t.to_string()).unwrap_or_else(|_| DEFAULT_DISPLAY_NAME.to_string());
-                let display_price = prod.Price()
-                    .and_then(|p| p.FormattedBasePrice().or_else(|_| p.FormattedPrice()))
-                    .map(|p| p.to_string())
-                    .unwrap_or_else(|_| FALLBACK_PRICE.to_string());
-
-                Ok(StoreProduct {
-                    id: PRO_ADDON_STORE_ID.to_string(),
-                    display_name,
-                    display_price,
-                    is_available: true,
-                })
-            } else {
-                Err(format!("Product {PRO_ADDON_STORE_ID} not found in Store catalog"))
-            }
-        }
-
         pub fn query_store_ownership(app: &AppHandle) -> Result<bool, String> {
             let context = get_initialized_store_context(app)?;
 
@@ -624,11 +589,11 @@ pub mod windows {
                         let key = pair.Key().map(|k| k.to_string()).unwrap_or_default();
                         if let Ok(lic) = pair.Value() {
                             let token = lic.InAppOfferToken().map(|t| t.to_string()).unwrap_or_default();
-                            let store_id = lic.StoreId().map(|s| s.to_string()).unwrap_or_default();
+                            let sku_store_id = lic.SkuStoreId().map(|s| s.to_string()).unwrap_or_default();
                             let is_active = lic.IsActive().unwrap_or(false);
 
                             if (key == PRO_ADDON_STORE_ID || key == PRO_ADDON_PRODUCT_ID ||
-                                store_id == PRO_ADDON_STORE_ID || token == PRO_ADDON_PRODUCT_ID) && is_active {
+                                sku_store_id == PRO_ADDON_STORE_ID || token == PRO_ADDON_PRODUCT_ID) && is_active {
                                 return Ok(true);
                             }
                         }
@@ -682,7 +647,15 @@ pub mod windows {
                 }
             };
 
-            let status = result.Status().unwrap_or(StorePurchaseStatus::UnknownError);
+            let status = match result.Status() {
+                Ok(s) => s,
+                Err(e) => {
+                    return PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some(format!("Failed to read purchase status: {e}")),
+                    };
+                }
+            };
             let extended_error = result.ExtendedError().err().map(|e| e.to_string());
 
             match status {
@@ -727,12 +700,7 @@ pub mod windows {
 
     // ── Public Store API Bridge Handlers ──────────────────────────────────────
 
-    pub fn store_load_pro_product(app: &AppHandle) -> StoreProduct {
-        if let Ok(prod) = ms_store::fetch_store_product(app) {
-            return prod;
-        }
-
-        // Defensive fallback for offline or development environments
+    pub fn store_load_pro_product(_app: &AppHandle) -> StoreProduct {
         StoreProduct {
             id: PRO_ADDON_STORE_ID.to_string(),
             display_name: DEFAULT_DISPLAY_NAME.to_string(),
