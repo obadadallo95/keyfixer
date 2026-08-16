@@ -507,17 +507,13 @@ pub mod windows {
     // ── Microsoft Store Real WinRT Implementation ─────────────────────────────
     mod ms_store {
         use super::*;
-        use windows::core::{interface, Interface, HSTRING};
+        use windows::core::{Interface, HSTRING};
         use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::Shell::IInitializeWithWindow;
         use windows::Services::Store::{StoreContext, StorePurchaseStatus};
         use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
         use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
         use windows::Win32::Foundation::{CloseHandle, HANDLE};
-
-        #[interface("3e68d4bd-e01b-4d45-b16e-50474d45d83e")]
-        unsafe trait IInitializeWithWindow: windows::core::IUnknownImpl {
-            unsafe fn Initialize(&self, hwnd: HWND) -> windows::core::HRESULT;
-        }
 
         pub fn is_process_elevated() -> bool {
             unsafe {
