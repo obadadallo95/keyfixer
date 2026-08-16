@@ -130,20 +130,25 @@ mod login_item {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
+mod login_item {
+    pub fn is_enabled() -> bool {
+        false
+    }
+
+    pub fn set_enabled(_enabled: bool) -> Result<(), String> {
+        Err("Launch at login is currently available on macOS only".into())
+    }
+}
+
 #[command]
 fn is_launch_at_login_enabled() -> bool {
-    #[cfg(target_os = "macos")]
-    { login_item::is_enabled() }
-    #[cfg(not(target_os = "macos"))]
-    { false }
+    login_item::is_enabled()
 }
 
 #[command]
 fn set_launch_at_login(enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    { login_item::set_enabled(enabled) }
-    #[cfg(not(target_os = "macos"))]
-    { let _ = enabled; Err("Launch at login is currently available on macOS only".into()) }
+    login_item::set_enabled(enabled)
 }
 
 /// Hide the application window
@@ -171,11 +176,16 @@ fn play_feedback_sound(sound_type: String) {
     }
     #[cfg(target_os = "windows")]
     {
+        let _ = &sound_type;
         std::thread::spawn(move || {
             let _ = std::process::Command::new("powershell")
                 .args(["-c", "[System.Media.SystemSounds]::Beep.Play()"])
                 .output();
         });
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = sound_type;
     }
 }
 
