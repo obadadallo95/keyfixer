@@ -166,10 +166,9 @@ pub fn storekit_load_pro_product(app: &AppHandle) -> serde_json::Value {
     }
     #[cfg(all(feature = "pro", target_os = "windows"))]
     {
-        let _ = app;
-        let p = inline_fix_windows::windows::store_load_pro_product();
+        let p = inline_fix_windows::windows::store_load_pro_product(app);
         return serde_json::to_value(p).unwrap_or(serde_json::json!({
-            "id": "9PK3G83GP41D",
+            "id": "9N98VZCQLDL7",
             "displayName": "KeyFixer Pro Lifetime",
             "displayPrice": "€9.99",
             "isAvailable": true
@@ -205,8 +204,7 @@ pub fn storekit_get_pro_entitlement(app: &AppHandle) -> serde_json::Value {
     }
     #[cfg(all(feature = "pro", target_os = "windows"))]
     {
-        let _ = app;
-        let e = inline_fix_windows::windows::store_get_pro_entitlement();
+        let e = inline_fix_windows::windows::store_get_pro_entitlement(app);
         return serde_json::to_value(e).unwrap_or(serde_json::json!({
             "paid": false,
             "productId": null,

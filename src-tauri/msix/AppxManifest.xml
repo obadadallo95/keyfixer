@@ -63,10 +63,10 @@
     <!--
       runFullTrust is required for all packaged Win32 / Desktop Bridge apps
       that use EntryPoint="windows.fullTrustApplication".
-      internetClient is NOT requested — KeyFixer is offline-first and
-      makes no network requests during normal operation.
+      internetClient enables secure StoreContext IAP communication with Microsoft Store.
     -->
     <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
   </Capabilities>
 
 </Package>

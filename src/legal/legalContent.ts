@@ -250,7 +250,7 @@ For any inquiries regarding these Terms:
 
 **Product:** KeyFixer for macOS and Windows  
 **Product ID (macOS):** \`com.obadadallo.keyfixer.pro.lifetime\`  
-**Product ID (Windows):** \`9PK3G83GP41D\`  
+**Product ID (Windows):** \`keyfixer.pro.lifetime\` (Store ID: \`9N98VZCQLDL7\`)  
 **Distribution:** Mac App Store & Microsoft Store  
 **Developer:** Obada Dallo (Chemnitz, Germany)  
 **Contact:** obada.dallo95@gmail.com  
@@ -271,7 +271,7 @@ Nothing in this policy limits mandatory statutory consumer rights.`,
 
 **المنتج:** تطبيق KeyFixer لأنظمة macOS و Windows  
 **معرف المنتج (macOS):** \`com.obadadallo.keyfixer.pro.lifetime\`  
-**معرف المنتج (Windows):** \`9PK3G83GP41D\`  
+**معرف المنتج (Windows):** \`keyfixer.pro.lifetime\` (معرف المتجر: \`9N98VZCQLDL7\`)  
 **التوزيع:** متجر Mac App Store ومتجر Microsoft Store  
 **المطور:** عبادة دللو (Obada Dallo) — كيمنتس، ألمانيا  
 **البريد الإلكتروني:** obada.dallo95@gmail.com  

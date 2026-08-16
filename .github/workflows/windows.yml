@@ -29,6 +29,11 @@ jobs:
       - name: Test
         run: npm run test:run
         
+      - name: Build Desktop Frontend
+        run: npm run build:desktop
+        env:
+          VITE_PRO_BUILD: 'true'
+
       - name: Build Windows Tauri App
         run: npm run build:windows
         

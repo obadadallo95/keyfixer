@@ -157,12 +157,12 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════');
 
   // ── Step 1: Build desktop frontend ──────────────────────────────────────────
-  console.log('\n[1/6] Building desktop frontend...');
-  run('npm run build:desktop');
+  console.log('\n[1/6] Building desktop frontend (Pro enabled)...');
+  run('npm run build:desktop', ROOT, { VITE_PRO_BUILD: 'true' });
 
   // ── Step 2: Compile Tauri Windows executable ─────────────────────────────────
-  console.log('\n[2/6] Compiling Tauri Windows x64 executable...');
-  run('npx tauri build --config src-tauri/tauri.windows.conf.json');
+  console.log('\n[2/6] Compiling Tauri Windows x64 executable (Pro enabled)...');
+  run('npx tauri build --config src-tauri/tauri.windows.conf.json --features pro');
 
   if (!fs.existsSync(EXE_SRC)) {
     console.error(`\nERROR: Expected executable not found: ${EXE_SRC}`);

@@ -21,7 +21,7 @@
     "verify:appstore:postbuild": "bash scripts/verify-appstore-bundle.sh --stage postbuild",
     "verify:appstore": "bash scripts/verify-appstore-bundle.sh --stage postbuild",
     "build:mac-ci": "tauri build --bundles app --config src-tauri/tauri.ci-mac.conf.json",
-    "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json",
+    "build:windows": "tauri build --config src-tauri/tauri.windows.conf.json --features pro",
     "build:windows:msix": "node scripts/build-msix.mjs",
     "build:extension": "npm run typecheck:extension && npm run build && node extension-build.js",
     "preview": "vite preview",

@@ -4,12 +4,18 @@ pub mod windows {
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{mpsc, Arc, LazyLock, Mutex};
-    use std::time::{Duration};
+    use std::time::Duration;
     use serde::{Deserialize, Serialize};
     use tauri::{AppHandle, Emitter, Manager};
     use tauri_plugin_clipboard_manager::ClipboardExt;
 
     const TAG: &str = "[KeyFixer Windows Pro]";
+    pub const PRO_ADDON_STORE_ID: &str = "9N98VZCQLDL7";
+    pub const PRO_ADDON_PRODUCT_ID: &str = "keyfixer.pro.lifetime";
+    pub const PARENT_STORE_ID: &str = "9PK3G83GP41D";
+    pub const DEFAULT_DISPLAY_NAME: &str = "KeyFixer Pro Lifetime";
+    pub const FALLBACK_PRICE: &str = "€9.99";
+
     const TRIAL_CREDIT_LIMIT: i32 = 25;
     const CONVERSION_TIMEOUT: Duration = Duration::from_millis(1200);
 
@@ -48,6 +54,16 @@ pub mod windows {
         pub inline_fix_enabled: bool,
         #[serde(default = "default_trial_credits")]
         pub trial_credit_limit: i32,
+
+        // Verified Entitlement Cache Fields
+        #[serde(default)]
+        pub verified_product_id: Option<String>,
+        #[serde(default)]
+        pub verified_store_id: Option<String>,
+        #[serde(default)]
+        pub verification_timestamp: Option<u64>,
+        #[serde(default)]
+        pub verification_signature: Option<String>,
     }
 
     fn default_trial_credits() -> i32 {
@@ -62,8 +78,28 @@ pub mod windows {
                 trial_started: false,
                 inline_fix_enabled: false,
                 trial_credit_limit: TRIAL_CREDIT_LIMIT,
+                verified_product_id: None,
+                verified_store_id: None,
+                verification_timestamp: None,
+                verification_signature: None,
             }
         }
+    }
+
+    fn generate_cache_token(timestamp: u64) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        "KF_MS_ENTITLEMENT_SALT_v1_9N98VZCQLDL7".hash(&mut hasher);
+        PRO_ADDON_STORE_ID.hash(&mut hasher);
+        PRO_ADDON_PRODUCT_ID.hash(&mut hasher);
+        timestamp.hash(&mut hasher);
+        format!("{:016x}", hasher.finish())
+    }
+
+    fn verify_cache_token(timestamp: u64, sig: &str) -> bool {
+        generate_cache_token(timestamp) == sig
     }
 
     impl ProState {
@@ -78,6 +114,44 @@ pub mod windows {
 
         pub fn can_attempt_inline_fix(&self) -> bool {
             self.inline_fix_enabled && matches!(self.ui_state(), UiState::TrialActive | UiState::Paid)
+        }
+
+        pub fn is_entitlement_verified(&self) -> bool {
+            if self.mode != ProMode::Paid {
+                return false;
+            }
+            if let (Some(ts), Some(sig)) = (self.verification_timestamp, &self.verification_signature) {
+                verify_cache_token(ts, sig)
+            } else {
+                false
+            }
+        }
+
+        pub fn set_paid_verified(&mut self, app: &AppHandle) {
+            self.mode = ProMode::Paid;
+            self.inline_fix_enabled = true;
+            self.verified_product_id = Some(PRO_ADDON_PRODUCT_ID.to_string());
+            self.verified_store_id = Some(PRO_ADDON_STORE_ID.to_string());
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            self.verification_timestamp = Some(now);
+            self.verification_signature = Some(generate_cache_token(now));
+            self.save(app);
+        }
+
+        pub fn revoke_paid(&mut self, app: &AppHandle) {
+            if self.trial_started {
+                self.mode = ProMode::Trial;
+            } else {
+                self.mode = ProMode::Free;
+            }
+            self.verified_product_id = None;
+            self.verified_store_id = None;
+            self.verification_timestamp = None;
+            self.verification_signature = None;
+            self.save(app);
         }
 
         fn state_file_path(app: &AppHandle) -> Option<PathBuf> {
@@ -173,9 +247,42 @@ pub mod windows {
     static CONVERSION_ID_COUNTER: LazyLock<Mutex<u64>> = LazyLock::new(|| Mutex::new(1));
 
     pub fn init_pro_state(app: &AppHandle) -> SharedProState {
-        let state = ProState::load(app);
+        let mut state = ProState::load(app);
+        // If local JSON claims Paid without valid verification cache, reset
+        if state.mode == ProMode::Paid && !state.is_entitlement_verified() {
+            eprintln!("{TAG} Unverified Paid state in local storage on startup. Resetting to unverified default.");
+            state.revoke_paid(app);
+        }
         let shared = Arc::new(Mutex::new(state));
         *PRO_STATE.lock().unwrap() = Some(shared.clone());
+
+        // Asynchronously synchronize entitlement with Microsoft Store in background
+        let app_handle = app.clone();
+        let shared_clone = shared.clone();
+        let _ = std::thread::spawn(move || {
+            // Give application window a short startup moment
+            std::thread::sleep(Duration::from_millis(500));
+            match ms_store::query_store_ownership(&app_handle) {
+                Ok(true) => {
+                    eprintln!("{TAG} Startup Store sync: KeyFixer Pro license verified with Microsoft Store!");
+                    let mut guard = shared_clone.lock().unwrap();
+                    guard.set_paid_verified(&app_handle);
+                    let _ = app_handle.emit("pro-status-changed", serde_json::json!({ "mode": "paid" }));
+                }
+                Ok(false) => {
+                    let mut guard = shared_clone.lock().unwrap();
+                    if guard.mode == ProMode::Paid {
+                        eprintln!("{TAG} Startup Store sync: No active Store license found. Reconciling to free/trial.");
+                        guard.revoke_paid(&app_handle);
+                        let _ = app_handle.emit("pro-status-changed", serde_json::json!({ "mode": "free" }));
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{TAG} Startup Store sync unavailable (offline or dev environment): {e}");
+                }
+            }
+        });
+
         shared
     }
 
@@ -340,7 +447,7 @@ pub mod windows {
             unsafe { simulate_paste(); }
             std::thread::sleep(Duration::from_millis(50));
 
-            // Decrement trial credits if applicable
+            // Decrement trial credits only on actual successful replacement
             if is_trial {
                 let mut guard = shared.lock().unwrap();
                 if guard.mode == ProMode::Trial && guard.trial_credits_remaining > 0 {
@@ -361,7 +468,7 @@ pub mod windows {
     }
 
     // ── Microsoft Store Integration Models ────────────────────────────────────
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct StoreProduct {
         pub id: String,
@@ -370,7 +477,7 @@ pub mod windows {
         pub is_available: bool,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct StoreEntitlement {
         pub paid: bool,
@@ -380,7 +487,7 @@ pub mod windows {
         pub verification_status: String,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct PurchaseResult {
         pub status: String,
@@ -388,7 +495,7 @@ pub mod windows {
         pub error_message: Option<String>,
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct RestorePurchasesResult {
         pub status: String,
@@ -397,48 +504,325 @@ pub mod windows {
         pub error_message: Option<String>,
     }
 
-    pub fn store_load_pro_product() -> StoreProduct {
+    // ── Microsoft Store Real WinRT Implementation ─────────────────────────────
+    mod ms_store {
+        use super::*;
+        use windows::core::{Interface, HSTRING};
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::System::WinRT::IInitializeWithWindow;
+        use windows::Services::Store::{StoreContext, StorePurchaseStatus};
+        use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+        use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+        use windows::Win32::Foundation::{CloseHandle, HANDLE};
+
+        pub fn is_process_elevated() -> bool {
+            unsafe {
+                let mut token_handle = HANDLE::default();
+                if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token_handle).is_ok() {
+                    let mut elevation = TOKEN_ELEVATION::default();
+                    let mut ret_len = 0;
+                    let ok = GetTokenInformation(
+                        token_handle,
+                        TokenElevation,
+                        Some(&mut elevation as *mut _ as *mut _),
+                        std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+                        &mut ret_len,
+                    ).is_ok();
+                    let _ = CloseHandle(token_handle);
+                    if ok {
+                        return elevation.TokenIsElevated != 0;
+                    }
+                }
+                false
+            }
+        }
+
+        pub fn get_initialized_store_context(app: &AppHandle) -> Result<StoreContext, String> {
+            let context = StoreContext::GetDefault().map_err(|e| format!("StoreContext::GetDefault failed: {e}"))?;
+
+            // Associate with main window HWND so Store UI dialogs are properly parented
+            if let Some(window) = app.get_webview_window("main") {
+                if let Ok(hwnd) = window.hwnd() {
+                    let win32_hwnd = HWND(hwnd.0 as _);
+                    if let Ok(init) = context.cast::<IInitializeWithWindow>() {
+                        unsafe {
+                            let _ = init.Initialize(win32_hwnd);
+                        }
+                    }
+                }
+            }
+
+            Ok(context)
+        }
+
+        pub fn fetch_store_product(app: &AppHandle) -> Result<StoreProduct, String> {
+            let context = get_initialized_store_context(app)?;
+
+            let product_kinds = vec![HSTRING::from("Durable")];
+            let store_ids = vec![HSTRING::from(PRO_ADDON_STORE_ID)];
+
+            let op = context.GetStoreProductsAsync(&product_kinds, &store_ids)
+                .map_err(|e| format!("GetStoreProductsAsync failed: {e}"))?;
+
+            let result = op.get().map_err(|e| format!("GetStoreProductsAsync execution failed: {e}"))?;
+
+            if let Ok(extended_error) = result.ExtendedError() {
+                if extended_error.is_err() {
+                    return Err(format!("Store error: {:?}", extended_error));
+                }
+            }
+
+            let products = result.Products().map_err(|e| format!("Failed to read Products map: {e}"))?;
+            let store_id_hstring = HSTRING::from(PRO_ADDON_STORE_ID);
+
+            if products.HasKey(&store_id_hstring).unwrap_or(false) {
+                let prod = products.Lookup(&store_id_hstring).map_err(|e| format!("Lookup failed: {e}"))?;
+                let display_name = prod.Title().map(|t| t.to_string()).unwrap_or_else(|_| DEFAULT_DISPLAY_NAME.to_string());
+                let display_price = prod.Price()
+                    .and_then(|p| p.FormattedBasePrice().or_else(|_| p.FormattedPrice()))
+                    .map(|p| p.to_string())
+                    .unwrap_or_else(|_| FALLBACK_PRICE.to_string());
+
+                Ok(StoreProduct {
+                    id: PRO_ADDON_STORE_ID.to_string(),
+                    display_name,
+                    display_price,
+                    is_available: true,
+                })
+            } else {
+                Err(format!("Product {PRO_ADDON_STORE_ID} not found in Store catalog"))
+            }
+        }
+
+        pub fn query_store_ownership(app: &AppHandle) -> Result<bool, String> {
+            let context = get_initialized_store_context(app)?;
+
+            let op = context.GetAppLicenseAsync().map_err(|e| format!("GetAppLicenseAsync failed: {e}"))?;
+            let app_license = op.get().map_err(|e| format!("GetAppLicenseAsync execution failed: {e}"))?;
+
+            let add_on_licenses = app_license.AddOnLicenses().map_err(|e| format!("AddOnLicenses failed: {e}"))?;
+            let store_id_hstring = HSTRING::from(PRO_ADDON_STORE_ID);
+
+            if add_on_licenses.HasKey(&store_id_hstring).unwrap_or(false) {
+                let lic = add_on_licenses.Lookup(&store_id_hstring).map_err(|e| format!("Lookup license failed: {e}"))?;
+                let is_active = lic.IsActive().unwrap_or(false);
+                return Ok(is_active);
+            }
+
+            let offer_token_hstring = HSTRING::from(PRO_ADDON_PRODUCT_ID);
+            if add_on_licenses.HasKey(&offer_token_hstring).unwrap_or(false) {
+                let lic = add_on_licenses.Lookup(&offer_token_hstring).map_err(|e| format!("Lookup license failed: {e}"))?;
+                let is_active = lic.IsActive().unwrap_or(false);
+                return Ok(is_active);
+            }
+
+            // Exhaustive iteration over all active add-on licenses
+            if let Ok(iterable) = add_on_licenses.First() {
+                while let Ok(has_current) = iterable.HasCurrent() {
+                    if !has_current { break; }
+                    if let Ok(pair) = iterable.Current() {
+                        let key = pair.Key().map(|k| k.to_string()).unwrap_or_default();
+                        if let Ok(lic) = pair.Value() {
+                            let token = lic.InAppOfferToken().map(|t| t.to_string()).unwrap_or_default();
+                            let store_id = lic.StoreId().map(|s| s.to_string()).unwrap_or_default();
+                            let is_active = lic.IsActive().unwrap_or(false);
+
+                            if (key == PRO_ADDON_STORE_ID || key == PRO_ADDON_PRODUCT_ID ||
+                                store_id == PRO_ADDON_STORE_ID || token == PRO_ADDON_PRODUCT_ID) && is_active {
+                                return Ok(true);
+                            }
+                        }
+                    }
+                    let _ = iterable.MoveNext();
+                }
+            }
+
+            Ok(false)
+        }
+
+        pub fn execute_purchase(app: &AppHandle) -> PurchaseResult {
+            if is_process_elevated() {
+                return PurchaseResult {
+                    status: "FAILED".to_string(),
+                    error_message: Some("Purchases cannot be made from an elevated (Administrator) process. Please run KeyFixer as a standard user to complete your purchase.".to_string()),
+                };
+            }
+
+            let context = match get_initialized_store_context(app) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("{TAG} StoreContext initialization failed: {e}");
+                    return PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some("Microsoft Store is unavailable in unpackaged development builds. Please test purchases using the packaged MSIX build.".to_string()),
+                    };
+                }
+            };
+
+            let store_id_hstring = HSTRING::from(PRO_ADDON_STORE_ID);
+            let op = match context.RequestPurchaseAsync(&store_id_hstring) {
+                Ok(op) => op,
+                Err(e) => {
+                    eprintln!("{TAG} RequestPurchaseAsync call failed: {e}");
+                    return PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some(format!("Could not initiate Microsoft Store purchase: {e}")),
+                    };
+                }
+            };
+
+            let result = match op.get() {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("{TAG} RequestPurchaseAsync operation failed: {e}");
+                    return PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some(format!("Purchase operation failed: {e}")),
+                    };
+                }
+            };
+
+            let status = result.Status().unwrap_or(StorePurchaseStatus::UnknownError);
+            let extended_error = result.ExtendedError().err().map(|e| e.to_string());
+
+            match status {
+                StorePurchaseStatus::Succeeded | StorePurchaseStatus::AlreadyPurchased => {
+                    eprintln!("{TAG} Purchase Succeeded or AlreadyPurchased. Reconciling ownership with Store.");
+                    PurchaseResult {
+                        status: "SUCCESS".to_string(),
+                        error_message: None,
+                    }
+                }
+                StorePurchaseStatus::NotPurchased => {
+                    eprintln!("{TAG} User canceled purchase dialog.");
+                    PurchaseResult {
+                        status: "CANCELLED".to_string(),
+                        error_message: None,
+                    }
+                }
+                StorePurchaseStatus::NetworkError => {
+                    eprintln!("{TAG} Network error during purchase.");
+                    PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some("A network error occurred while connecting to Microsoft Store. Please check your internet connection and try again.".to_string()),
+                    }
+                }
+                StorePurchaseStatus::ServerError => {
+                    eprintln!("{TAG} Server error during purchase.");
+                    PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: Some("A Microsoft Store server error occurred. Please try again later.".to_string()),
+                    }
+                }
+                _ => {
+                    eprintln!("{TAG} Unexpected purchase status: {status:?}, extended error: {extended_error:?}");
+                    PurchaseResult {
+                        status: "FAILED".to_string(),
+                        error_message: extended_error.or_else(|| Some("An unexpected error occurred during purchase.".to_string())),
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Public Store API Bridge Handlers ──────────────────────────────────────
+
+    pub fn store_load_pro_product(app: &AppHandle) -> StoreProduct {
+        if let Ok(prod) = ms_store::fetch_store_product(app) {
+            return prod;
+        }
+
+        // Defensive fallback for offline or development environments
         StoreProduct {
-            id: "9PK3G83GP41D".to_string(),
-            display_name: "KeyFixer Pro Lifetime".to_string(),
-            display_price: "€9.99".to_string(),
+            id: PRO_ADDON_STORE_ID.to_string(),
+            display_name: DEFAULT_DISPLAY_NAME.to_string(),
+            display_price: FALLBACK_PRICE.to_string(),
             is_available: true,
         }
     }
 
-    pub fn store_get_pro_entitlement() -> StoreEntitlement {
-        let is_paid = get_shared_state()
-            .map(|s| s.lock().unwrap().mode == ProMode::Paid)
-            .unwrap_or(false);
+    pub fn store_get_pro_entitlement(_app: &AppHandle) -> StoreEntitlement {
+        let (is_paid, verified_prod, timestamp) = get_shared_state()
+            .map(|s| {
+                let guard = s.lock().unwrap();
+                (
+                    guard.mode == ProMode::Paid && guard.is_entitlement_verified(),
+                    guard.verified_product_id.clone(),
+                    guard.verification_timestamp,
+                )
+            })
+            .unwrap_or((false, None, None));
 
-        StoreEntitlement {
-            paid: is_paid,
-            product_id: if is_paid { Some("9PK3G83GP41D".to_string()) } else { None },
-            purchase_date: None,
-            revocation_date: None,
-            verification_status: if is_paid { "VERIFIED".to_string() } else { "NOT_PURCHASED".to_string() },
+        if is_paid {
+            StoreEntitlement {
+                paid: true,
+                product_id: verified_prod.or_else(|| Some(PRO_ADDON_PRODUCT_ID.to_string())),
+                purchase_date: timestamp.map(|t| t.to_string()),
+                revocation_date: None,
+                verification_status: "VERIFIED".to_string(),
+            }
+        } else {
+            StoreEntitlement {
+                paid: false,
+                product_id: None,
+                purchase_date: None,
+                revocation_date: None,
+                verification_status: "NOT_PURCHASED".to_string(),
+            }
         }
     }
 
-    pub fn store_purchase_pro(_app: &AppHandle) -> PurchaseResult {
-        // Open Microsoft Store product page
-        let store_uri = "ms-windows-store://pdp/?productid=9PK3G83GP41D";
-        let _ = std::process::Command::new("cmd")
-            .args(["/C", "start", store_uri])
-            .spawn();
-
-        PurchaseResult {
-            status: "SUCCESS".to_string(),
-            error_message: None,
+    pub fn store_purchase_pro(app: &AppHandle) -> PurchaseResult {
+        let res = ms_store::execute_purchase(app);
+        if res.status == "SUCCESS" {
+            if let Some(shared) = get_shared_state() {
+                let mut guard = shared.lock().unwrap();
+                guard.set_paid_verified(app);
+            }
+            let _ = app.emit("pro-status-changed", serde_json::json!({ "mode": "paid" }));
         }
+        res
     }
 
-    pub fn store_restore_purchases(_app: &AppHandle) -> RestorePurchasesResult {
-        let entitlement = store_get_pro_entitlement();
-        RestorePurchasesResult {
-            status: if entitlement.paid { "RESTORED".to_string() } else { "NOT_FOUND".to_string() },
-            entitlement,
-            error_message: None,
+    pub fn store_restore_purchases(app: &AppHandle) -> RestorePurchasesResult {
+        match ms_store::query_store_ownership(app) {
+            Ok(true) => {
+                if let Some(shared) = get_shared_state() {
+                    let mut guard = shared.lock().unwrap();
+                    guard.set_paid_verified(app);
+                }
+                let _ = app.emit("pro-status-changed", serde_json::json!({ "mode": "paid" }));
+                let entitlement = store_get_pro_entitlement(app);
+                RestorePurchasesResult {
+                    status: "RESTORED".to_string(),
+                    entitlement,
+                    error_message: None,
+                }
+            }
+            Ok(false) => {
+                if let Some(shared) = get_shared_state() {
+                    let mut guard = shared.lock().unwrap();
+                    if guard.mode == ProMode::Paid {
+                        guard.revoke_paid(app);
+                        let _ = app.emit("pro-status-changed", serde_json::json!({ "mode": "free" }));
+                    }
+                }
+                let entitlement = store_get_pro_entitlement(app);
+                RestorePurchasesResult {
+                    status: "NOT_FOUND".to_string(),
+                    entitlement,
+                    error_message: None,
+                }
+            }
+            Err(e) => {
+                eprintln!("{TAG} Restore purchase query failed: {e}");
+                let entitlement = store_get_pro_entitlement(app);
+                RestorePurchasesResult {
+                    status: "FAILED".to_string(),
+                    entitlement,
+                    error_message: Some("Could not connect to Microsoft Store to verify purchases. Please check your internet connection.".to_string()),
+                }
+            }
         }
     }
 }
