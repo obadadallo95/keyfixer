@@ -45,14 +45,14 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
       trialStart: 'ابدأ التجربة المجانية (25 تصحيحاً)',
       trialLater: 'ربما لاحقاً',
       upgradeTitle: 'KeyFixer Pro مدى الحياة',
-      upgradeDesc: 'استمتع بتصحيح فوري غير محدود داخل التطبيقات المدعومة بشراء لمرة واحدة فقط.',
+      upgradeDesc: 'تصحيح فوري غير محدود داخل التطبيقات المدعومة بشراء لمرة واحدة فقط.',
       upgradeF1: `تصحيح فوري غير محدود باختصار ${shortcut}`,
-      upgradeF2: `شراء لمرة واحدة مع تحديثات مدى الحياة عبر ${storeName} (بدون اشتراكات)`,
+      upgradeF2: `شراء لمرة واحدة مدى الحياة عبر ${storeName} (بدون اشتراكات)`,
       upgradeF3: isWindows
-        ? 'تصحيح مباشر وسريع داخل التطبيقات'
-        : 'بدون أي إذن لتسهيلات الاستخدام عبر خدمات macOS الأصلية',
-      upgradeF4: 'تتم معالجة وتحويل النصوص محلياً بالكامل على جهاز الماك',
-      upgradeF5: 'يعالج النص المحدد في الذاكرة المؤقتة ولا يتم تخزينه أو رفعه أبداً',
+        ? 'معالجة محلية بالكامل وتصحيح مباشر وسريع'
+        : 'معالجة محلية بالكامل وبدون أي إذن لتسهيلات الاستخدام',
+      upgradeF4: 'معالجة محلية بالكامل في الذاكرة المؤقتة',
+      upgradeF5: 'الخصوصية أولاً ولا يتم تخزين أي نصوص',
       upgradeCta: 'الترقية إلى Pro مدى الحياة',
       upgradeNot: 'ليس الآن',
       purchaseUnavailable: 'الشراء غير متاح مؤقتًا',
@@ -99,14 +99,14 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
       trialStart: 'Kostenlose Testphase starten (25 Fixes)',
       trialLater: 'Vielleicht später',
       upgradeTitle: 'KeyFixer Pro Lifetime',
-      upgradeDesc: 'Nutzen Sie unbegrenzte Sofort-Korrekturen in unterstützten Apps mit einem einmaligen Kauf.',
+      upgradeDesc: 'Unbegrenzte Sofort-Korrekturen in unterstützten Apps mit einem Einmalkauf.',
       upgradeF1: `Unbegrenzte Sofort-Korrekturen mit ${shortcut}`,
-      upgradeF2: `Einmaliger Kauf für lebenslange Nutzung über den ${storeName} (kein Abo)`,
+      upgradeF2: `Einmalkauf für lebenslange Nutzung via ${storeName} (kein Abo)`,
       upgradeF3: isWindows
-        ? 'Direkte Texteingabe-Korrektur in Apps'
-        : 'Keine Bedienungshilfen-Berechtigung erforderlich (native macOS-Dienste)',
-      upgradeF4: 'Die gesamte Textkonvertierung läuft zu 100 % lokal auf Ihrem Mac',
-      upgradeF5: 'Markierter Text wird im Arbeitsspeicher verarbeitet und niemals gespeichert oder übertragen',
+        ? '100 % lokale Verarbeitung und direkte Textkorrektur'
+        : '100 % lokale Textverarbeitung ohne Berechtigungen',
+      upgradeF4: 'Volle Privatsphäre im Arbeitsspeicher',
+      upgradeF5: 'Keine Speicherung von Texten',
       upgradeCta: 'Pro Lifetime freischalten',
       upgradeNot: 'Nicht jetzt',
       purchaseUnavailable: 'Kauf vorübergehend nicht verfügbar',
@@ -153,14 +153,14 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
     trialStart: 'Start Free Trial (25 Fixes)',
     trialLater: 'Maybe Later',
     upgradeTitle: 'KeyFixer Pro Lifetime',
-    upgradeDesc: 'Enjoy unlimited Instant Fixes across supported apps with a one-time purchase.',
+    upgradeDesc: 'Unlimited Instant Fixes across supported apps with a one-time purchase.',
     upgradeF1: `Unlimited Instant Fixes with ${shortcut}`,
-    upgradeF2: `One-time lifetime license via ${storeName} (no subscriptions)`,
+    upgradeF2: `One-time purchase for lifetime use via ${storeName} (no subscriptions)`,
     upgradeF3: isWindows
-      ? 'Direct in-app text correction'
-      : 'Zero Accessibility permissions required via native macOS Services',
-    upgradeF4: 'All text conversion runs 100% locally on your Mac',
-    upgradeF5: 'Selected text is processed in memory and never stored or uploaded',
+      ? '100% local processing and fast in-app correction'
+      : '100% local text processing & zero permissions',
+    upgradeF4: 'Full privacy in transient memory',
+    upgradeF5: 'No text is ever stored or uploaded',
     upgradeCta: 'Unlock Pro Lifetime',
     upgradeNot: 'Not Now',
     purchaseUnavailable: 'Purchase temporarily unavailable',
@@ -734,7 +734,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
       {showTrialWelcome && (
         <Modal onClose={() => setShowTrialWelcome(false)} isRTL={isRTL}>
           <div style={styles.modalIcon}>
-            <Sparkles size={28} style={{ color: '#F59E0B' }} />
+            <Sparkles size={22} style={{ color: '#F59E0B' }} />
           </div>
           <h3 style={styles.modalTitle}>{t.trialTitle}</h3>
           <p style={styles.modalBody}>{t.trialDesc}</p>
@@ -742,28 +742,21 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
           <div style={styles.featureList}>
             {[t.trialF1, t.trialF2, t.trialF3].map((f, i) => (
               <div key={i} style={styles.featureRow}>
-                <CheckCircle2 size={13} style={{ color: '#10B981', flexShrink: 0 }} />
+                <CheckCircle2 size={12} style={{ color: '#10B981', flexShrink: 0 }} />
                 <span>{f}</span>
               </div>
             ))}
           </div>
 
           {/* Compatibility & Fallback Note */}
-          <div style={styles.compatBox}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <HelpCircle size={13} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.72)', lineHeight: 1.45 }}>
-                {t.compatNote}
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.5)', marginTop: 4, lineHeight: 1.4 }}>
-              {t.fallbackNote}
-            </div>
+          <div style={styles.compatNote}>
+            <HelpCircle size={11} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <span>{t.compatNote}</span>
           </div>
 
           <button onClick={handleConfirmTrial} style={styles.primaryBtn} data-testid="confirm-trial-button">
             <span>{t.trialStart}</span>
-            <ArrowRight size={14} style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }} />
+            <ArrowRight size={13} style={{ transform: isRTL ? 'rotate(180deg)' : 'none' }} />
           </button>
           <button onClick={() => setShowTrialWelcome(false)} style={styles.ghostBtn}>
             {t.trialLater}
@@ -775,7 +768,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
       {!isAppStore && showAccessibilityModal && (
         <Modal onClose={() => setShowAccessibilityModal(false)} isRTL={isRTL}>
           <div style={styles.modalIcon}>
-            <ShieldCheck size={30} style={{ color: hasAccessibility ? '#10B981' : '#F59E0B' }} />
+            <ShieldCheck size={26} style={{ color: hasAccessibility ? '#10B981' : '#F59E0B' }} />
           </div>
           <h3 style={styles.modalTitle}>{t.axTitle}</h3>
           <p style={styles.modalBody}>{t.axDesc}</p>
@@ -791,21 +784,21 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
 
           {hasAccessibility === true && (
             <div style={styles.successBanner}>
-              <CheckCircle2 size={15} style={{ color: '#10B981' }} />
-              <span style={{ color: '#10B981', fontWeight: 600, fontSize: 12.5 }}>{t.axGranted}</span>
+              <CheckCircle2 size={14} style={{ color: '#10B981' }} />
+              <span style={{ color: '#10B981', fontWeight: 600, fontSize: 12 }}>{t.axGranted}</span>
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
             {hasAccessibility === true ? (
               <button onClick={() => bridge.restartKeyFixer()} style={styles.primaryBtn}>
-                <RefreshCw size={14} />
+                <RefreshCw size={13} />
                 <span>{isRTL ? 'إعادة تشغيل KeyFixer' : 'Restart KeyFixer'}</span>
               </button>
             ) : (
               <>
                 <button onClick={handleOpenAccessibility} style={styles.primaryBtn}>
-                  <ExternalLink size={14} />
+                  <ExternalLink size={13} />
                   <span>{t.axOpen}</span>
                 </button>
 
@@ -815,16 +808,16 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
                   style={styles.secondaryBtn}
                 >
                   {isCheckingAccess ? (
-                    <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+                    <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
                   ) : (
-                    <ShieldCheck size={13} />
+                    <ShieldCheck size={12} />
                   )}
                   <span>{isCheckingAccess ? t.axChecking : t.axCheck}</span>
                 </button>
 
                 {permissionSettingsOpened && (
                   <button onClick={() => bridge.restartKeyFixer()} style={styles.primaryBtn} data-testid="restart-after-permission-button">
-                    <RefreshCw size={14} />
+                    <RefreshCw size={13} />
                     <span>{isRTL ? 'إعادة تشغيل KeyFixer لتطبيق الصلاحية' : 'Restart KeyFixer to apply permission'}</span>
                   </button>
                 )}
@@ -842,31 +835,24 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
       {showUpgradeModal && (
         <Modal onClose={() => setShowUpgradeModal(false)} isRTL={isRTL}>
           <div style={styles.modalIcon}>
-            <Lock size={28} style={{ color: '#F59E0B' }} />
+            <Lock size={22} style={{ color: '#F59E0B' }} />
           </div>
           <h3 style={styles.modalTitle}>{t.upgradeTitle}</h3>
           <p style={styles.modalBody}>{t.upgradeDesc}</p>
 
           <div style={styles.featureList}>
-            {[t.upgradeF1, t.upgradeF2, t.upgradeF3, t.upgradeF4, t.upgradeF5].map((f, i) => (
+            {[t.upgradeF1, t.upgradeF2, t.upgradeF3].map((f, i) => (
               <div key={i} style={styles.featureRow}>
-                <CheckCircle2 size={13} style={{ color: '#10B981', flexShrink: 0 }} />
+                <CheckCircle2 size={12} style={{ color: '#10B981', flexShrink: 0 }} />
                 <span>{f}</span>
               </div>
             ))}
           </div>
 
-          {/* Compatibility & Fallback Note */}
-          <div style={styles.compatBox}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <HelpCircle size={13} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.72)', lineHeight: 1.45 }}>
-                {t.compatNote}
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.5)', marginTop: 4, lineHeight: 1.4 }}>
-              {t.fallbackNote}
-            </div>
+          {/* Compatibility Note */}
+          <div style={styles.compatNote}>
+            <HelpCircle size={11} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <span>{t.compatNote}</span>
           </div>
 
           {/* Pending Approval Notice */}
@@ -904,9 +890,9 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
             data-testid="purchase-pro-button"
           >
             {isPurchasing ? (
-              <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+              <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
             ) : (
-              <Sparkles size={14} />
+              <Sparkles size={13} />
             )}
             <span>{isPurchasing ? (isRTL ? 'جارٍ الاتصال بـ App Store…' : (effectiveLang === 'de' ? 'Verbindung zum App Store…' : 'Connecting to App Store…')) : `${t.upgradeCta}${displayPriceText}`}</span>
           </button>
@@ -914,7 +900,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
           {/* Restore Notice Banner inside Modal */}
           {restoreNotice && restoreNotice.type === 'info' && (
             <div style={styles.infoBanner} data-testid="restore-info-banner-modal">
-              <span style={{ fontSize: 11.5, textAlign: 'center', color: '#93C5FD' }}>{restoreNotice.message}</span>
+              <span style={{ fontSize: 11, textAlign: 'center', color: '#93C5FD' }}>{restoreNotice.message}</span>
             </div>
           )}
           {restoreNotice && restoreNotice.type === 'error' && (
@@ -932,9 +918,9 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
             data-testid="restore-purchases-button-modal"
           >
             {isRestoring ? (
-              <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
+              <Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite' }} />
             ) : (
-              <RotateCcw size={13} />
+              <RotateCcw size={12} />
             )}
             <span>{isRestoring ? t.restoring : t.restoreBtn}</span>
           </button>
@@ -943,20 +929,8 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
             {t.upgradeNot}
           </button>
 
-          {/* Small Secondary Legal Links below the purchase area */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              fontSize: 11,
-              color: 'rgba(255, 255, 255, 0.45)',
-            }}
-          >
+          {/* Small Secondary Legal Links */}
+          <div style={styles.legalLinksRow}>
             <button
               type="button"
               onClick={() => {
@@ -964,7 +938,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
                 window.dispatchEvent(new CustomEvent('open-legal-doc', { detail: { doc: 'terms' } }));
                 onOpenLegal?.('terms');
               }}
-              style={{ background: 'none', border: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              style={styles.legalLinkBtn}
             >
               {t.terms}
             </button>
@@ -976,7 +950,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
                 window.dispatchEvent(new CustomEvent('open-legal-doc', { detail: { doc: 'privacy' } }));
                 onOpenLegal?.('privacy');
               }}
-              style={{ background: 'none', border: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              style={styles.legalLinkBtn}
             >
               {t.privacy}
             </button>
@@ -988,7 +962,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
                 window.dispatchEvent(new CustomEvent('open-legal-doc', { detail: { doc: 'purchase-refund' } }));
                 onOpenLegal?.('purchase-refund');
               }}
-              style={{ background: 'none', border: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              style={styles.legalLinkBtn}
             >
               {t.refund}
             </button>
@@ -1207,20 +1181,20 @@ const styles = {
     width: '100%',
     position: 'relative' as const,
     border: '1px solid rgba(245, 158, 11, 0.25)',
-    boxShadow: '0 25px 70px rgba(0,0,0,0.65), 0 0 35px rgba(245,158,11,0.08)',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.65), 0 0 30px rgba(245,158,11,0.06)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 11,
+    gap: 7,
   },
   closeBtn: {
     position: 'absolute' as const,
-    top: 12,
+    top: 10,
     background: 'rgba(255, 255, 255, 0.08)',
     border: 'none',
     borderRadius: 6,
     color: 'rgba(255, 255, 255, 0.5)',
     cursor: 'pointer',
-    padding: 5,
+    padding: 4,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1229,9 +1203,10 @@ const styles = {
   modalIcon: {
     display: 'flex',
     justifyContent: 'center',
+    marginBottom: -2,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: 800,
     color: '#FFFFFF',
     textAlign: 'center' as const,
@@ -1239,57 +1214,63 @@ const styles = {
     letterSpacing: '-0.01em',
   },
   modalBody: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    lineHeight: 1.5,
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.65)',
+    lineHeight: 1.35,
     textAlign: 'center' as const,
     margin: 0,
   },
   featureList: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 6,
-    padding: '8px 11px',
+    gap: 4,
+    padding: '6px 10px',
     background: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 10,
+    borderRadius: 8,
     border: '1px solid rgba(255, 255, 255, 0.06)',
   },
   featureRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: 7,
-    fontSize: 11.5,
+    gap: 6,
+    fontSize: 11,
     color: 'rgba(255, 255, 255, 0.82)',
+    lineHeight: 1.35,
   },
-  compatBox: {
-    padding: '8px 10px',
-    background: 'rgba(245, 158, 11, 0.06)',
-    borderRadius: 8,
-    border: '1px solid rgba(245, 158, 11, 0.18)',
+  compatNote: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.5)',
+    textAlign: 'center' as const,
+    lineHeight: 1.3,
+    padding: '2px 0',
   },
   stepList: {
     margin: 0,
     padding: 0,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 8,
+    gap: 6,
     listStyle: 'none',
   },
   step: {
     display: 'flex',
     alignItems: 'flex-start',
-    gap: 8,
-    fontSize: 12,
+    gap: 7,
+    fontSize: 11.5,
     color: 'rgba(255, 255, 255, 0.78)',
-    lineHeight: 1.45,
+    lineHeight: 1.4,
   },
   stepNum: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     background: 'rgba(245, 158, 11, 0.22)',
     color: '#F59E0B',
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: 800,
     display: 'flex',
     alignItems: 'center',
@@ -1301,32 +1282,32 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    padding: '8px 12px',
+    gap: 6,
+    padding: '6px 10px',
     background: 'rgba(16, 185, 129, 0.12)',
     border: '1px solid rgba(16, 185, 129, 0.35)',
-    borderRadius: 8,
+    borderRadius: 7,
   },
   infoBanner: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    padding: '8px 12px',
+    gap: 6,
+    padding: '6px 10px',
     background: 'rgba(59, 130, 246, 0.12)',
     border: '1px solid rgba(59, 130, 246, 0.35)',
-    borderRadius: 8,
+    borderRadius: 7,
   },
   pendingBanner: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    padding: '8px 12px',
+    gap: 3,
+    padding: '6px 10px',
     background: 'rgba(245, 158, 11, 0.12)',
     border: '1px solid rgba(245, 158, 11, 0.35)',
-    borderRadius: 8,
+    borderRadius: 7,
     color: '#F59E0B',
     textAlign: 'center' as const,
   },
@@ -1334,13 +1315,13 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    padding: '8px 12px',
+    gap: 5,
+    padding: '6px 10px',
     background: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.35)',
-    borderRadius: 8,
+    borderRadius: 7,
     color: '#EF4444',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     textAlign: 'center' as const,
   },
@@ -1348,12 +1329,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '7px 12px',
+    padding: '6px 10px',
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
+    borderRadius: 7,
     color: 'rgba(255, 255, 255, 0.65)',
-    fontSize: 11.5,
+    fontSize: 11,
     textAlign: 'center' as const,
   },
   primaryBtn: {
@@ -1362,29 +1343,29 @@ const styles = {
     justifyContent: 'center',
     gap: 6,
     width: '100%',
-    padding: '9px 15px',
-    borderRadius: 10,
+    padding: '8px 14px',
+    borderRadius: 8,
     border: 'none',
     background: 'linear-gradient(135deg, #F59E0B, #D97706)',
     color: '#121212',
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: 800,
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+    boxShadow: '0 3px 12px rgba(245, 158, 11, 0.3)',
     transition: 'transform 0.15s, opacity 0.15s',
   },
   secondaryBtn: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
     width: '100%',
-    padding: '7px 12px',
-    borderRadius: 9,
+    padding: '6px 12px',
+    borderRadius: 7,
     border: '1px solid rgba(255, 255, 255, 0.12)',
     background: 'rgba(255, 255, 255, 0.06)',
     color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
   },
@@ -1406,9 +1387,29 @@ const styles = {
     background: 'none',
     border: 'none',
     color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 11.5,
+    fontSize: 11,
     cursor: 'pointer',
     textAlign: 'center' as const,
-    padding: '3px 0',
+    padding: '2px 0',
+  },
+  legalLinksRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 2,
+    paddingTop: 4,
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  legalLinkBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'inherit',
+    fontSize: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    padding: 0,
   },
 } as const;
