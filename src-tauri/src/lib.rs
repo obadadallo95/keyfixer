@@ -389,8 +389,6 @@ pub fn run() {
 
     let app = app
         .setup(|app| {
-            pro_bridge::init_pro_state(app.handle());
-
             let keyfixer_shortcut = {
                 #[cfg(target_os = "macos")]
                 {
@@ -437,6 +435,8 @@ pub fn run() {
                     })
                     .build(),
             )?;
+
+            pro_bridge::init_pro_state(app.handle());
 
             #[cfg(all(feature = "appstore", target_os = "macos"))]
             pro_bridge::sync_global_shortcut_state(app.handle());
@@ -540,6 +540,7 @@ pub fn run() {
         #[cfg(target_os = "macos")]
         if let tauri::RunEvent::Reopen { .. } = _event {
             if let Some(window) = _app_handle.get_webview_window("main") {
+                let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
             }
