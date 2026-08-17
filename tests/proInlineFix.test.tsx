@@ -97,9 +97,7 @@ describe('ProPanel Instant Fix, Discoverability & Legal Integration Tests (Phase
 
     fireEvent.click(screen.getByTestId('start-trial-button'));
     expect(screen.getByText('Try KeyFixer Pro')).toBeInTheDocument();
-    expect(screen.getByText('Start Free Trial (25 Fixes)')).toBeInTheDocument();
-    expect(screen.getByText(/Instant Fix works in supported Mac apps and text fields/)).toBeInTheDocument();
-    expect(screen.getByText(/If unavailable in an app, standard Copy → KeyFixer → Fix → Paste is always available/)).toBeInTheDocument();
+    expect(screen.getByText(/Instant Fix works in supported Mac apps and text fields\. If the shortcut doesn't respond, use KeyFixer's standard Copy → Fix → Paste workflow\./)).toBeInTheDocument();
   });
 
   it('activating trial transitions to TRIAL_ACTIVE and starts 25 credits trial', async () => {

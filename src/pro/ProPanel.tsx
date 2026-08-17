@@ -40,8 +40,8 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
         ? 'تصحيح سريع ومباشر على مستوى النظام'
         : 'بدون أي إذن لتسهيلات الاستخدام عبر خدمات macOS الأصلية',
       trialF3: 'معالجة محلية للنصوص 100% داخل الذاكرة على جهاز الماك',
-      compatNote: 'يعمل التصحيح الفوري في تطبيقات وحقول النص المدعومة على الماك.',
-      fallbackNote: 'إذا لم يكن مدعوماً في تطبيق ما، يمكنك دائماً استخدام: نسخ ← KeyFixer ← تصحيح ← لصق.',
+      compatNote: 'يعمل التصحيح الفوري في تطبيقات وحقول النص المدعومة على الماك. إذا لم يستجب الاختصار، استخدم الطريقة العادية: نسخ → KeyFixer → تصحيح → لصق.',
+      fallbackNote: 'إذا لم يكن مدعوماً في تطبيق ما، يمكنك دائماً استخدام: نسخ → KeyFixer → تصحيح → لصق.',
       trialStart: 'ابدأ التجربة المجانية (25 تصحيحاً)',
       trialLater: 'ربما لاحقاً',
       upgradeTitle: 'KeyFixer Pro مدى الحياة',
@@ -94,7 +94,7 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
         ? 'Schnelle systemweite Korrektur'
         : 'Keine Bedienungshilfen-Berechtigung dank nativer macOS-Dienste',
       trialF3: '100 % lokale Textkonvertierung im Arbeitsspeicher auf Ihrem Mac',
-      compatNote: 'Die Sofort-Korrektur funktioniert in unterstützten Mac-Apps und Textfeldern.',
+      compatNote: 'Die Sofort-Korrektur funktioniert in unterstützten Mac-Apps und Textfeldern. Falls der Kurzbefehl nicht reagiert, nutzen Sie den Standard-Ablauf: Kopieren → KeyFixer → Korrigieren → Einfügen.',
       fallbackNote: 'Falls nicht unterstützt: Kopieren → KeyFixer → Korrigieren → Einfügen steht immer bereit.',
       trialStart: 'Kostenlose Testphase starten (25 Fixes)',
       trialLater: 'Vielleicht später',
@@ -148,7 +148,7 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
       ? 'Fast system-wide correction'
       : 'Zero Accessibility permissions required via native macOS Services',
     trialF3: '100% local text conversion in RAM on your Mac',
-    compatNote: 'Instant Fix works in supported Mac apps and text fields.',
+    compatNote: "Instant Fix works in supported Mac apps and text fields. If the shortcut doesn't respond, use KeyFixer's standard Copy → Fix → Paste workflow.",
     fallbackNote: 'If unavailable in an app, standard Copy → KeyFixer → Fix → Paste is always available.',
     trialStart: 'Start Free Trial (25 Fixes)',
     trialLater: 'Maybe Later',
