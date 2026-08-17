@@ -399,22 +399,22 @@ public func keyfixer_storekit_restore_purchases_json() -> UnsafePointer<CChar>? 
     return makeCString(from: resultModel)
 }
 
-@_cdecl("keyfixer_storekit_purchase_pro_json")
-public func keyfixer_storekit_purchase_pro_json() -> UnsafePointer<CChar>? {
+@_cdecl("keyfixer_storekit_purchase_pro_async")
+public func keyfixer_storekit_purchase_pro_async(
+    context: UnsafeMutableRawPointer?,
+    callback: @escaping @convention(c) (UnsafeMutableRawPointer?, UnsafePointer<CChar>?) -> Void
+) {
     guard #available(macOS 12.0, *) else {
-        return makeCString(from: PurchaseResultModel(status: "FAILED", errorMessage: "StoreKit 2 requires macOS 12.0+"))
+        let err = makeCString(from: PurchaseResultModel(status: "FAILED", errorMessage: "StoreKit 2 requires macOS 12.0+"))
+        callback(context, err)
+        return
     }
 
-    let semaphore = DispatchSemaphore(value: 0)
-    var resultModel = PurchaseResultModel(status: "FAILED", errorMessage: "Timeout")
-
-    Task {
-        resultModel = await KeyFixerStoreKitManager.shared.purchasePro()
-        semaphore.signal()
+    Task { @MainActor in
+        let result = await KeyFixerStoreKitManager.shared.purchasePro()
+        let jsonPtr = makeCString(from: result)
+        callback(context, jsonPtr)
     }
-
-    _ = semaphore.wait(timeout: .now() + 30.0)
-    return makeCString(from: resultModel)
 }
 
 @_cdecl("keyfixer_storekit_free_string")

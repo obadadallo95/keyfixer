@@ -242,11 +242,11 @@ pub fn storekit_get_pro_entitlement(app: &AppHandle) -> serde_json::Value {
     }
 }
 
-pub fn storekit_purchase_pro(app: &AppHandle) -> serde_json::Value {
+pub async fn storekit_purchase_pro(app: &AppHandle) -> serde_json::Value {
     #[cfg(all(feature = "pro", target_os = "macos"))]
     {
         let _ = app;
-        let res = inline_fix::macos::storekit_purchase_pro();
+        let res = inline_fix::macos::storekit_purchase_pro().await;
         return serde_json::to_value(res).unwrap_or(serde_json::json!({
             "status": "FAILED",
             "errorMessage": "Failed to parse purchase result"

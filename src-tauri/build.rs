@@ -4,6 +4,8 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(storekit_native_exists)");
+    println!("cargo:rerun-if-changed=native/KeyFixerStoreKit.swift");
+    println!("cargo:rerun-if-changed=native/KeyFixerServices.swift");
 
     #[cfg(target_os = "macos")]
     if env::var("CARGO_FEATURE_APPSTORE").is_ok() {

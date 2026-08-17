@@ -274,8 +274,43 @@ pub mod macos {
         fn keyfixer_storekit_get_entitlement_json() -> *const c_char;
         fn keyfixer_storekit_load_product_json() -> *const c_char;
         fn keyfixer_storekit_restore_purchases_json() -> *const c_char;
-        fn keyfixer_storekit_purchase_pro_json() -> *const c_char;
+        fn keyfixer_storekit_purchase_pro_async(
+            context: *mut c_void,
+            callback: extern "C" fn(*mut c_void, *const c_char),
+        );
         fn keyfixer_storekit_free_string(ptr: *const c_char);
+    }
+
+    #[cfg(all(feature = "pro", storekit_native_exists, target_os = "macos"))]
+    extern "C" fn on_purchase_completed(context: *mut c_void, json_ptr: *const c_char) {
+        if context.is_null() {
+            if !json_ptr.is_null() {
+                unsafe { keyfixer_storekit_free_string(json_ptr); }
+            }
+            return;
+        }
+
+        let sender = unsafe {
+            Box::from_raw(context as *mut tokio::sync::oneshot::Sender<PurchaseResult>)
+        };
+
+        let result = if !json_ptr.is_null() {
+            if let Some(res) = unsafe { parse_swift_json::<PurchaseResult>(json_ptr) } {
+                res
+            } else {
+                PurchaseResult {
+                    status: "FAILED".to_string(),
+                    error_message: Some("Failed to parse Swift purchase response".to_string()),
+                }
+            }
+        } else {
+            PurchaseResult {
+                status: "FAILED".to_string(),
+                error_message: Some("Null response from Swift purchase".to_string()),
+            }
+        };
+
+        let _ = sender.send(result);
     }
 
     #[cfg(all(feature = "pro", storekit_native_exists, target_os = "macos"))]
@@ -383,17 +418,28 @@ pub mod macos {
         }
     }
 
-    pub fn storekit_purchase_pro() -> PurchaseResult {
+    pub async fn storekit_purchase_pro() -> PurchaseResult {
         #[cfg(all(feature = "pro", storekit_native_exists, target_os = "macos"))]
         {
-            let ptr = unsafe { keyfixer_storekit_purchase_pro_json() };
-            if let Some(res) = unsafe { parse_swift_json::<PurchaseResult>(ptr) } {
-                return res;
+            let (tx, rx) = tokio::sync::oneshot::channel::<PurchaseResult>();
+            let context = Box::into_raw(Box::new(tx)) as *mut c_void;
+            unsafe {
+                keyfixer_storekit_purchase_pro_async(context, on_purchase_completed);
+            }
+            match rx.await {
+                Ok(res) => res,
+                Err(_) => PurchaseResult {
+                    status: "FAILED".to_string(),
+                    error_message: Some("Purchase channel closed".to_string()),
+                },
             }
         }
-        PurchaseResult {
-            status: "FAILED".to_string(),
-            error_message: Some("StoreKit 2 is not available in this build".to_string()),
+        #[cfg(not(all(feature = "pro", storekit_native_exists, target_os = "macos")))]
+        {
+            PurchaseResult {
+                status: "FAILED".to_string(),
+                error_message: Some("StoreKit 2 is not available in this build".to_string()),
+            }
         }
     }
 

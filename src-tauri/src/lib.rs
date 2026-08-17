@@ -251,8 +251,8 @@ fn storekit_get_pro_entitlement(app: AppHandle) -> serde_json::Value {
 }
 
 #[command]
-fn storekit_purchase_pro(app: AppHandle) -> serde_json::Value {
-    pro_bridge::storekit_purchase_pro(&app)
+async fn storekit_purchase_pro(app: AppHandle) -> serde_json::Value {
+    pro_bridge::storekit_purchase_pro(&app).await
 }
 
 #[command]
