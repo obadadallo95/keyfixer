@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.obadadallo.keyfixer.prototype</string>
+    <key>CFBundleName</key>
+    <string>KeyFixerServicePrototype</string>
+    <key>CFBundleDisplayName</key>
+    <string>KeyFixer Prototype</string>
+    <key>CFBundleExecutable</key>
+    <string>KeyFixerServicePrototype</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>Fix Layout with KeyFixer</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>fixSelectedText</string>
+            <key>NSPortName</key>
+            <string>KeyFixerServicePrototype</string>
+            <key>NSSendTypes</key>
+            <array>
+                <string>NSPasteboardTypeString</string>
+                <string>NSStringPboardType</string>
+                <string>public.utf8-plain-text</string>
+            </array>
+            <key>NSReturnTypes</key>
+            <array>
+                <string>NSPasteboardTypeString</string>
+                <string>NSStringPboardType</string>
+                <string>public.utf8-plain-text</string>
+            </array>
+            <key>NSKeyEquivalent</key>
+            <dict>
+                <key>default</key>
+                <string>~@k</string>
+            </dict>
+            <key>NSRequiredContext</key>
+            <dict>
+                <key>NSTextContent</key>
+                <string>NSTextContentSelected</string>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>

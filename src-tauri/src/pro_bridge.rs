@@ -1,8 +1,12 @@
 #[allow(unused_imports)]
 use tauri::{AppHandle, Manager};
 
-#[cfg(all(feature = "pro", target_os = "macos"))]
-#[path = "pro/inline_fix.rs"]
+#[cfg(all(feature = "appstore", target_os = "macos"))]
+#[path = "pro/inline_fix_nsservices.rs"]
+mod inline_fix;
+
+#[cfg(all(not(feature = "appstore"), feature = "pro", target_os = "macos"))]
+#[path = "pro/inline_fix_direct.rs"]
 mod inline_fix;
 
 #[cfg(all(feature = "pro", target_os = "windows"))]
@@ -101,6 +105,7 @@ pub fn set_inline_fix_preference(app: &AppHandle, enabled: bool) {
 
 // ── Inline fix runner ─────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 pub fn run_inline_fix(app: &AppHandle) {
     #[cfg(all(feature = "pro", target_os = "macos"))]
     { inline_fix::macos::run_inline_fix(app); }

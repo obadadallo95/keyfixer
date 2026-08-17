@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 describe('macOS Inline Fix shortcut release architecture', () => {
-  const native = readFileSync('src-tauri/src/pro/inline_fix.rs', 'utf8');
+  const native = readFileSync('src-tauri/src/pro/inline_fix_direct.rs', 'utf8');
   const app = readFileSync('src-tauri/src/lib.rs', 'utf8');
 
   it('starts on K release without polling physical modifier release', () => {

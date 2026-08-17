@@ -7,7 +7,7 @@ export interface LegalViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialDoc?: LegalDocId;
-  lang: 'en' | 'ar';
+  lang: 'en' | 'ar' | 'de';
   isDark?: boolean;
 }
 
@@ -237,43 +237,46 @@ export function LegalViewerModal({ isOpen, onClose, initialDoc = 'privacy', lang
   const docList: Array<{ id: LegalDocId; title: string; icon: React.ReactNode }> = useMemo(() => [
     {
       id: 'privacy',
-      title: isRTL ? 'سياسة الخصوصية' : 'Privacy Policy',
+      title: lang === 'ar' ? 'سياسة الخصوصية' : (lang === 'de' ? 'Datenschutz' : 'Privacy Policy'),
       icon: <ShieldCheck size={14} />,
     },
     {
       id: 'terms',
-      title: isRTL ? 'شروط الاستخدام' : 'Terms of Use',
+      title: lang === 'ar' ? 'شروط الاستخدام' : (lang === 'de' ? 'Bedingungen' : 'Terms of Use'),
       icon: <Scale size={14} />,
     },
     {
       id: 'purchase-refund',
-      title: isRTL ? 'سياسة الشراء والاسترجاع' : 'Purchase & Refund Policy',
+      title: lang === 'ar' ? 'سياسة الشراء والاسترجاع' : (lang === 'de' ? 'Kauf & Erstattung' : 'Purchase & Refund'),
       icon: <CreditCard size={14} />,
     },
     {
       id: 'impressum',
-      title: isRTL ? 'المعلومات القانونية' : 'Legal Notice',
+      title: lang === 'ar' ? 'المعلومات القانونية' : (lang === 'de' ? 'Impressum' : 'Legal Notice'),
       icon: <FileText size={14} />,
     },
     {
       id: 'accessibility',
-      title: isRTL ? 'الأذونات وتسهيلات الاستخدام' : 'Accessibility & Permissions',
+      title: lang === 'ar' ? 'الأذونات والخدمات' : (lang === 'de' ? 'Berechtigungen' : 'Permissions & Services'),
       icon: <KeyRound size={14} />,
     },
-  ], [isRTL]);
+  ], [lang]);
 
   const activeDoc = LEGAL_DOCUMENTS[selectedDocId];
 
   const activeContent = useMemo(() => {
     if (!activeDoc) return '';
     if (selectedDocId === 'impressum') {
-      if (isRTL) {
+      if (lang === 'de') return activeDoc.contentDe || activeDoc.contentEn;
+      if (lang === 'ar') {
         return showImpressumEnInAr ? activeDoc.contentEn : (activeDoc.contentDe || activeDoc.contentEn);
       }
       return activeDoc.contentEn;
     }
-    return isRTL ? activeDoc.contentAr : activeDoc.contentEn;
-  }, [activeDoc, selectedDocId, isRTL, showImpressumEnInAr]);
+    if (lang === 'de') return activeDoc.contentDe || activeDoc.contentEn;
+    if (lang === 'ar') return activeDoc.contentAr;
+    return activeDoc.contentEn;
+  }, [activeDoc, selectedDocId, lang, showImpressumEnInAr]);
 
   if (!isOpen) return null;
 

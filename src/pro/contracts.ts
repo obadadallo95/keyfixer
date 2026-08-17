@@ -18,6 +18,7 @@ export interface ProStateDto {
   trialStarted: boolean;
   /** User preference — independent of entitlement */
   inlineFixEnabled: boolean;
+  isAppStore?: boolean;
 }
 
 // ── StoreKit 2 Normalized Models ──────────────────────────────────────────────
@@ -106,6 +107,7 @@ export interface ProRuntimeBridge {
 export interface ProPanelProps {
   bridge: ProRuntimeBridge;
   isRTL: boolean;
+  lang?: 'en' | 'ar' | 'de';
   platform?: 'mac' | 'windows';
   /** Called when the effective Pro status changes for the header badge */
   onStatusChange?: (status: 'pro' | 'trial' | 'free') => void;

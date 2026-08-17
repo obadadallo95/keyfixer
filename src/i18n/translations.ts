@@ -1,6 +1,6 @@
 /**
  * @file translations.ts
- * @description Internationalization (i18n) dictionary for English & Arabic.
+ * @description Internationalization (i18n) dictionary for English, Arabic & German.
  */
 
 export const translations = {
@@ -8,7 +8,7 @@ export const translations = {
     appName: 'KeyFixer',
     tagline: 'Instant Arabic / English Keyboard Layout Switcher',
     converter: {
-      inputPlaceholder: 'Paste or type mistyped QWERTY or Arabic text here (e.g. "smnd] pn]")...',
+      inputPlaceholder: 'Paste or type mistyped text here (e.g. "smnd] pn]")...',
       outputPlaceholder: 'Converted text will appear here automatically...',
       inputLabel: 'Input',
       outputLabel: 'Output',
@@ -24,7 +24,7 @@ export const translations = {
       chars: 'Characters',
       words: 'Words',
       fixed: 'Fixed',
-      latency: '0ms Offline',
+      latency: 'Local Conversion',
       soundEffects: 'Click Sound',
       openFloating: 'Open Floating KeyFixer',
     },
@@ -37,7 +37,7 @@ export const translations = {
     appName: 'KeyFixer',
     tagline: 'مصحح لغة لوحة المفاتيح الفوري (عربي / إنجليزي)',
     converter: {
-      inputPlaceholder: 'الصق أو اكتب النص المصحح هنا (مثال: "smnd] pn]")...',
+      inputPlaceholder: 'الصق أو اكتب النص هنا (مثال: "smnd] pn]")...',
       outputPlaceholder: 'سيظهر النص المصحح هنا تلقائياً...',
       inputLabel: 'النص المدخل',
       outputLabel: 'النتيجة',
@@ -53,7 +53,7 @@ export const translations = {
       chars: 'حروف',
       words: 'كلمات',
       fixed: 'تم تصحيحه',
-      latency: '0ms تحويل أوفلاين',
+      latency: 'معالجة محلية',
       soundEffects: 'صوت الكيبورد',
       openFloating: 'فتح KeyFixer العائم',
     },
@@ -62,5 +62,33 @@ export const translations = {
       builtBy: 'تصميم وتطوير عبادة دللو',
     },
   },
+  de: {
+    appName: 'KeyFixer',
+    tagline: 'Schneller Tastaturlayout-Korrektor (Arabisch / Englisch)',
+    converter: {
+      inputPlaceholder: 'Text hier einfügen oder tippen (z. B. "smnd] pn]")...',
+      outputPlaceholder: 'Der korrigierte Text erscheint automatisch hier...',
+      inputLabel: 'Eingabe',
+      outputLabel: 'Ergebnis',
+      autoMode: 'Automatisch',
+      enToArMode: 'QWERTY → Arabisch',
+      arToEnMode: 'Arabisch → QWERTY',
+      windowsPlatform: 'Windows (PC)',
+      macPlatform: 'Mac (Apple)',
+      copy: 'Kopieren',
+      copied: 'Kopiert!',
+      clear: 'Löschen',
+      swap: 'Tauschen',
+      chars: 'Zeichen',
+      words: 'Wörter',
+      fixed: 'Korrigiert',
+      latency: 'Lokale Konvertierung',
+      soundEffects: 'Tastenton',
+      openFloating: 'Schwebendes KeyFixer öffnen',
+    },
+    developer: {
+      role: 'Senior Full-Stack Developer & Systemarchitekt',
+      builtBy: 'Entwickelt von Obada Dallo',
+    },
+  },
 };
-

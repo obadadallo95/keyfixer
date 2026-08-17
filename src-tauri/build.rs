@@ -20,6 +20,7 @@ fn main() {
                 "-o",
                 &lib_path,
                 "native/KeyFixerStoreKit.swift",
+                "native/KeyFixerServices.swift",
             ])
             .status()
             .expect("Failed to execute swiftc compiler");
@@ -29,9 +30,10 @@ fn main() {
             println!("cargo:rustc-link-lib=static=keyfixer_storekit");
             println!("cargo:rustc-link-lib=framework=StoreKit");
             println!("cargo:rustc-link-lib=framework=Foundation");
+            println!("cargo:rustc-link-lib=framework=AppKit");
             println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
         } else {
-            panic!("StoreKit Swift compilation failed!");
+            panic!("StoreKit and NSServices Swift compilation failed!");
         }
     }
 

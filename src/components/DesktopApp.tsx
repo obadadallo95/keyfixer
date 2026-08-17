@@ -634,6 +634,7 @@ export function DesktopApp() {
               <ProPanelComponent
                 bridge={proBridge}
                 isRTL={isRTL}
+                lang={lang}
                 platform={platform}
                 onStatusChange={handleProStatusChange}
                 onOpenLegal={(doc) => {

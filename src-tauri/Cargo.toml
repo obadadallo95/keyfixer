@@ -42,9 +42,10 @@ core-graphics = "0.24"
 
 
 [features]
-default = ["custom-protocol"]
+default = ["custom-protocol", "direct"]
 custom-protocol = ["tauri/custom-protocol"]
 pro = []
+direct = ["pro"]
 appstore = ["pro"]
 
 [profile.release]

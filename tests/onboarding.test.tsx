@@ -19,12 +19,12 @@ describe('first-run onboarding', () => {
     listen.mockReset().mockResolvedValue(vi.fn());
   });
 
-  it('teaches ⌥⌘K interactively and saves launch-at-login choice', async () => {
+  it('teaches ⌥⌘K interactively and saves launch-at-login choice (EN)', async () => {
     const onDone = vi.fn();
-    render(<Onboarding isRTL={false} onDone={onDone} />);
+    render(<Onboarding isRTL={false} lang="en" onDone={onDone} />);
 
     fireEvent.click(screen.getByText('Next'));
-    const demo = screen.getByLabelText('Inline Fix demo') as HTMLInputElement;
+    const demo = screen.getByLabelText('Instant Fix demo') as HTMLInputElement;
     expect(demo).toHaveValue('lnpfh f;');
     demo.select();
     fireEvent.keyUp(window, { code: 'KeyK', altKey: true, metaKey: true });
@@ -43,5 +43,23 @@ describe('first-run onboarding', () => {
     await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_launch_at_login', { enabled: true }));
     expect(localStorage.getItem(ONBOARDING_STORAGE_KEY)).toBe('true');
     expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it('renders Arabic onboarding correctly with RTL direction', async () => {
+    const onDone = vi.fn();
+    render(<Onboarding isRTL={true} lang="ar" onDone={onDone} />);
+
+    expect(screen.getByText('اكتب بلغتك بحرية تامة')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('التالي'));
+    expect(screen.getByText('التصحيح الفوري بالاختصار')).toBeInTheDocument();
+  });
+
+  it('renders German onboarding correctly', async () => {
+    const onDone = vi.fn();
+    render(<Onboarding isRTL={false} lang="de" onDone={onDone} />);
+
+    expect(screen.getByText('Tippen Sie frei auf Arabisch und Englisch')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Weiter'));
+    expect(screen.getByText('Sofort-Korrektur mit Kurzbefehl')).toBeInTheDocument();
   });
 });

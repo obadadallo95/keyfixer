@@ -291,6 +291,14 @@ else
   fail "ITSAppUsesNonExemptEncryption mismatch: got '$EXEMPT_ENC', expected 'false'"
 fi
 
+# ── Check 6.5: NSServices configured in Info.plist ──────────────────────────
+section "Check 6.5 – NSServices configuration in Info.plist"
+if plutil -extract NSServices xml1 -o - "$INFO_PATH" 2>/dev/null | grep -q "fixSelectedText"; then
+  pass "NSServices 'fixSelectedText' present in Info.plist"
+else
+  fail "NSServices 'fixSelectedText' NOT found in Info.plist"
+fi
+
 # ── Check 7: Code signature ────────────────────────────────────────────────
 section "Check 7 – Code signature"
 set +e
@@ -316,6 +324,20 @@ if echo "$LINKAGE_OUTPUT" | grep -q "StoreKit.framework"; then
   pass "StoreKit framework is linked"
 else
   fail "StoreKit.framework linkage missing in App Store build!"
+fi
+
+# ── Check 7.8: Zero Forbidden Accessibility / PostEvent symbols ─────────────
+section "Check 7.8 – Forbidden Accessibility / PostEvent symbol audit"
+FORBIDDEN_FOUND=false
+for sym in "CGEventPost" "CGRequestPostEventAccess" "CGPreflightPostEventAccess" "AXIsProcessTrusted" "AXIsProcessTrustedWithOptions"; do
+  _cnt=$(nm -u "$BINARY_PATH" 2>/dev/null | grep -E "(^|[ _])${sym}" | wc -l | tr -d ' ' || true)
+  if [[ "$_cnt" -gt 0 ]]; then
+    fail "Forbidden symbol '${sym}' found in App Store binary (${_cnt} occurrences)!"
+    FORBIDDEN_FOUND=true
+  fi
+done
+if [[ "$FORBIDDEN_FOUND" == "false" ]]; then
+  pass "Zero forbidden Accessibility / PostEvent symbols in binary"
 fi
 
 # ── Check 8: App Sandbox entitlement ──────────────────────────────────────

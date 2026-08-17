@@ -35,9 +35,9 @@ describe('LegalViewerModal and Legal Package Integration', () => {
     // Tab labels in English
     expect(screen.getAllByText('Privacy Policy').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Terms of Use')).toBeDefined();
-    expect(screen.getByText('Purchase & Refund Policy')).toBeDefined();
+    expect(screen.getByText('Purchase & Refund')).toBeDefined();
     expect(screen.getByText('Legal Notice')).toBeDefined();
-    expect(screen.getByText('Accessibility & Permissions')).toBeDefined();
+    expect(screen.getByText('Permissions & Services')).toBeDefined();
 
     // Content of Privacy Policy
     expect(screen.getByText(/KeyFixer is a keyboard layout correction utility for macOS/i)).toBeDefined();
@@ -66,10 +66,10 @@ describe('LegalViewerModal and Legal Package Integration', () => {
     expect(screen.getByText('شروط الاستخدام')).toBeDefined();
     expect(screen.getByText('سياسة الشراء والاسترجاع')).toBeDefined();
     expect(screen.getByText('المعلومات القانونية')).toBeDefined();
-    expect(screen.getByText('الأذونات وتسهيلات الاستخدام')).toBeDefined();
+    expect(screen.getByText('الأذونات والخدمات')).toBeDefined();
 
     // Content of Arabic Privacy Policy
-    expect(screen.getByText(/تتم جميع عمليات معالجة وتحويل النصوص محلياً بالكامل/i)).toBeDefined();
+    expect(screen.getByText(/تتم جميع عمليات معالجة وتحويل النصوص محلياً بنسبة 100%/i)).toBeDefined();
     expect(screen.getAllByText(/عبادة دللو/i).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -86,21 +86,21 @@ describe('LegalViewerModal and Legal Package Integration', () => {
 
     // Switch to Terms of Use
     fireEvent.click(screen.getByText('Terms of Use'));
-    expect(screen.getByText(/KeyFixer Pro Lifetime is a one-time purchase with no recurring subscription fees/i)).toBeDefined();
+    expect(screen.getByText(/A one-time purchase with no recurring subscription fees/i)).toBeDefined();
 
     // Switch to Purchase & Refund Policy
-    fireEvent.click(screen.getByText('Purchase & Refund Policy'));
+    fireEvent.click(screen.getByText('Purchase & Refund'));
     expect(screen.getByText(/com.obadadallo.keyfixer.pro.lifetime/i)).toBeDefined();
-    expect(screen.getByText(/Refund requests for Mac App Store purchases are handled by Apple/i)).toBeDefined();
+    expect(screen.getByText(/Refund requests are handled directly by the respective store/i)).toBeDefined();
 
     // Switch to Legal Notice (Impressum)
     fireEvent.click(screen.getByText('Legal Notice'));
     expect(screen.getByText(/Augsburger Straße 7/i)).toBeDefined();
     expect(screen.getByText(/09126 Chemnitz/i)).toBeDefined();
 
-    // Switch to Accessibility & Permissions
-    fireEvent.click(screen.getByText('Accessibility & Permissions'));
-    expect(screen.getByText(/Why KeyFixer needs Accessibility access/i)).toBeDefined();
+    // Switch to Permissions & Services
+    fireEvent.click(screen.getByText('Permissions & Services'));
+    expect(screen.getByText(/Mac App Store Edition: Zero Accessibility Permissions/i)).toBeDefined();
   });
 
   it('renders statutory German Impressum in Arabic mode with English toggle', () => {

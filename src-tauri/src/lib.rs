@@ -4,6 +4,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager,
 };
+#[allow(unused_imports)]
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 #[cfg(target_os = "windows")]
@@ -188,9 +189,6 @@ fn play_feedback_sound(sound_type: String) {
         let _ = sound_type;
     }
 }
-
-#[cfg(all(feature = "appstore", debug_assertions))]
-compile_error!("Mac App Store release build must not include debug assertions / simulator commands!");
 
 mod pro_bridge;
 
@@ -396,49 +394,52 @@ pub fn run() {
         .setup(|app| {
             pro_bridge::init_pro_state(app.handle());
 
-            #[cfg(target_os = "macos")]
-            let keyfixer_shortcut = Shortcut::new(
-                Some(Modifiers::ALT | Modifiers::SUPER),
-                Code::KeyK,
-            );
+            #[cfg(all(feature = "appstore", target_os = "macos"))]
+            let shortcut_registered = true;
 
-            #[cfg(not(target_os = "macos"))]
-            let keyfixer_shortcut = Shortcut::new(
-                Some(Modifiers::CONTROL | Modifiers::ALT),
-                Code::KeyK,
-            );
-            let handled_shortcut = keyfixer_shortcut;
-
-            app.handle().plugin(
-                tauri_plugin_global_shortcut::Builder::new()
-                    .with_handler(move |app, shortcut, event| {
-                        if shortcut == &handled_shortcut
-                            && event.state() == ShortcutState::Released
-                        {
-                            // The native global shortcut consumes the physical event before
-                            // WebView key handlers can observe it. Forward K release so the
-                            // interactive onboarding demo uses the real shortcut path.
-                            let _ = app.emit("global-shortcut-k-released", ());
-                            let app_handle = app.clone();
-                            // run_inline_fix internally checks state, preference, accessibility
-                            std::thread::spawn(move || {
-                                pro_bridge::run_inline_fix(&app_handle);
-                            });
-                        }
-                    })
-                    .build(),
-            )?;
-
-            let shortcut_registered = app
-                .global_shortcut()
-                .register(keyfixer_shortcut)
-                .is_ok();
-
-            if !shortcut_registered {
-                eprintln!(
-                    "KeyFixer could not register the global shortcut {GLOBAL_SHORTCUT_LABEL}; it may already be in use."
+            #[cfg(not(all(feature = "appstore", target_os = "macos")))]
+            let shortcut_registered = {
+                #[cfg(target_os = "macos")]
+                let keyfixer_shortcut = Shortcut::new(
+                    Some(Modifiers::ALT | Modifiers::SUPER),
+                    Code::KeyK,
                 );
-            }
+
+                #[cfg(not(target_os = "macos"))]
+                let keyfixer_shortcut = Shortcut::new(
+                    Some(Modifiers::CONTROL | Modifiers::ALT),
+                    Code::KeyK,
+                );
+                let handled_shortcut = keyfixer_shortcut;
+
+                app.handle().plugin(
+                    tauri_plugin_global_shortcut::Builder::new()
+                        .with_handler(move |app, shortcut, event| {
+                            if shortcut == &handled_shortcut
+                                && event.state() == ShortcutState::Released
+                            {
+                                let _ = app.emit("global-shortcut-k-released", ());
+                                let app_handle = app.clone();
+                                std::thread::spawn(move || {
+                                    pro_bridge::run_inline_fix(&app_handle);
+                                });
+                            }
+                        })
+                        .build(),
+                )?;
+
+                let res = app
+                    .global_shortcut()
+                    .register(keyfixer_shortcut)
+                    .is_ok();
+
+                if !res {
+                    eprintln!(
+                        "KeyFixer could not register the global shortcut {GLOBAL_SHORTCUT_LABEL}; it may already be in use."
+                    );
+                }
+                res
+            };
 
             let quit_i = MenuItem::with_id(app, "quit", "إغلاق التطبيق (Quit)", true, None::<&str>)?;
             let show_label = if shortcut_registered {

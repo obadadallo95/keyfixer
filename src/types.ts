@@ -3,7 +3,7 @@
  * @description Global type definitions for KeyFixer Web App, Chrome Extension, and i18n.
  */
 
-export type UILanguage = 'en' | 'ar';
+export type UILanguage = 'en' | 'ar' | 'de';
 export type AppTheme = 'light' | 'dark' | 'system';
 export type ActiveTab = 'app' | 'extension' | 'desktop' | 'architecture' | 'developer';
 
