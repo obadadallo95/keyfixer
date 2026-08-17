@@ -59,4 +59,12 @@ describe('macOS App Store NSServices Architecture & Safety', () => {
     expect(proBridge).toContain('#[cfg(all(not(feature = "appstore"), feature = "pro", target_os = "macos"))]');
     expect(proBridge).toContain('#[path = "pro/inline_fix_direct.rs"]');
   });
+
+  it('implements dynamic ⌥⌘K ownership based on entitlement state', () => {
+    expect(servicesRust).toContain('pub fn sync_global_shortcut_state(app: &AppHandle)');
+    expect(servicesRust).toContain('guard.can_attempt_instant_fix()');
+    expect(servicesRust).toContain('global_sc.unregister(keyfixer_shortcut)');
+    expect(servicesRust).toContain('global_sc.register(keyfixer_shortcut)');
+    expect(proBridge).toContain('pub fn sync_global_shortcut_state');
+  });
 });

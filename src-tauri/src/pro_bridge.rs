@@ -106,6 +106,14 @@ pub fn set_inline_fix_preference(app: &AppHandle, enabled: bool) {
 // ── Inline fix runner ─────────────────────────────────────────────────────────
 
 #[allow(dead_code)]
+pub fn sync_global_shortcut_state(app: &AppHandle) {
+    #[cfg(all(feature = "appstore", target_os = "macos"))]
+    { inline_fix::macos::sync_global_shortcut_state(app); }
+    #[cfg(not(all(feature = "appstore", target_os = "macos")))]
+    { let _ = app; }
+}
+
+#[allow(dead_code)]
 pub fn run_inline_fix(app: &AppHandle) {
     #[cfg(all(feature = "pro", target_os = "macos"))]
     { inline_fix::macos::run_inline_fix(app); }

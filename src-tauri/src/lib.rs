@@ -7,9 +7,6 @@ use tauri::{
 #[allow(unused_imports)]
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
-#[cfg(target_os = "windows")]
-const SUPPORT_URL: &str = "https://obadadallo.web.app/contact/";
-
 #[cfg(target_os = "macos")]
 const GLOBAL_SHORTCUT_LABEL: &str = "⌥⌘K";
 
@@ -394,40 +391,58 @@ pub fn run() {
         .setup(|app| {
             pro_bridge::init_pro_state(app.handle());
 
-            #[cfg(all(feature = "appstore", target_os = "macos"))]
-            let shortcut_registered = true;
-
-            #[cfg(not(all(feature = "appstore", target_os = "macos")))]
-            let shortcut_registered = {
+            let keyfixer_shortcut = {
                 #[cfg(target_os = "macos")]
-                let keyfixer_shortcut = Shortcut::new(
-                    Some(Modifiers::ALT | Modifiers::SUPER),
-                    Code::KeyK,
-                );
-
+                {
+                    Shortcut::new(Some(Modifiers::ALT | Modifiers::SUPER), Code::KeyK)
+                }
                 #[cfg(not(target_os = "macos"))]
-                let keyfixer_shortcut = Shortcut::new(
-                    Some(Modifiers::CONTROL | Modifiers::ALT),
-                    Code::KeyK,
-                );
-                let handled_shortcut = keyfixer_shortcut;
+                {
+                    Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyK)
+                }
+            };
+            let handled_shortcut = keyfixer_shortcut;
 
-                app.handle().plugin(
-                    tauri_plugin_global_shortcut::Builder::new()
-                        .with_handler(move |app, shortcut, event| {
-                            if shortcut == &handled_shortcut
-                                && event.state() == ShortcutState::Released
+            app.handle().plugin(
+                tauri_plugin_global_shortcut::Builder::new()
+                    .with_handler(move |app, shortcut, event| {
+                        if shortcut == &handled_shortcut && event.state() == ShortcutState::Released {
+                            let _ = app.emit("global-shortcut-k-released", ());
+                            #[cfg(all(feature = "appstore", target_os = "macos"))]
                             {
-                                let _ = app.emit("global-shortcut-k-released", ());
+                                // In App Store build, this handler is ONLY active when global ⌥⌘K is registered (Free / Instant Fix disabled).
+                                // It handles the original automated Free clipboard workflow:
+                                // 1st press = show & auto-convert clipboard; 2nd press = copy & auto-hide
+                                if let Some(w) = app.get_webview_window("main") {
+                                    let is_visible = w.is_visible().unwrap_or(false);
+                                    let is_focused = w.is_focused().unwrap_or(false);
+                                    if is_visible && is_focused {
+                                        let _ = app.emit("shortcut-pressed", ());
+                                    } else {
+                                        let _ = w.unminimize();
+                                        let _ = w.show();
+                                        let _ = w.set_focus();
+                                        let _ = app.emit("shortcut-pressed", ());
+                                    }
+                                }
+                            }
+                            #[cfg(not(all(feature = "appstore", target_os = "macos")))]
+                            {
                                 let app_handle = app.clone();
                                 std::thread::spawn(move || {
                                     pro_bridge::run_inline_fix(&app_handle);
                                 });
                             }
-                        })
-                        .build(),
-                )?;
+                        }
+                    })
+                    .build(),
+            )?;
 
+            #[cfg(all(feature = "appstore", target_os = "macos"))]
+            pro_bridge::sync_global_shortcut_state(app.handle());
+
+            #[cfg(not(all(feature = "appstore", target_os = "macos")))]
+            {
                 let res = app
                     .global_shortcut()
                     .register(keyfixer_shortcut)
@@ -438,8 +453,9 @@ pub fn run() {
                         "KeyFixer could not register the global shortcut {GLOBAL_SHORTCUT_LABEL}; it may already be in use."
                     );
                 }
-                res
-            };
+            }
+
+            let shortcut_registered = true;
 
             let quit_i = MenuItem::with_id(app, "quit", "إغلاق التطبيق (Quit)", true, None::<&str>)?;
             let show_label = if shortcut_registered {

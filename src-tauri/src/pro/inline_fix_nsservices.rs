@@ -181,7 +181,9 @@ pub mod macos {
                     if let Some(app) = app_guard.as_ref() {
                         guard.save(app);
                         if trial_exhausted {
-                            eprintln!("{TAG} Trial credits exhausted (0 remaining)");
+                            drop(guard);
+                            sync_global_shortcut_state(app);
+                            eprintln!("{TAG} Trial credits exhausted (0 remaining) -> Re-registered global ⌥⌘K for Free workflow");
                             let _ = app.emit("trial-exhausted", ());
                         } else {
                             eprintln!("{TAG} Instant Fix succeeded. Remaining credits: {remaining_to_emit}");
@@ -271,6 +273,8 @@ pub mod macos {
                     if let Some(app) = app_guard.as_ref() {
                         state_guard.save(app);
                         let dto = ProStateDto::from(&*state_guard);
+                        drop(state_guard);
+                        sync_global_shortcut_state(app);
                         let _ = app.emit("pro-state-changed", dto);
                     }
                 }
@@ -379,6 +383,8 @@ pub mod macos {
                     }
                     guard.save(app);
                     let dto = ProStateDto::from(&*guard);
+                    drop(guard);
+                    sync_global_shortcut_state(app);
                     let _ = app.emit("pro-state-changed", dto);
                 }
                 return result;
@@ -407,16 +413,62 @@ pub mod macos {
             guard.inline_fix_enabled = true;
             guard.trial_started = true;
             guard.save(app);
-            eprintln!("{TAG} Trial activated. Credits: {}", guard.trial_credits_remaining);
+            drop(guard);
+            sync_global_shortcut_state(app);
+            eprintln!("{TAG} Trial activated. Credits: {}", TRIAL_CREDIT_LIMIT);
         }
-        ProStateDto::from(&*guard)
+        ProStateDto::from(&*shared.lock().unwrap())
     }
 
     pub fn set_inline_fix_preference(app: &AppHandle, shared: &SharedProState, enabled: bool) {
         let mut guard = shared.lock().unwrap();
         guard.inline_fix_enabled = enabled;
         guard.save(app);
+        drop(guard);
+        sync_global_shortcut_state(app);
         eprintln!("{TAG} Instant Fix Preference = {enabled}");
+    }
+
+    /// Dynamically registers or unregisters the global ⌥⌘K shortcut based on current entitlement.
+    /// - Free / Instant Fix disabled: ⌥⌘K is registered globally to drive the automated clipboard workflow.
+    /// - Trial / Paid (Instant Fix active): ⌥⌘K is UNREGISTERED globally so host apps route ⌥⌘K to NSServices.
+    pub fn sync_global_shortcut_state(app: &AppHandle) {
+        use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+
+        let keyfixer_shortcut = Shortcut::new(
+            Some(Modifiers::ALT | Modifiers::SUPER),
+            Code::KeyK,
+        );
+
+        let should_use_nsservices = if let Some(shared) = get_shared_state() {
+            if let Ok(guard) = shared.lock() {
+                guard.can_attempt_instant_fix()
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        let global_sc = app.global_shortcut();
+
+        if should_use_nsservices {
+            // Instant Fix active (Trial / Paid): unregister global shortcut so NSServices in host apps receives ⌥⌘K
+            if global_sc.is_registered(keyfixer_shortcut) {
+                let _ = global_sc.unregister(keyfixer_shortcut);
+                eprintln!("{TAG} [Dynamic Shortcut] Unregistered global ⌥⌘K (NSServices Instant Fix active)");
+            }
+        } else {
+            // Free / Instant Fix inactive: register global shortcut for automated clipboard workflow
+            if !global_sc.is_registered(keyfixer_shortcut) {
+                let res = global_sc.register(keyfixer_shortcut);
+                if res.is_ok() {
+                    eprintln!("{TAG} [Dynamic Shortcut] Registered global ⌥⌘K (Free automated clipboard workflow active)");
+                } else {
+                    eprintln!("{TAG} [Dynamic Shortcut] Could not register global ⌥⌘K: {:?}", res.err());
+                }
+            }
+        }
     }
 
     // In the App Store edition, zero Accessibility / PostEvent permissions are needed.
@@ -435,6 +487,8 @@ pub mod macos {
         guard.trial_credit_limit = TRIAL_CREDIT_LIMIT;
         guard.trial_started = true;
         guard.save(app);
+        drop(guard);
+        sync_global_shortcut_state(app);
         true
     }
 
@@ -443,6 +497,8 @@ pub mod macos {
         let mut guard = shared.lock().unwrap();
         guard.mode = ProMode::Paid;
         guard.save(app);
+        drop(guard);
+        sync_global_shortcut_state(app);
         true
     }
 }
