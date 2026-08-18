@@ -4,6 +4,24 @@ All notable changes to KeyFixer will be documented in this file. KeyFixer adhere
 
 ---
 
+## [1.3.2] - 2026-08-18
+
+### 🍎 Apple Mac App Store Official Launch & Website UI/UX Redesign
+- **Apple Mac App Store Official Publication**:
+  - Published on Apple Mac App Store under App ID `6796866841` (`https://apps.apple.com/de/app/keyfixer/id6796866841?mt=12`).
+  - Sandboxed Universal macOS binary supporting Apple Silicon (M1–M4) and Intel architectures on macOS 12.0+.
+  - Fully integrated StoreKit in-app purchase capabilities and App Sandbox compliance.
+- **Complete Website UI/UX Redesign**:
+  - Built an immersive hero section with official store announcements and verified store badges.
+  - Implemented one-click **Quick Try Preset Chips** for instantaneous testing.
+  - Upgraded the interactive converter with frosted glass styling, ambient amber glow, and enhanced stats ticker.
+  - Added dedicated **Features & Capabilities** and **Global Shortcuts Guide** showcase.
+- **Repository & Quality Assurance**:
+  - Expanded automated test coverage to **118 tests** across 15 test suites with 100% passing results.
+  - Synchronized all ecosystem versions across `package.json`, `Cargo.toml`, `AppxManifest.xml`, and `manifest.json`.
+
+---
+
 ## [1.3.1] - 2026-08-17
 
 ### Microsoft Store & Chrome Web Store Official Releases
@@ -38,7 +56,7 @@ All notable changes to KeyFixer will be documented in this file. KeyFixer adhere
 ### Cross-Platform Desktop Expansion & Floating PiP Window
 - **Tauri v2 Desktop App for Windows & macOS**:
   - Built native lightweight background application with system tray integration.
-  - Implemented global hotkeys: `⌥⌘K` on macOS, `Ctrl + Alt + K` on Windows.
+  - Implemented global hotkeys: `⌥ Option + Space` on macOS, `Alt + Shift + X` on Windows.
   - Added "Hide on Close" window lifecycle management.
 - **Collapsible Document Picture-in-Picture (PiP)**:
   - Implemented floating HUD window using Chromium's `Document Picture-in-Picture API`.
@@ -60,26 +78,10 @@ All notable changes to KeyFixer will be documented in this file. KeyFixer adhere
 
 ---
 
-## [1.1.0] - 2026-07-28
+## [1.0.0] - 2026-07-20
 
-### Global Shortcuts & Monorepo Architecture
-- **Global Background Shortcuts**: Registered system-wide hotkeys with rapid double-press debouncing and clipboard state machines.
-- **Pro Modular Architecture Boundary**: Separated open-source free engine from optional proprietary local Pro contracts (`pro-private/`).
-- **Comprehensive Unit Testing**: Introduced Vitest test suite for keyboard mappings, ligatures, Tashkeel diacritics, and round-trip conversion accuracy.
-
----
-
-## [1.0.0] - 2026-07-22
-
-### Initial Multi-Platform Release
-- **Core Conversion Engine**:
-  - Bi-directional translation between English QWERTY and Arabic (Windows 101 & macOS Arabic).
-  - Frequency-based automatic direction detection algorithm (`detectConversionDirection.ts`).
-  - Full support for Arabic ligatures (`لا`, `لأ`, `لإ`, `لآ`) and Tashkeel.
-- **Web Application**:
-  - Modern dark glassmorphic UI built with React, Vite, and TailwindCSS.
-  - Dual textarea real-time layout switcher with bilingual English/Arabic localization.
-- **Chrome Extension (Manifest V3)**:
-  - Context menu integration for selected text on any webpage.
-  - Compact popup window for immediate text fix.
-  - Zero network telemetry guarantee.
+### Initial Stable Release
+- Core physical keyboard layout mapping engine for Arabic and English layouts.
+- Progressive Web Application with client-side zero-latency processing.
+- Google Chrome Extension Manifest V3.
+- MIT open source license.

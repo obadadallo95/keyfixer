@@ -1,6 +1,19 @@
-# Mac App Store Release Guide (v1.3.1)
+# Mac App Store Release Guide (v1.3.2)
 
-This guide documents the configuration, Sandboxing requirements, and Apple submission standards for KeyFixer on macOS.
+This guide documents the official publication, Sandboxing configuration, StoreKit architecture, and Apple standards for **KeyFixer** on macOS.
+
+---
+
+## 🍎 Official App Store Publication
+
+- **App Name**: KeyFixer
+- **App ID**: `6796866841`
+- **Store URL**: [https://apps.apple.com/de/app/keyfixer/id6796866841?mt=12](https://apps.apple.com/de/app/keyfixer/id6796866841?mt=12)
+- **Bundle Identifier**: `com.obadadallo.keyfixer`
+- **Primary Category**: Utilities
+- **Secondary Category**: Productivity
+- **Architecture**: Universal (Apple Silicon M1/M2/M3/M4 + Intel x86_64)
+- **Minimum macOS Version**: macOS 12.0 (Monterey) or later
 
 ---
 
@@ -22,7 +35,7 @@ Mac App Store builds require strict App Sandbox enforcement:
 ## 🧪 Pre-Flight Validation Commands
 
 ```bash
-# 1. Typecheck and verify test suite
+# 1. Typecheck and verify test suite (118 tests)
 npm run typecheck
 npm run test:run
 
@@ -44,11 +57,8 @@ The verification script checks:
 
 ## 📋 App Store Connect Metadata
 
-- **App Name**: KeyFixer
-- **Primary Category**: Utilities
-- **Secondary Category**: Productivity
-- **Privacy Disclosure**: Data Not Collected (Verified binary has zero analytics/tracking)
+- **Privacy Disclosure**: Data Not Collected (Verified binary has zero telemetry, zero tracking, zero external network calls)
 - **Support URL**: `https://obadadallo.web.app/contact/`
 - **Privacy Policy URL**: `https://keyfixer.vercel.app/privacy`
-- **Pricing**: Free tier with optional In-App Purchases (StoreKit)
+- **Pricing**: Free tier with optional In-App Purchases (StoreKit Pro Tier)
 - **Availability**: Global (175 countries)
