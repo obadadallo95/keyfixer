@@ -14,7 +14,6 @@ pub mod windows {
     pub const PRO_ADDON_PRODUCT_ID: &str = "keyfixer.pro.lifetime";
     pub const PARENT_STORE_ID: &str = "9PK3G83GP41D";
     pub const DEFAULT_DISPLAY_NAME: &str = "KeyFixer Pro Lifetime";
-    pub const FALLBACK_PRICE: &str = "€9.99";
 
     const TRIAL_CREDIT_LIMIT: i32 = 25;
     const CONVERSION_TIMEOUT: Duration = Duration::from_millis(1200);
@@ -511,6 +510,7 @@ pub mod windows {
         use windows::Win32::Foundation::HWND;
         use windows::Win32::UI::Shell::IInitializeWithWindow;
         use windows::Services::Store::{StoreContext, StorePurchaseStatus};
+        use windows::Foundation::Collections::IIterable;
         use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
         use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
         use windows::Win32::Foundation::{CloseHandle, HANDLE};
@@ -553,6 +553,98 @@ pub mod windows {
             }
 
             Ok(context)
+        }
+
+        pub fn query_store_product(app: &AppHandle) -> Result<StoreProduct, String> {
+            let context = get_initialized_store_context(app)?;
+
+            let product_kinds = IIterable::<HSTRING>::from(vec![HSTRING::from("Durable")]);
+            let store_ids = IIterable::<HSTRING>::from(vec![HSTRING::from(PRO_ADDON_STORE_ID)]);
+
+            let op = context
+                .GetStoreProductsAsync(&product_kinds, &store_ids)
+                .map_err(|e| format!("GetStoreProductsAsync failed: {e}"))?;
+            let query_result = op
+                .get()
+                .map_err(|e| format!("GetStoreProductsAsync execution failed: {e}"))?;
+
+            let products = query_result
+                .Products()
+                .map_err(|e| format!("Products() failed: {e}"))?;
+
+            let store_id_hstring = HSTRING::from(PRO_ADDON_STORE_ID);
+            if products.HasKey(&store_id_hstring).unwrap_or(false) {
+                if let Ok(product) = products.Lookup(&store_id_hstring) {
+                    let title = product
+                        .Title()
+                        .map(|t| t.to_string())
+                        .unwrap_or_else(|_| DEFAULT_DISPLAY_NAME.to_string());
+                    let display_title = if title.trim().is_empty() {
+                        DEFAULT_DISPLAY_NAME.to_string()
+                    } else {
+                        title
+                    };
+                    let formatted_price = product
+                        .Price()
+                        .and_then(|p| p.FormattedPrice())
+                        .map(|p| p.to_string())
+                        .unwrap_or_default();
+
+                    return Ok(StoreProduct {
+                        id: PRO_ADDON_STORE_ID.to_string(),
+                        display_name: display_title,
+                        display_price: formatted_price,
+                        is_available: true,
+                    });
+                }
+            }
+
+            // Fallback: iterate over all products returned in map
+            if let Ok(iterable) = products.First() {
+                while let Ok(has_current) = iterable.HasCurrent() {
+                    if !has_current {
+                        break;
+                    }
+                    if let Ok(pair) = iterable.Current() {
+                        let key = pair.Key().map(|k| k.to_string()).unwrap_or_default();
+                        if let Ok(product) = pair.Value() {
+                            let token = product.InAppOfferToken().map(|t| t.to_string()).unwrap_or_default();
+                            let store_id = product.StoreId().map(|s| s.to_string()).unwrap_or_default();
+
+                            if key == PRO_ADDON_STORE_ID
+                                || key == PRO_ADDON_PRODUCT_ID
+                                || store_id == PRO_ADDON_STORE_ID
+                                || token == PRO_ADDON_PRODUCT_ID
+                            {
+                                let title = product
+                                    .Title()
+                                    .map(|t| t.to_string())
+                                    .unwrap_or_else(|_| DEFAULT_DISPLAY_NAME.to_string());
+                                let display_title = if title.trim().is_empty() {
+                                    DEFAULT_DISPLAY_NAME.to_string()
+                                } else {
+                                    title
+                                };
+                                let formatted_price = product
+                                    .Price()
+                                    .and_then(|p| p.FormattedPrice())
+                                    .map(|p| p.to_string())
+                                    .unwrap_or_default();
+
+                                return Ok(StoreProduct {
+                                    id: PRO_ADDON_STORE_ID.to_string(),
+                                    display_name: display_title,
+                                    display_price: formatted_price,
+                                    is_available: true,
+                                });
+                            }
+                        }
+                    }
+                    let _ = iterable.MoveNext();
+                }
+            }
+
+            Err("Product not found in Store response".to_string())
         }
 
         pub fn query_store_ownership(app: &AppHandle) -> Result<bool, String> {
@@ -696,12 +788,18 @@ pub mod windows {
 
     // ── Public Store API Bridge Handlers ──────────────────────────────────────
 
-    pub fn store_load_pro_product(_app: &AppHandle) -> StoreProduct {
-        StoreProduct {
-            id: PRO_ADDON_STORE_ID.to_string(),
-            display_name: DEFAULT_DISPLAY_NAME.to_string(),
-            display_price: FALLBACK_PRICE.to_string(),
-            is_available: true,
+    pub fn store_load_pro_product(app: &AppHandle) -> StoreProduct {
+        match ms_store::query_store_product(app) {
+            Ok(product) => product,
+            Err(e) => {
+                eprintln!("{TAG} Could not load dynamic product pricing from Microsoft Store ({e}). Using safe fallback.");
+                StoreProduct {
+                    id: PRO_ADDON_STORE_ID.to_string(),
+                    display_name: DEFAULT_DISPLAY_NAME.to_string(),
+                    display_price: String::new(),
+                    is_available: true,
+                }
+            }
         }
     }
 

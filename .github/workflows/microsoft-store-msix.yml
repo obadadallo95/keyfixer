@@ -21,14 +21,14 @@ name: Microsoft Store MSIX
 #   before distributing it to users.
 #
 # Upload:
-#   After downloading the artifact, upload KeyFixer_1.1.2.0_x64.msix to:
+#   After downloading the artifact, upload KeyFixer_<version>_x64.msix to:
 #   https://partner.microsoft.com/ → Product Management → Packages
 #   Partner Center validates the Publisher identity and applies Store signing.
 #
 # Version increment rule:
 #   Each new submission must use a strictly greater four-part version.
-#   Update the Version attribute in src-tauri/msix/AppxManifest.xml and
-#   the MSIX_FILENAME in scripts/build-msix.mjs before the next submission.
+#   Run "npm run version:set -- <new_version>" (which synchronizes package.json,
+#   AppxManifest.xml, Cargo.toml, etc.) before submitting a new release.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -86,14 +86,33 @@ jobs:
         run: npm run test:run
 
 
-      # ── 6. Build MSIX ────────────────────────────────────────────────────────
+      # ── 6. Resolve MSIX metadata ─────────────────────────────────────────────
+      - name: Resolve MSIX package metadata
+        shell: pwsh
+        run: |
+          $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
+          $appVersion = $pkg.version
+          $msixVersion = "$appVersion.0"
+          $msixFileName = "KeyFixer_${msixVersion}_x64.msix"
+          $msixPath = "src-tauri\target\release\bundle\msix\$msixFileName"
+
+          Write-Host "Resolved App Version   : $appVersion"
+          Write-Host "Resolved MSIX Version  : $msixVersion"
+          Write-Host "Resolved MSIX Filename : $msixFileName"
+          Write-Host "Resolved MSIX Path     : $msixPath"
+
+          echo "MSIX_VERSION=$msixVersion" >> $env:GITHUB_ENV
+          echo "MSIX_FILENAME=$msixFileName" >> $env:GITHUB_ENV
+          echo "MSIX_PATH=$msixPath" >> $env:GITHUB_ENV
+
+      # ── 7. Build MSIX ────────────────────────────────────────────────────────
       - name: Build MSIX package
         run: npm run build:windows:msix
         env:
           # Ensure a clean build; no GITHUB_TOKEN leaks into tauri-cli
           GITHUB_TOKEN: ""
 
-      # ── 7. Sign with ephemeral self-signed certificate ───────────────────────
+      # ── 8. Sign with ephemeral self-signed certificate ───────────────────────
       #
       # The certificate Subject matches the Partner Center Publisher identity
       # exactly: CN=A2B67C57-E9AA-4233-B229-7A21800FE184
@@ -129,7 +148,7 @@ jobs:
       - name: Sign MSIX package
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
+          $msix = $env:MSIX_PATH
 
           # Locate SignTool from the Windows SDK
           $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
@@ -157,7 +176,7 @@ jobs:
       - name: Verify package signature
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
+          $msix = $env:MSIX_PATH
 
           # Use Get-AuthenticodeSignature to verify the signature is structurally
           # valid and signed by the correct certificate. This works with self-signed
@@ -195,11 +214,11 @@ jobs:
           Write-Host "  Thumbprint: $($sig.SignerCertificate.Thumbprint)"
           Write-Host "  Status   : $($sig.Status)"
 
-      # ── 8. Validate manifest ─────────────────────────────────────────────────
+      # ── 9. Validate manifest ─────────────────────────────────────────────────
       - name: Validate MSIX manifest fields
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
+          $msix = $env:MSIX_PATH
           $unpackDir = "src-tauri\target\msix-inspect"
 
           # Locate MakeAppx
@@ -226,7 +245,7 @@ jobs:
           $errors = 0
           if ($id.Name -ne "ObadaDallo.KeyFixer")                                     { Write-Error "Name mismatch!";      $errors++ }
           if ($id.Publisher -ne "CN=A2B67C57-E9AA-4233-B229-7A21800FE184")            { Write-Error "Publisher mismatch!"; $errors++ }
-          if ($id.Version -ne "1.1.2.0")                                               { Write-Error "Version mismatch!";   $errors++ }
+          if ($id.Version -ne $env:MSIX_VERSION)                                       { Write-Error "Version mismatch! Expected: $env:MSIX_VERSION Got: $($id.Version)"; $errors++ }
           if ($id.ProcessorArchitecture -ne "x64")                                     { Write-Error "Arch mismatch!";      $errors++ }
 
           $exe = "$unpackDir\KeyFixer\keyfixer-desktop.exe"
@@ -252,22 +271,22 @@ jobs:
           Write-Host ""
           Write-Host "All manifest checks passed."
 
-      # ── 9. Report package info ───────────────────────────────────────────────
+      # ── 10. Report package info ──────────────────────────────────────────────
       - name: Report package info
         shell: pwsh
         run: |
-          $msix = "src-tauri\target\release\bundle\msix\KeyFixer_1.1.2.0_x64.msix"
+          $msix = $env:MSIX_PATH
           $size = (Get-Item $msix).Length
           $hash = (Get-FileHash $msix -Algorithm SHA256).Hash
           Write-Host ""
           Write-Host "═══════════════════════════════════════════"
           Write-Host " MSIX Artifact"
-          Write-Host "  File   : KeyFixer_1.1.2.0_x64.msix"
+          Write-Host "  File   : $env:MSIX_FILENAME"
           Write-Host "  Size   : $([math]::Round($size/1MB,2)) MB ($size bytes)"
           Write-Host "  SHA256 : $hash"
           Write-Host "═══════════════════════════════════════════"
 
-      # ── 10. Remove ephemeral certificate from all stores ─────────────────────
+      # ── 11. Remove ephemeral certificate from all stores ─────────────────────
       - name: Remove ephemeral certificate
         if: always()
         shell: pwsh
@@ -287,11 +306,11 @@ jobs:
             }
           }
 
-      # ── 11. Upload artifact ──────────────────────────────────────────────────
+      # ── 12. Upload artifact ──────────────────────────────────────────────────
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v7
         with:
           name: KeyFixer-Microsoft-Store-MSIX
-          path: src-tauri/target/release/bundle/msix/KeyFixer_1.1.2.0_x64.msix
+          path: src-tauri/target/release/bundle/msix/${{ env.MSIX_FILENAME }}
           if-no-files-found: error
           retention-days: 90

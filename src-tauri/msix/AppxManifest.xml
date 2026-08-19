@@ -40,6 +40,7 @@
   <Resources>
     <Resource Language="en-US" />
     <Resource Language="ar" />
+    <Resource Language="de" />
   </Resources>
 
   <Applications>

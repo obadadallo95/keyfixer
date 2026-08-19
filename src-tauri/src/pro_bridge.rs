@@ -183,7 +183,7 @@ pub fn storekit_load_pro_product(app: &AppHandle) -> serde_json::Value {
         return serde_json::to_value(p).unwrap_or(serde_json::json!({
             "id": "9N98VZCQLDL7",
             "displayName": "KeyFixer Pro Lifetime",
-            "displayPrice": "€9.99",
+            "displayPrice": "",
             "isAvailable": true
         }));
     }

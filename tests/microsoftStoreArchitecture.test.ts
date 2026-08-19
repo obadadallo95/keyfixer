@@ -1,17 +1,48 @@
 import { describe, it, expect } from 'vitest';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   StoreProduct,
   StoreEntitlement,
   PurchaseResult,
   RestorePurchasesResult,
 } from '../src/pro/contracts';
+import { getProTranslations } from '../src/pro/ProPanel';
 
 // Constants matching Microsoft Partner Center & Rust Windows Pro Engine
 export const MS_PARENT_STORE_ID = '9PK3G83GP41D';
 export const MS_PRO_ADDON_STORE_ID = '9N98VZCQLDL7';
 export const MS_PRO_ADDON_PRODUCT_ID = 'keyfixer.pro.lifetime';
-export const MS_FALLBACK_PRICE = '€9.99';
+export const MS_SAFE_FALLBACK_PRICE = '';
 export const MS_DEFAULT_DISPLAY_NAME = 'KeyFixer Pro Lifetime';
+
+export interface MockStoreProduct {
+  storeId: string;
+  inAppOfferToken?: string;
+  title?: string;
+  formattedPrice?: string;
+  isAvailable?: boolean;
+}
+
+export function normalizeMicrosoftStoreProduct(
+  product: MockStoreProduct | null
+): StoreProduct {
+  if (!product) {
+    return {
+      id: MS_PRO_ADDON_STORE_ID,
+      displayName: MS_DEFAULT_DISPLAY_NAME,
+      displayPrice: '',
+      isAvailable: true,
+    };
+  }
+
+  return {
+    id: product.storeId || MS_PRO_ADDON_STORE_ID,
+    displayName: product.title && product.title.trim().length > 0 ? product.title : MS_DEFAULT_DISPLAY_NAME,
+    displayPrice: product.formattedPrice || '',
+    isAvailable: product.isAvailable ?? true,
+  };
+}
 
 // WinRT StorePurchaseStatus Enum
 export enum WinRTStorePurchaseStatus {
@@ -175,8 +206,17 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
       expect(MS_PARENT_STORE_ID).toBe('9PK3G83GP41D');
       expect(MS_PRO_ADDON_STORE_ID).toBe('9N98VZCQLDL7');
       expect(MS_PRO_ADDON_PRODUCT_ID).toBe('keyfixer.pro.lifetime');
-      expect(MS_FALLBACK_PRICE).toBe('€9.99');
+      expect(MS_SAFE_FALLBACK_PRICE).toBe('');
       expect(MS_DEFAULT_DISPLAY_NAME).toBe('KeyFixer Pro Lifetime');
+    });
+
+    it('declares all supported languages (en-US, ar, de) in AppxManifest.xml', () => {
+      const manifestPath = path.resolve(__dirname, '../src-tauri/msix/AppxManifest.xml');
+      const content = fs.readFileSync(manifestPath, 'utf8');
+
+      expect(content).toContain('<Resource Language="en-US" />');
+      expect(content).toContain('<Resource Language="ar" />');
+      expect(content).toContain('<Resource Language="de" />');
     });
   });
 
@@ -336,6 +376,128 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
       expect(result.status).toBe('FAILED');
       expect(result.entitlement.paid).toBe(false);
       expect(result.errorMessage).toBeDefined();
+    });
+  });
+
+  describe('5. Dynamic Product Discovery & Localized Pricing', () => {
+    it('populates dynamic localized prices for various currencies/regions', () => {
+      const usProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        inAppOfferToken: 'keyfixer.pro.lifetime',
+        title: 'KeyFixer Pro Lifetime',
+        formattedPrice: '$9.99',
+        isAvailable: true,
+      });
+      expect(usProduct.displayPrice).toBe('$9.99');
+      expect(usProduct.displayName).toBe('KeyFixer Pro Lifetime');
+      expect(usProduct.isAvailable).toBe(true);
+
+      const euProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        formattedPrice: '9,99 €',
+      });
+      expect(euProduct.displayPrice).toBe('9,99 €');
+
+      const saProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        formattedPrice: 'SAR 39.99',
+      });
+      expect(saProduct.displayPrice).toBe('SAR 39.99');
+
+      const ukProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        formattedPrice: '£8.99',
+      });
+      expect(ukProduct.displayPrice).toBe('£8.99');
+    });
+
+    it('falls back safely to empty price when Microsoft Store product cannot be retrieved', () => {
+      const fallbackProduct = normalizeMicrosoftStoreProduct(null);
+      expect(fallbackProduct.id).toBe('9N98VZCQLDL7');
+      expect(fallbackProduct.displayName).toBe('KeyFixer Pro Lifetime');
+      expect(fallbackProduct.displayPrice).toBe('');
+      expect(fallbackProduct.isAvailable).toBe(true);
+    });
+
+    it('preserves default display name when Store returns empty title', () => {
+      const emptyTitleProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        title: '   ',
+        formattedPrice: '$9.99',
+      });
+      expect(emptyTitleProduct.displayName).toBe('KeyFixer Pro Lifetime');
+      expect(emptyTitleProduct.displayPrice).toBe('$9.99');
+    });
+
+    it('formats Pro button text cleanly without appended price when price is empty string', () => {
+      const ctaLabel = 'Unlock Pro Lifetime';
+      const storeProduct = normalizeMicrosoftStoreProduct(null);
+      const displayPriceText = storeProduct?.displayPrice ? ` • ${storeProduct.displayPrice}` : '';
+      const buttonText = `${ctaLabel}${displayPriceText}`;
+
+      expect(buttonText).toBe('Unlock Pro Lifetime');
+      expect(buttonText).not.toContain('€9.99');
+    });
+
+    it('formats Pro button text with localized price when returned by Store', () => {
+      const ctaLabel = 'Unlock Pro Lifetime';
+      const storeProduct = normalizeMicrosoftStoreProduct({
+        storeId: '9N98VZCQLDL7',
+        formattedPrice: '$9.99',
+      });
+      const displayPriceText = storeProduct?.displayPrice ? ` • ${storeProduct.displayPrice}` : '';
+      const buttonText = `${ctaLabel}${displayPriceText}`;
+
+      expect(buttonText).toBe('Unlock Pro Lifetime • $9.99');
+    });
+  });
+
+  describe('6. Platform Store Naming in Purchase UI (Windows vs macOS)', () => {
+    it('uses Microsoft Store naming in English on Windows and App Store on macOS', () => {
+      const winEn = getProTranslations('en', true);
+      expect(winEn.purchasing).toBe('Connecting to Microsoft Store…');
+      expect(winEn.upgradeF2).toContain('Microsoft Store');
+      expect(winEn.upgradeF2).not.toContain('App Store');
+      expect(winEn.purchasePendingDesc).toContain('Microsoft Store');
+      expect(winEn.restoreNotFound).toContain('Microsoft Account');
+
+      const macEn = getProTranslations('en', false);
+      expect(macEn.purchasing).toBe('Connecting to App Store…');
+      expect(macEn.upgradeF2).toContain('App Store');
+      expect(macEn.upgradeF2).not.toContain('Microsoft Store');
+      expect(macEn.purchasePendingDesc).toContain('App Store');
+      expect(macEn.restoreNotFound).toContain('Apple Account');
+    });
+
+    it('uses Microsoft Store naming in Arabic on Windows and App Store on macOS', () => {
+      const winAr = getProTranslations('ar', true);
+      expect(winAr.purchasing).toBe('جارٍ الاتصال بـ متجر مايكروسوفت…');
+      expect(winAr.upgradeF2).toContain('متجر مايكروسوفت');
+      expect(winAr.upgradeF2).not.toContain('App Store');
+      expect(winAr.purchasePendingDesc).toContain('متجر مايكروسوفت');
+      expect(winAr.restoreNotFound).toContain('حساب مايكروسوفت');
+
+      const macAr = getProTranslations('ar', false);
+      expect(macAr.purchasing).toBe('جارٍ الاتصال بـ App Store…');
+      expect(macAr.upgradeF2).toContain('App Store');
+      expect(macAr.purchasePendingDesc).toContain('App Store');
+      expect(macAr.restoreNotFound).toContain('حساب Apple');
+    });
+
+    it('uses Microsoft Store naming in German on Windows and App Store on macOS', () => {
+      const winDe = getProTranslations('de', true);
+      expect(winDe.purchasing).toBe('Verbindung zum Microsoft Store…');
+      expect(winDe.upgradeF2).toContain('Microsoft Store');
+      expect(winDe.upgradeF2).not.toContain('App Store');
+      expect(winDe.purchasePendingDesc).toContain('Microsoft Store');
+      expect(winDe.restoreNotFound).toContain('Microsoft-Konto');
+
+      const macDe = getProTranslations('de', false);
+      expect(macDe.purchasing).toBe('Verbindung zum App Store…');
+      expect(macDe.upgradeF2).toContain('App Store');
+      expect(macDe.upgradeF2).not.toContain('Microsoft Store');
+      expect(macDe.purchasePendingDesc).toContain('App Store');
+      expect(macDe.restoreNotFound).toContain('Apple Account');
     });
   });
 });

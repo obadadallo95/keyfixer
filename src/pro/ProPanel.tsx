@@ -19,7 +19,7 @@ const FREE_STATE: ProStateDto = {
   isAppStore: true,
 };
 
-function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
+export function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
   const shortcut = isWindows ? 'Ctrl+Alt+K' : '⌥⌘K';
   const storeName = isWindows
     ? (lang === 'ar' ? 'متجر مايكروسوفت' : 'Microsoft Store')
@@ -55,6 +55,7 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
       upgradeF5: 'الخصوصية أولاً ولا يتم تخزين أي نصوص',
       upgradeCta: 'الترقية إلى Pro مدى الحياة',
       upgradeNot: 'ليس الآن',
+      purchasing: `جارٍ الاتصال بـ ${storeName}…`,
       purchaseUnavailable: 'الشراء غير متاح مؤقتًا',
       purchasePending: 'عملية الشراء بانتظار الموافقة',
       purchasePendingDesc: `عملية الشراء بانتظار الموافقة عبر ${storeName}. سيتم تفعيل KeyFixer Pro تلقائيًا فور تأكيدها.`,
@@ -109,6 +110,7 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
       upgradeF5: 'Keine Speicherung von Texten',
       upgradeCta: 'Pro Lifetime freischalten',
       upgradeNot: 'Nicht jetzt',
+      purchasing: isWindows ? 'Verbindung zum Microsoft Store…' : 'Verbindung zum App Store…',
       purchaseUnavailable: 'Kauf vorübergehend nicht verfügbar',
       purchasePending: 'Kauf wird geprüft',
       purchasePendingDesc: `Ihr Kauf wird im ${storeName} verarbeitet. KeyFixer Pro wird nach Bestätigung automatisch aktiviert.`,
@@ -163,6 +165,7 @@ function getProTranslations(lang: 'en' | 'ar' | 'de', isWindows: boolean) {
     upgradeF5: 'No text is ever stored or uploaded',
     upgradeCta: 'Unlock Pro Lifetime',
     upgradeNot: 'Not Now',
+    purchasing: `Connecting to ${storeName}…`,
     purchaseUnavailable: 'Purchase temporarily unavailable',
     purchasePending: 'Purchase pending approval',
     purchasePendingDesc: `Your purchase is pending approval with ${storeName}. KeyFixer Pro will unlock automatically once confirmed.`,
@@ -894,7 +897,7 @@ export function ProPanel({ bridge, isRTL, lang = isRTL ? 'ar' : 'en', platform =
             ) : (
               <Sparkles size={13} />
             )}
-            <span>{isPurchasing ? (isRTL ? 'جارٍ الاتصال بـ App Store…' : (effectiveLang === 'de' ? 'Verbindung zum App Store…' : 'Connecting to App Store…')) : `${t.upgradeCta}${displayPriceText}`}</span>
+            <span>{isPurchasing ? t.purchasing : `${t.upgradeCta}${displayPriceText}`}</span>
           </button>
 
           {/* Restore Notice Banner inside Modal */}
