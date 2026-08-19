@@ -118,6 +118,8 @@ jobs:
         run: |
           npm run build:desktop
           npm run build:windows
+        env:
+          VITE_PRO_BUILD: "true"
       - name: Upload Windows NSIS artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -141,6 +143,8 @@ jobs:
         run: |
           npm run build:desktop
           npm run build:windows:msix
+        env:
+          VITE_PRO_BUILD: "true"
       - name: Generate CI Ephemeral Certificate
         run: |
           $Cert = New-SelfSignedCertificate -Type Custom -Subject "CN=A2B67C57-E9AA-4233-B229-7A21800FE184" -KeyUsage DigitalSignature -FriendlyName "KeyFixer CI Ephemeral Cert" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}") -HashAlgorithm sha256

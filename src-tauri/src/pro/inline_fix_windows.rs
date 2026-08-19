@@ -350,6 +350,21 @@ pub mod windows {
         keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
     }
 
+    fn show_main_window_free_workflow(app: &AppHandle) {
+        if let Some(w) = app.get_webview_window("main") {
+            let is_visible = w.is_visible().unwrap_or(false);
+            let is_focused = w.is_focused().unwrap_or(false);
+            if is_visible && is_focused {
+                let _ = app.emit("shortcut-pressed", ());
+            } else {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+                let _ = app.emit("shortcut-pressed", ());
+            }
+        }
+    }
+
     // ── Inline Fix Runner for Windows ─────────────────────────────────────────
     pub fn run_inline_fix(app: &AppHandle) {
         if IN_FLIGHT.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_err() {
@@ -367,16 +382,27 @@ pub mod windows {
             }
             let _guard = FlightGuard;
 
-            let Some(shared) = get_shared_state() else { return; };
-            let (can_attempt, is_trial, mut credits) = {
+            let Some(shared) = get_shared_state() else {
+                show_main_window_free_workflow(&app_clone);
+                return;
+            };
+            let (can_attempt, is_trial, mut credits, is_free) = {
                 let guard = shared.lock().unwrap();
-                (guard.can_attempt_inline_fix(), guard.mode == ProMode::Trial, guard.trial_credits_remaining)
+                (
+                    guard.can_attempt_inline_fix(),
+                    guard.mode == ProMode::Trial,
+                    guard.trial_credits_remaining,
+                    guard.mode == ProMode::Free,
+                )
             };
 
             if !can_attempt {
-                let guard = shared.lock().unwrap();
-                if guard.mode == ProMode::Free || (is_trial && credits <= 0) {
+                if is_free {
+                    show_main_window_free_workflow(&app_clone);
+                } else if is_trial && credits <= 0 {
                     let _ = app_clone.emit("show-upgrade-modal", ());
+                } else {
+                    show_main_window_free_workflow(&app_clone);
                 }
                 return;
             }
@@ -407,7 +433,7 @@ pub mod windows {
             PENDING_CONVERSIONS.lock().unwrap().insert(conv_id, tx);
 
             let emit_res = app_clone.emit(
-                "request-inline-conversion",
+                "inline-convert-request",
                 serde_json::json!({
                     "id": conv_id,
                     "text": raw_text,

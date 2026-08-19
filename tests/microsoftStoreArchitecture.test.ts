@@ -500,4 +500,70 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
       expect(macDe.restoreNotFound).toContain('Apple Account');
     });
   });
+
+  describe('7. Windows Inline Conversion IPC Contract', () => {
+    it('verifies Windows backend emits inline-convert-request matching DesktopApp frontend listener', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const windowsRustContent = fs.readFileSync(windowsRustPath, 'utf8');
+
+      const frontendPath = path.resolve(__dirname, '../src/components/DesktopApp.tsx');
+      const frontendContent = fs.readFileSync(frontendPath, 'utf8');
+
+      // Rust must emit the exact event name the frontend is listening for
+      expect(windowsRustContent).toContain('"inline-convert-request"');
+      expect(windowsRustContent).not.toContain('"request-inline-conversion"');
+
+      expect(frontendContent).toContain("'inline-convert-request'");
+    });
+  });
+
+  describe('8. Windows Shortcut Mode Routing Architecture (Free vs Trial/Pro)', () => {
+    it('routes Free mode shortcut presses to standard window converter workflow instead of upgrade modal', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const windowsRustContent = fs.readFileSync(windowsRustPath, 'utf8');
+
+      // Free mode must call show_main_window_free_workflow and emit shortcut-pressed
+      expect(windowsRustContent).toContain('fn show_main_window_free_workflow(app: &AppHandle)');
+      expect(windowsRustContent).toContain('if is_free {\n                    show_main_window_free_workflow(&app_clone);');
+      expect(windowsRustContent).toContain('app.emit("shortcut-pressed", ())');
+
+      // Free mode must NOT emit show-upgrade-modal merely on shortcut press
+      expect(windowsRustContent).not.toMatch(/if\s+guard\.mode\s*==\s*ProMode::Free\s*\|\|\s*\(is_trial/);
+    });
+
+    it('routes exhausted trial to show-upgrade-modal', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const windowsRustContent = fs.readFileSync(windowsRustPath, 'utf8');
+
+      expect(windowsRustContent).toContain('else if is_trial && credits <= 0 {');
+      expect(windowsRustContent).toContain('app_clone.emit("show-upgrade-modal", ());');
+    });
+
+    it('routes active Trial and Paid with inlineFixEnabled to in-place simulation pipeline', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const windowsRustContent = fs.readFileSync(windowsRustPath, 'utf8');
+
+      expect(windowsRustContent).toContain('simulate_copy()');
+      expect(windowsRustContent).toContain('simulate_paste()');
+      expect(windowsRustContent).toContain('app_clone.emit(\n                "inline-convert-request",');
+    });
+  });
+
+  describe('9. Windows Release Build Environment Architecture', () => {
+    it('verifies build-release-artifacts.yml sets VITE_PRO_BUILD=true for Windows jobs', () => {
+      const workflowPath = path.resolve(__dirname, '../.github/workflows/build-release-artifacts.yml');
+      const workflowContent = fs.readFileSync(workflowPath, 'utf8');
+
+      // Both build-windows and build-windows-msix jobs must pass VITE_PRO_BUILD: "true"
+      expect(workflowContent).toMatch(/build-windows:[\s\S]*?Build Windows NSIS unsigned[\s\S]*?VITE_PRO_BUILD:\s*['"]true['"]/);
+      expect(workflowContent).toMatch(/build-windows-msix:[\s\S]*?Build Windows MSIX[\s\S]*?VITE_PRO_BUILD:\s*['"]true['"]/);
+    });
+
+    it('verifies windows.yml CI workflow sets VITE_PRO_BUILD=true', () => {
+      const workflowPath = path.resolve(__dirname, '../.github/workflows/windows.yml');
+      const workflowContent = fs.readFileSync(workflowPath, 'utf8');
+
+      expect(workflowContent).toMatch(/VITE_PRO_BUILD:\s*['"]true['"]/);
+    });
+  });
 });
