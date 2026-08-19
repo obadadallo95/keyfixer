@@ -294,6 +294,7 @@ async fn open_support_page(app: AppHandle) -> Result<(), String> {
     {
         use tauri_plugin_opener::OpenerExt;
 
+        const SUPPORT_URL: &str = "https://obadadallo.web.app/contact/";
         return app
             .opener()
             .open_url(SUPPORT_URL, None::<&str>)

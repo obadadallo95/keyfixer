@@ -510,7 +510,7 @@ pub mod windows {
         use windows::Win32::Foundation::HWND;
         use windows::Win32::UI::Shell::IInitializeWithWindow;
         use windows::Services::Store::{StoreContext, StorePurchaseStatus};
-        use windows::Foundation::Collections::IIterable;
+        use windows_collections::IIterable;
         use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
         use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
         use windows::Win32::Foundation::{CloseHandle, HANDLE};

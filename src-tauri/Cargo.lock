@@ -1998,6 +1998,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tokio",
  "windows",
+ "windows-collections",
 ]
 
 [[package]]
