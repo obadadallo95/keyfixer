@@ -566,4 +566,21 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
       expect(workflowContent).toMatch(/VITE_PRO_BUILD:\s*['"]true['"]/);
     });
   });
+
+  describe('10. Windows MSIX Build Configuration Preserves Pro Frontend', () => {
+    it('verifies tauri.windows.conf.json overrides beforeBuildCommand to empty string', () => {
+      const configPath = path.resolve(__dirname, '../src-tauri/tauri.windows.conf.json');
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+      expect(config.build?.beforeBuildCommand).toBe('');
+    });
+
+    it('verifies scripts/build-msix.mjs passes VITE_PRO_BUILD=true to all build steps', () => {
+      const scriptPath = path.resolve(__dirname, '../scripts/build-msix.mjs');
+      const scriptContent = fs.readFileSync(scriptPath, 'utf8').replace(/\r\n/g, '\n');
+
+      expect(scriptContent).toContain("run('npm run build:desktop', ROOT, { VITE_PRO_BUILD: 'true' })");
+      expect(scriptContent).toContain("run('npx tauri build --config src-tauri/tauri.windows.conf.json --features pro', ROOT, { VITE_PRO_BUILD: 'true' })");
+    });
+  });
 });

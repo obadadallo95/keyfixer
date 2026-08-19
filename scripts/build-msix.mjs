@@ -162,7 +162,7 @@ async function main() {
 
   // ── Step 2: Compile Tauri Windows executable ─────────────────────────────────
   console.log('\n[2/6] Compiling Tauri Windows x64 executable (Pro enabled)...');
-  run('npx tauri build --config src-tauri/tauri.windows.conf.json --features pro');
+  run('npx tauri build --config src-tauri/tauri.windows.conf.json --features pro', ROOT, { VITE_PRO_BUILD: 'true' });
 
   if (!fs.existsSync(EXE_SRC)) {
     console.error(`\nERROR: Expected executable not found: ${EXE_SRC}`);
