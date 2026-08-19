@@ -221,14 +221,33 @@ jobs:
           $msix = $env:MSIX_PATH
           $unpackDir = "src-tauri\target\msix-inspect"
 
-          # Locate MakeAppx
-          $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
-          $makeappx = Get-ChildItem -Path $sdkBase -Recurse -Filter "makeappx.exe" |
-                      Where-Object { $_.FullName -match "x64" } |
-                      Sort-Object FullName -Descending |
-                      Select-Object -First 1 -ExpandProperty FullName
+          if (Test-Path $unpackDir) {
+            Remove-Item -Path $unpackDir -Recurse -Force
+          }
 
-          & $makeappx unpack /p $msix /d $unpackDir /nv
+          # Locate MakeAppx fast from Windows Kits
+          $sdkBase = "C:\Program Files (x86)\Windows Kits\10\bin"
+          $makeappx = ""
+          if (Test-Path $sdkBase) {
+            $versions = Get-ChildItem -Path $sdkBase | Where-Object { $_.Name -match "^10\.0\.\d+\.\d+$" } | Sort-Object Name -Descending
+            foreach ($v in $versions) {
+              $candidate = Join-Path -Path $v.FullName -ChildPath "x64\makeappx.exe"
+              if (Test-Path $candidate) {
+                $makeappx = $candidate
+                break
+              }
+            }
+          }
+
+          if (-not $makeappx) {
+            $makeappx = Get-ChildItem -Path $sdkBase -Recurse -Filter "makeappx.exe" |
+                        Where-Object { $_.FullName -match "x64" } |
+                        Sort-Object FullName -Descending |
+                        Select-Object -First 1 -ExpandProperty FullName
+          }
+
+          Write-Host "Using MakeAppx: $makeappx"
+          & $makeappx unpack /p $msix /d $unpackDir /o /nv
 
           $manifest = [xml](Get-Content "$unpackDir\AppxManifest.xml")
           $ns = @{ ns = "http://schemas.microsoft.com/appx/manifest/foundation/windows10" }
