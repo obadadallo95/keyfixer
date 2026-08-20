@@ -332,11 +332,21 @@ pub mod windows {
     }
 
     const VK_CONTROL: u8 = 0x11;
+    const VK_MENU: u8 = 0x12; // Alt key
+    const VK_SHIFT: u8 = 0x10;
     const VK_C: u8 = 0x43;
     const VK_V: u8 = 0x56;
     const KEYEVENTF_KEYUP: u32 = 0x0002;
 
+    unsafe fn release_modifiers() {
+        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+    }
+
     unsafe fn simulate_copy() {
+        release_modifiers();
+        std::thread::sleep(Duration::from_millis(25));
         keybd_event(VK_CONTROL, 0, 0, 0);
         keybd_event(VK_C, 0, 0, 0);
         keybd_event(VK_C, 0, KEYEVENTF_KEYUP, 0);
@@ -344,6 +354,8 @@ pub mod windows {
     }
 
     unsafe fn simulate_paste() {
+        release_modifiers();
+        std::thread::sleep(Duration::from_millis(25));
         keybd_event(VK_CONTROL, 0, 0, 0);
         keybd_event(VK_V, 0, 0, 0);
         keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0);
@@ -409,7 +421,7 @@ pub mod windows {
 
             // Synthesize Copy (Ctrl+C)
             unsafe { simulate_copy(); }
-            std::thread::sleep(Duration::from_millis(75));
+            std::thread::sleep(Duration::from_millis(90));
 
             // Read clipboard via Tauri clipboard manager
             let clipboard = app_clone.clipboard();
