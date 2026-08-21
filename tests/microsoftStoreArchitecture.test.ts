@@ -524,7 +524,7 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
 
       // Free mode must call show_main_window_free_workflow and emit shortcut-pressed
       expect(windowsRustContent).toContain('fn show_main_window_free_workflow(app: &AppHandle)');
-      expect(windowsRustContent).toContain('if is_free {\n                    show_main_window_free_workflow(&app_clone);');
+      expect(windowsRustContent).toMatch(/if\s+is_free\s*\{[\s\S]*?show_main_window_free_workflow\(&app_clone\);/);
       expect(windowsRustContent).toContain('app.emit("shortcut-pressed", ())');
 
       // Free mode must NOT emit show-upgrade-modal merely on shortcut press
@@ -581,6 +581,56 @@ describe('Microsoft Store Durable Add-on Integration Architecture', () => {
 
       expect(scriptContent).toContain("run('npm run build:desktop', ROOT, { VITE_PRO_BUILD: 'true' })");
       expect(scriptContent).toContain("run('npx tauri build --config src-tauri/tauri.windows.conf.json --features pro', ROOT, { VITE_PRO_BUILD: 'true' })");
+    });
+  });
+
+  describe('11. Windows SendInput & Robust Inline Fix Contract', () => {
+    it('verifies SendInput structures, scan codes, and Win32 functions in inline_fix_windows.rs', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const content = fs.readFileSync(windowsRustPath, 'utf8').replace(/\r\n/g, '\n');
+
+      expect(content).toContain('fn SendInput(');
+      expect(content).toContain('fn GetClipboardSequenceNumber(');
+      expect(content).toContain('fn GetForegroundWindow(');
+      expect(content).toContain('SCAN_ESCAPE: u16 = 0x01;');
+      expect(content).toContain('SCAN_CTRL: u16 = 0x1D;');
+      expect(content).toContain('SCAN_ALT: u16 = 0x38;');
+      expect(content).toContain('SCAN_C: u16 = 0x2E;');
+      expect(content).toContain('SCAN_V: u16 = 0x2F;');
+    });
+
+    it('verifies Alt normalization masks Alt with Ctrl and pulses Escape to dismiss menu mode', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const content = fs.readFileSync(windowsRustPath, 'utf8').replace(/\r\n/g, '\n');
+
+      expect(content).toContain('fn normalize_modifiers_and_menu()');
+      expect(content).toContain('make_key_input(VK_CONTROL, SCAN_CTRL, 0)');
+      expect(content).toContain('make_key_input(VK_MENU, SCAN_ALT, KEYEVENTF_KEYUP)');
+      expect(content).toContain('make_key_input(VK_ESCAPE, SCAN_ESCAPE, 0)');
+      expect(content).toContain('make_key_input(VK_ESCAPE, SCAN_ESCAPE, KEYEVENTF_KEYUP)');
+    });
+
+    it('verifies bounded clipboard acquisition with sequence tracking and write retry', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const content = fs.readFileSync(windowsRustPath, 'utf8').replace(/\r\n/g, '\n');
+
+      expect(content).toContain('fn acquire_clipboard_text(');
+      expect(content).toContain('fn write_clipboard_with_retry(');
+      expect(content).toContain('GetClipboardSequenceNumber()');
+    });
+
+    it('verifies diagnostic logging does not log user text and reports each stage', () => {
+      const windowsRustPath = path.resolve(__dirname, '../src-tauri/src/pro/inline_fix_windows.rs');
+      const content = fs.readFileSync(windowsRustPath, 'utf8').replace(/\r\n/g, '\n');
+
+      expect(content).toContain('SHORTCUT_CAPTURED');
+      expect(content).toContain('MODIFIERS_NORMALIZED');
+      expect(content).toContain('COPY_INJECTED');
+      expect(content).toContain('CLIPBOARD_ACQUIRED');
+      expect(content).toContain('CONVERSION_COMPLETED');
+      expect(content).toContain('PASTE_INJECTED');
+      expect(content).not.toContain('{raw_text}');
+      expect(content).not.toContain('{fixed_text}');
     });
   });
 });

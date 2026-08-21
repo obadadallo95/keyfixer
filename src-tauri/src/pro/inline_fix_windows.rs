@@ -326,40 +326,168 @@ pub mod windows {
         }
     }
 
-    // ── Windows Win32 Key Simulation ──────────────────────────────────────────
-    extern "system" {
-        fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
+    // ── Windows Win32 SendInput Key Simulation & Menu Handling ───────────────
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct KEYBDINPUT {
+        wVk: u16,
+        wScan: u16,
+        dwFlags: u32,
+        time: u32,
+        dwExtraInfo: usize,
     }
 
-    const VK_CONTROL: u8 = 0x11;
-    const VK_MENU: u8 = 0x12; // Alt key
-    const VK_SHIFT: u8 = 0x10;
-    const VK_C: u8 = 0x43;
-    const VK_V: u8 = 0x56;
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct MOUSEINPUT {
+        dx: i32,
+        dy: i32,
+        mouseData: u32,
+        dwFlags: u32,
+        time: u32,
+        dwExtraInfo: usize,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct HARDWAREINPUT {
+        uMsg: u32,
+        wParamL: u16,
+        wParamH: u16,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    union INPUT_UNION {
+        mi: MOUSEINPUT,
+        ki: KEYBDINPUT,
+        hi: HARDWAREINPUT,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct INPUT {
+        r#type: u32,
+        u: INPUT_UNION,
+    }
+
+    const INPUT_KEYBOARD: u32 = 1;
     const KEYEVENTF_KEYUP: u32 = 0x0002;
 
-    unsafe fn release_modifiers() {
-        keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+    const VK_SHIFT: u16 = 0x10;
+    const VK_CONTROL: u16 = 0x11;
+    const VK_MENU: u16 = 0x12; // Alt key
+    const VK_ESCAPE: u16 = 0x1B;
+    const VK_C: u16 = 0x43;
+    const VK_V: u16 = 0x56;
+
+    // Hardware scan codes (standard 101/102 PC keyboard)
+    const SCAN_ESCAPE: u16 = 0x01;
+    const SCAN_CTRL: u16 = 0x1D;
+    const SCAN_ALT: u16 = 0x38;
+    const SCAN_SHIFT: u16 = 0x2A;
+    const SCAN_C: u16 = 0x2E;
+    const SCAN_V: u16 = 0x2F;
+
+    extern "system" {
+        fn SendInput(cInputs: u32, pInputs: *const INPUT, cbSize: i32) -> u32;
+        fn GetForegroundWindow() -> usize;
+        fn GetClipboardSequenceNumber() -> u32;
     }
 
-    unsafe fn simulate_copy() {
-        release_modifiers();
-        std::thread::sleep(Duration::from_millis(25));
-        keybd_event(VK_CONTROL, 0, 0, 0);
-        keybd_event(VK_C, 0, 0, 0);
-        keybd_event(VK_C, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+    fn make_key_input(vk: u16, scan: u16, flags: u32) -> INPUT {
+        INPUT {
+            r#type: INPUT_KEYBOARD,
+            u: INPUT_UNION {
+                ki: KEYBDINPUT {
+                    wVk: vk,
+                    wScan: scan,
+                    dwFlags: flags,
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        }
     }
 
-    unsafe fn simulate_paste() {
-        release_modifiers();
-        std::thread::sleep(Duration::from_millis(25));
-        keybd_event(VK_CONTROL, 0, 0, 0);
-        keybd_event(VK_V, 0, 0, 0);
-        keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+    fn send_inputs(inputs: &[INPUT]) -> bool {
+        let count = inputs.len() as u32;
+        let size = std::mem::size_of::<INPUT>() as i32;
+        let sent = unsafe { SendInput(count, inputs.as_ptr(), size) };
+        sent == count
+    }
+
+    /// Normalizes physical modifier states from Ctrl+Alt+K and suppresses Windows menu-bar activation.
+    ///
+    /// 1. Masks Alt release with Ctrl down to prevent DefWindowProc from treating Alt as a standalone tap (SC_KEYMENU).
+    /// 2. Releases Alt, Shift, and Ctrl cleanly with hardware scan codes.
+    /// 3. Pulses Escape to dismiss any menu focus if the target window (e.g. Notepad) already entered menu mode,
+    ///    instantly restoring focus back to the text control and preserved selection.
+    unsafe fn normalize_modifiers_and_menu() {
+        let inputs = [
+            // Mask Alt release with active Ctrl
+            make_key_input(VK_CONTROL, SCAN_CTRL, 0),
+            make_key_input(VK_MENU, SCAN_ALT, KEYEVENTF_KEYUP),
+            make_key_input(VK_SHIFT, SCAN_SHIFT, KEYEVENTF_KEYUP),
+            make_key_input(VK_CONTROL, SCAN_CTRL, KEYEVENTF_KEYUP),
+            // Dismiss any active menu-bar loop without altering text selection
+            make_key_input(VK_ESCAPE, SCAN_ESCAPE, 0),
+            make_key_input(VK_ESCAPE, SCAN_ESCAPE, KEYEVENTF_KEYUP),
+        ];
+        send_inputs(&inputs);
+    }
+
+    /// Synthesizes clean Ctrl+C keystroke with explicit hardware scan codes via SendInput.
+    unsafe fn simulate_copy() -> bool {
+        let inputs = [
+            make_key_input(VK_CONTROL, SCAN_CTRL, 0),
+            make_key_input(VK_C, SCAN_C, 0),
+            make_key_input(VK_C, SCAN_C, KEYEVENTF_KEYUP),
+            make_key_input(VK_CONTROL, SCAN_CTRL, KEYEVENTF_KEYUP),
+        ];
+        send_inputs(&inputs)
+    }
+
+    /// Synthesizes clean Ctrl+V keystroke with explicit hardware scan codes via SendInput.
+    unsafe fn simulate_paste() -> bool {
+        let inputs = [
+            make_key_input(VK_CONTROL, SCAN_CTRL, 0),
+            make_key_input(VK_V, SCAN_V, 0),
+            make_key_input(VK_V, SCAN_V, KEYEVENTF_KEYUP),
+            make_key_input(VK_CONTROL, SCAN_CTRL, KEYEVENTF_KEYUP),
+        ];
+        send_inputs(&inputs)
+    }
+
+    /// Bounded clipboard polling for acquired text with sequence tracking and timeout.
+    fn acquire_clipboard_text(app: &AppHandle, initial_seq: u32, timeout: Duration) -> Option<String> {
+        let start = Instant::now();
+        let clipboard = app.clipboard();
+        while start.elapsed() < timeout {
+            let current_seq = unsafe { GetClipboardSequenceNumber() };
+            if current_seq != initial_seq || start.elapsed() >= Duration::from_millis(40) {
+                if let Ok(text) = clipboard.read_text() {
+                    if !text.trim().is_empty() {
+                        return Some(text);
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        None
+    }
+
+    /// Bounded clipboard writing with retry to handle temporary target application locks.
+    fn write_clipboard_with_retry(app: &AppHandle, text: &str, timeout: Duration) -> bool {
+        let start = Instant::now();
+        let clipboard = app.clipboard();
+        while start.elapsed() < timeout {
+            if clipboard.write_text(text.to_string()).is_ok() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        false
     }
 
     fn show_main_window_free_workflow(app: &AppHandle) {
@@ -393,8 +521,13 @@ pub mod windows {
                 }
             }
             let _guard = FlightGuard;
+            let start_time = Instant::now();
+
+            let target_hwnd = unsafe { GetForegroundWindow() };
+            eprintln!("{TAG} SHORTCUT_CAPTURED: target_hwnd=0x{target_hwnd:x}");
 
             let Some(shared) = get_shared_state() else {
+                eprintln!("{TAG} FAILURE: state_uninitialized");
                 show_main_window_free_workflow(&app_clone);
                 return;
             };
@@ -410,30 +543,48 @@ pub mod windows {
 
             if !can_attempt {
                 if is_free {
+                    eprintln!("{TAG} ROUTED_TO_FREE_WORKFLOW (mode=free)");
                     show_main_window_free_workflow(&app_clone);
                 } else if is_trial && credits <= 0 {
+                    eprintln!("{TAG} TRIAL_EXHAUSTED (credits=0)");
                     let _ = app_clone.emit("show-upgrade-modal", ());
                 } else {
+                    eprintln!("{TAG} ROUTED_TO_FREE_WORKFLOW (inline_fix_disabled)");
                     show_main_window_free_workflow(&app_clone);
                 }
                 return;
             }
 
-            // Synthesize Copy (Ctrl+C)
-            unsafe { simulate_copy(); }
-            std::thread::sleep(Duration::from_millis(90));
+            // Step 1: Normalize modifier state and dismiss any active Alt/menu focus
+            let initial_seq = unsafe { GetClipboardSequenceNumber() };
+            unsafe { normalize_modifiers_and_menu(); }
+            eprintln!("{TAG} MODIFIERS_NORMALIZED: initial_clip_seq={initial_seq}");
+            std::thread::sleep(Duration::from_millis(20));
 
-            // Read clipboard via Tauri clipboard manager
-            let clipboard = app_clone.clipboard();
-            let raw_text = match clipboard.read_text() {
-                Ok(text) if !text.trim().is_empty() => text,
+            // Step 2: Synthesize Copy (Ctrl+C) via SendInput
+            if !unsafe { simulate_copy() } {
+                eprintln!("{TAG} FAILURE: copy_injection_failed");
+                return;
+            }
+            eprintln!("{TAG} COPY_INJECTED (elapsed={}ms)", start_time.elapsed().as_millis());
+
+            // Step 3: Bounded clipboard text acquisition
+            let raw_text = match acquire_clipboard_text(&app_clone, initial_seq, Duration::from_millis(250)) {
+                Some(text) if !text.trim().is_empty() => {
+                    eprintln!(
+                        "{TAG} CLIPBOARD_ACQUIRED: char_count={}, elapsed={}ms",
+                        text.chars().count(),
+                        start_time.elapsed().as_millis()
+                    );
+                    text
+                }
                 _ => {
-                    eprintln!("{TAG} No text copied or empty selection");
+                    eprintln!("{TAG} FAILURE: no_text_copied_or_empty_selection");
                     return;
                 }
             };
 
-            // Request conversion from frontend
+            // Step 4: Request conversion from local frontend pipeline
             let conv_id = {
                 let mut c = CONVERSION_ID_COUNTER.lock().unwrap();
                 let val = *c;
@@ -454,37 +605,49 @@ pub mod windows {
 
             if emit_res.is_err() {
                 PENDING_CONVERSIONS.lock().unwrap().remove(&conv_id);
+                eprintln!("{TAG} FAILURE: conversion_emit_failed");
                 return;
             }
 
+            let conv_start = Instant::now();
             let response = match rx.recv_timeout(CONVERSION_TIMEOUT) {
-                Ok(r) => r,
+                Ok(r) => {
+                    eprintln!(
+                        "{TAG} CONVERSION_COMPLETED (conv_elapsed={}ms, total_elapsed={}ms)",
+                        conv_start.elapsed().as_millis(),
+                        start_time.elapsed().as_millis()
+                    );
+                    r
+                }
                 Err(_) => {
                     PENDING_CONVERSIONS.lock().unwrap().remove(&conv_id);
-                    eprintln!("{TAG} Conversion timeout");
+                    eprintln!("{TAG} FAILURE: conversion_timeout (exceeded {}ms)", CONVERSION_TIMEOUT.as_millis());
                     return;
                 }
             };
 
             let fixed_text = response.fixed_text;
             if fixed_text.is_empty() || fixed_text == raw_text {
-                eprintln!("{TAG} Text already correct or empty");
+                eprintln!("{TAG} TEXT_ALREADY_CORRECT_OR_UNCHANGED (elapsed={}ms)", start_time.elapsed().as_millis());
                 return;
             }
 
-            // Write fixed text to clipboard
-            if clipboard.write_text(fixed_text).is_err() {
-                eprintln!("{TAG} Failed to write to clipboard");
+            // Step 5: Write fixed text to clipboard with bounded retry
+            if !write_clipboard_with_retry(&app_clone, &fixed_text, Duration::from_millis(120)) {
+                eprintln!("{TAG} FAILURE: clipboard_write_failed");
                 return;
             }
+            std::thread::sleep(Duration::from_millis(25));
 
-            std::thread::sleep(Duration::from_millis(30));
+            // Step 6: Synthesize Paste (Ctrl+V) via SendInput
+            if !unsafe { simulate_paste() } {
+                eprintln!("{TAG} FAILURE: paste_injection_failed");
+                return;
+            }
+            eprintln!("{TAG} PASTE_INJECTED (elapsed={}ms)", start_time.elapsed().as_millis());
+            std::thread::sleep(Duration::from_millis(40));
 
-            // Synthesize Paste (Ctrl+V)
-            unsafe { simulate_paste(); }
-            std::thread::sleep(Duration::from_millis(50));
-
-            // Decrement trial credits only on actual successful replacement
+            // Step 7: Decrement trial credits only upon full end-to-end success
             if is_trial {
                 let mut guard = shared.lock().unwrap();
                 if guard.mode == ProMode::Trial && guard.trial_credits_remaining > 0 {
@@ -492,15 +655,15 @@ pub mod windows {
                     credits = guard.trial_credits_remaining;
                     guard.save(&app_clone);
                     let _ = app_clone.emit("inline-fix-succeeded", serde_json::json!({ "remaining": credits }));
+                    eprintln!("{TAG} SUCCESS: TRIAL_INLINE_FIX_APPLIED (credits_remaining={credits})");
                     if credits <= 0 {
                         let _ = app_clone.emit("trial-exhausted", ());
                     }
                 }
             } else {
                 let _ = app_clone.emit("inline-fix-succeeded", serde_json::json!({ "remaining": 999 }));
+                eprintln!("{TAG} SUCCESS: PAID_INLINE_FIX_APPLIED");
             }
-
-            eprintln!("{TAG} Inline fix applied successfully!");
         });
     }
 
