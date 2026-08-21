@@ -4,7 +4,7 @@ pub mod windows {
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{mpsc, Arc, LazyLock, Mutex};
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
     use serde::{Deserialize, Serialize};
     use tauri::{AppHandle, Emitter, Manager};
     use tauri_plugin_clipboard_manager::ClipboardExt;
