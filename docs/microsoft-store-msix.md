@@ -26,11 +26,11 @@ These identity values are embedded in `src-tauri/msix/AppxManifest.xml` and matc
 
 ---
 
-## 📦 Package Specification (v1.3.1.0)
+## 📦 Package Specification (v1.3.5.0)
 
 | Specification | Details |
 | :--- | :--- |
-| **MSIX Version** | `1.3.1.0` (4-part Quad format) |
+| **MSIX Version** | `1.3.5.0` (4-part Quad format) |
 | **Target Architecture** | `x64` |
 | **Target OS** | Windows 10 v1809 (build 17763) or later |
 | **Max Version Tested** | Windows 11 24H2 (build 26100) |
@@ -50,7 +50,7 @@ Tauri v2 compiles native Win32 binaries. The MSIX packaging is orchestrated by `
 2. **Staging Directory Assembly**:
    Copies the compiled release binary, WebView2 dependencies, manifest, and assets into `src-tauri/target/msix-staging/`.
 3. **MakeAppx Execution**:
-   Locates the Windows SDK `MakeAppx.exe` and packages the directory into `KeyFixer_1.3.1.0_x64.msix`.
+   Locates the Windows SDK `MakeAppx.exe` and packages the directory into `KeyFixer_1.3.5.0_x64.msix`.
 4. **CI Automated Signing**:
    In GitHub Actions (`.github/workflows/microsoft-store-msix.yml`), a self-signed staging certificate is generated and attached to validate package integrity before upload. Microsoft Store re-signs the package with a globally trusted Microsoft certificate during ingestion.
 
@@ -63,4 +63,4 @@ Tauri v2 compiles native Win32 binaries. The MSIX packaging is orchestrated by `
 npm run build:windows:msix
 ```
 
-Package output: `src-tauri/target/release/bundle/msix/KeyFixer_1.3.1.0_x64.msix`
+Package output: `src-tauri/target/release/bundle/msix/KeyFixer_1.3.5.0_x64.msix`

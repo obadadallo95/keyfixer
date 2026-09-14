@@ -1,4 +1,4 @@
-# Windows Desktop Application (v1.3.1)
+# Windows Desktop Application (v1.3.5)
 
 KeyFixer for Windows is a native desktop application built with **Tauri v2** and **Rust**, distributed both as a packaged Win32 MSIX app on the **Microsoft Store** and as a standalone NSIS installer.
 
@@ -39,12 +39,12 @@ npm install
 npm run build:desktop
 npm run build:windows
 ```
-*Output location:* `src-tauri/target/release/bundle/nsis/KeyFixer_1.3.1_x64-setup.exe`
+*Output location:* `src-tauri/target/release/bundle/nsis/KeyFixer_1.3.5_x64-setup.exe`
 
 ### 3. Microsoft Store MSIX Package
 ```powershell
 npm run build:windows:msix
 ```
-*Output location:* `src-tauri/target/release/bundle/msix/KeyFixer_1.3.1.0_x64.msix`
+*Output location:* `src-tauri/target/release/bundle/msix/KeyFixer_1.3.5.0_x64.msix`
 
 For full MSIX packaging details, Partner Center identity configuration, and CI workflows, see [docs/microsoft-store-msix.md](microsoft-store-msix.md).

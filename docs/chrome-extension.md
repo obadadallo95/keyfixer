@@ -1,4 +1,4 @@
-# Chrome Extension Documentation (v1.3.1)
+# Chrome Extension Documentation (v1.3.5)
 
 KeyFixer includes a Manifest V3 bilingual extension for Google Chrome, Microsoft Edge, Brave, and other Chromium-based browsers to instantly correct text typed with the wrong keyboard layout.
 

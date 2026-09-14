@@ -13,12 +13,12 @@
   <a href="https://apps.microsoft.com/detail/9pk3g83gp41d?ocid=webpdpshare"><img src="https://img.shields.io/badge/Microsoft%20Store-9PK3G83GP41D-0078D4?style=for-the-badge&logo=microsoft&logoColor=white" alt="Microsoft Store" /></a>
   <a href="https://chromewebstore.google.com/detail/bgleifjaplnanbncododdkgkpaieeafg?utm_source=item-share-cb"><img src="https://img.shields.io/badge/Chrome%20Web%20Store-Published-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store" /></a>
   <a href="https://keyfixer.vercel.app"><img src="https://img.shields.io/badge/Web%20App-Live-050505?style=for-the-badge&logo=vercel&logoColor=white" alt="Web App" /></a>
-  <a href="https://github.com/obadadallo95/keyfixer/releases"><img src="https://img.shields.io/badge/Release-v1.3.2-F59E0B?style=for-the-badge&logo=github&logoColor=black" alt="Release" /></a>
+  <a href="https://github.com/obadadallo95/keyfixer/releases"><img src="https://img.shields.io/badge/Version-v1.3.5-F59E0B?style=for-the-badge&logo=github&logoColor=black" alt="Version" /></a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20%E2%80%A2%200%20Telemetry-10B981?style=flat-square" alt="Privacy First" />
-  <img src="https://img.shields.io/badge/Tests-118%20Passing-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-139%20Passing-brightgreen?style=flat-square" alt="Tests" />
   <img src="https://img.shields.io/badge/Tauri-v2%20(Rust)-FFC131?style=flat-square&logo=tauri&logoColor=black" alt="Tauri v2" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -50,7 +50,7 @@ Available as a native app on the **Apple Mac App Store**, **Microsoft Store**, *
 | **macOS (Apple Silicon & Intel)** | **Apple Mac App Store** | <img src="https://img.shields.io/badge/Store-Live-10B981?style=flat-square" /> | [**Get on Mac App Store**](https://apps.apple.com/de/app/keyfixer/id6796866841?mt=12) |
 | **Windows 10 / 11 (x64 & ARM)** | **Microsoft Store (MSIX)** | <img src="https://img.shields.io/badge/Store-Live-10B981?style=flat-square" /> | [**Get from Microsoft Store**](https://apps.microsoft.com/detail/9pk3g83gp41d?ocid=webpdpshare) |
 | **Google Chrome, Brave, Edge** | **Chrome Web Store (MV3)** | <img src="https://img.shields.io/badge/Store-Live-10B981?style=flat-square" /> | [**Add to Chrome**](https://chromewebstore.google.com/detail/bgleifjaplnanbncododdkgkpaieeafg?utm_source=item-share-cb) |
-| **macOS / Windows Standalone** | **GitHub Releases (PKG / MSIX)** | <img src="https://img.shields.io/badge/Releases-v1.3.2-F59E0B?style=flat-square" /> | [**GitHub Releases**](https://github.com/obadadallo95/keyfixer/releases) |
+| **macOS / Windows Standalone** | **GitHub Releases (PKG / MSIX)** | <img src="https://img.shields.io/badge/Version-v1.3.5-F59E0B?style=flat-square" /> | [**GitHub Releases**](https://github.com/obadadallo95/keyfixer/releases) |
 | **Web Browser (Universal)** | **Live Web App & PWA** | <img src="https://img.shields.io/badge/Web-Active-38BDF8?style=flat-square" /> | [**Launch Web App**](https://keyfixer.vercel.app) |
 
 ---
@@ -155,10 +155,10 @@ npm run build:appstore
 npm run version:check
 ```
 
-### Automated Testing Suite (118 Tests)
+### Automated Testing Suite (139 Tests)
 
 ```bash
-npm run test:run        # Run full Vitest suite (118 unit & integration tests)
+npm run test:run        # Run full Vitest suite (139 unit & integration tests)
 npm run typecheck       # TypeScript verification
 npm run release:check   # Full pre-release validation pipeline
 ```
@@ -181,7 +181,7 @@ npm run release:check   # Full pre-release validation pipeline
 | [**Keyboard Layouts**](docs/keyboard-layouts.md) | Specification of Windows 101 and Apple Arabic mapping tables |
 | [**Development Guide**](docs/development.md) | Local environment setup, scripts, and monorepo structure |
 | [**Testing & QA**](docs/testing.md) | Vitest testing scope, edge cases, and automated validation |
-| [**Changelog**](docs/changelog.md) | Complete version history from v1.0.0 through v1.3.2 |
+| [**Changelog**](docs/changelog.md) | Complete version history from v1.0.0 through v1.3.5 |
 | [**Privacy Policy**](docs/privacy.md) | Formal zero-data collection guarantee |
 | [**Terms of Use**](docs/terms.md) | Acceptable use terms and disclaimer |
 

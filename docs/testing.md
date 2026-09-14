@@ -1,4 +1,4 @@
-# Testing & Quality Assurance Guide (v1.3.1)
+# Testing & Quality Assurance Guide (v1.3.5)
 
 KeyFixer implements an automated testing strategy powered by [Vitest](https://vitest.dev/) to ensure 100% conversion accuracy, platform compatibility, and regression prevention.
 
@@ -19,21 +19,23 @@ npm run typecheck:tests
 
 ---
 
-## 📊 Test Suite Coverage (106 Tests / 13 Suites)
+## 📊 Test Suite Coverage (139 Tests / 15 Suites)
 
 | Test Suite File | Tests | Focus Area |
 | :--- | :---: | :--- |
+| `tests/appStoreNSServicesArchitecture.test.ts` | 7 | macOS App Store Services integration and native service configuration |
 | `tests/keyboardLayoutConverter.test.ts` | 30 | Full keymap coverage, ligatures (`لا`, `لأ`, `لإ`, `لآ`), diacritics (Tashkeel), auto-detect direction, round-trip conversions |
 | `tests/storeKitArchitecture.test.ts` | 19 | macOS StoreKit In-App Purchase bridge, transaction states, offline activation code fallback |
-| `tests/microsoftStoreArchitecture.test.ts` | 14 | Windows MSIX manifest rules, Partner Center identity (`9PK3G83GP41D`), versioning constraints |
+| `tests/microsoftStoreArchitecture.test.ts` | 35 | Windows MSIX manifest rules, Partner Center identity (`9PK3G83GP41D`), versioning constraints, inline-fix packaging |
 | `tests/frontend.test.tsx` | 11 | ConverterArea state machine, clipboard read/write handling, debounce protection, double-press prevention |
 | `tests/startupResilience.test.tsx` | 8 | Resilient desktop startup, missing platform APIs fallback, audio context gracefulness |
-| `tests/websiteLegalRoutes.test.tsx` | 7 | Dynamic web routing for Privacy, Terms, Refund, Impressum, and About Developer pages |
+| `tests/websiteLandingPage.test.tsx` | 4 | Landing-page metadata, navigation, store links, and primary conversion content |
+| `tests/websiteLegalRoutes.test.tsx` | 6 | Dynamic web routing for Privacy, Terms, Refund, Impressum, and About Developer pages |
 | `tests/legalViewer.test.tsx` | 6 | In-app bilingual legal modal, document switching, RTL layout support |
 | `tests/extensionContent.test.ts` | 3 | Chrome Extension DOM input replacement, React controlled component prototype setters, toast triggers |
 | `tests/shortcutReleaseArchitecture.test.ts` | 3 | Global shortcut release pipeline and modifier key safety |
 | `tests/desktopLongText.test.tsx` | 2 | Large input text rendering (1500+ characters), multiline scrolling bounds, performance |
-| `tests/onboarding.test.tsx` | 1 | First-run onboarding flow, storage persistence, and dismissal |
+| `tests/onboarding.test.tsx` | 3 | First-run onboarding flow, storage persistence, and dismissal |
 | `tests/proInlineFix.test.tsx` | 1 | Pro contract fallback behavior when proprietary modules are absent |
 | `tests/proProvider.test.ts` | 1 | Pro licensing provider state initialization |
 

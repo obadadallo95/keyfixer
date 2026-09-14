@@ -1,4 +1,4 @@
-# macOS Native Desktop Application (v1.3.1)
+# macOS Native Desktop Application (v1.3.5)
 
 KeyFixer for macOS is a lightweight desktop utility engineered with **Tauri v2** and **Rust**. Designed to run silently in the menu bar, it provides instant global hotkey access without cluttering the macOS Dock.
 
@@ -31,7 +31,7 @@ npm run tauri dev
 npm run build:desktop
 npm run tauri build -- --bundles dmg
 ```
-*Output location:* `src-tauri/target/release/bundle/dmg/KeyFixer_1.3.1_aarch64.dmg`
+*Output location:* `src-tauri/target/release/bundle/dmg/KeyFixer_1.3.5_aarch64.dmg`
 
 ### Mac App Store Sandboxed Build
 ```bash

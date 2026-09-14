@@ -19,8 +19,8 @@ Only the latest release of KeyFixer receives active security and compatibility p
 
 | Version | Supported |
 | :--- | :---: |
-| `1.3.x` | ✅ Yes |
-| `< 1.3.0` | ❌ No (Please upgrade) |
+| `1.3.5` | ✅ Yes |
+| `< 1.3.5` | ❌ No (Please upgrade) |
 
 ---
 

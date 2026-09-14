@@ -1,6 +1,6 @@
 # KeyFixer Documentation Hub
 
-Welcome to the comprehensive technical documentation for **KeyFixer** (v1.3.1) — the privacy-first Arabic ⇄ English keyboard layout conversion utility across Web, Chrome Extension, Windows Desktop (Microsoft Store), and macOS Desktop.
+Welcome to the comprehensive technical documentation for **KeyFixer** (v1.3.5) — the privacy-first Arabic ⇄ English keyboard layout conversion utility across Web, Chrome Extension, Windows Desktop (Microsoft Store), and macOS Desktop.
 
 ---
 
@@ -27,10 +27,10 @@ Welcome to the comprehensive technical documentation for **KeyFixer** (v1.3.1) �
 
 ### 🛠️ Development & Quality Assurance
 - [**Development Guide**](./development.md): Local environment setup, prerequisites (Node 22, Rust), monorepo structure, and npm scripts.
-- [**Testing & QA Guide**](./testing.md): Automated Vitest test suite breakdown (106 unit & integration tests), test matrix, and release verification.
+- [**Testing & QA Guide**](./testing.md): Automated Vitest test suite breakdown (139 unit & integration tests), test matrix, and release verification.
 - [**Troubleshooting Guide**](./troubleshooting.md): Solutions for common setup, packaging, permission, and audio context issues.
 - [**Product Roadmap**](./roadmap.md): Completed milestones and planned future features.
-- [**Changelog**](./changelog.md): Complete version history from v1.0.0 through v1.3.1.
+- [**Changelog**](./changelog.md): Complete version history from v1.0.0 through v1.3.5.
 
 ### ⚖️ Legal & Privacy
 - [**Privacy Policy**](./privacy.md): Zero data collection guarantee and local-only processing commitment.

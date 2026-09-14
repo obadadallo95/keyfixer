@@ -1,4 +1,4 @@
-# Development Guide (v1.3.1)
+# Development Guide (v1.3.5)
 
 This guide covers setting up, developing, testing, and building KeyFixer across Web, Extension, Windows, and macOS targets.
 
@@ -39,7 +39,7 @@ This guide covers setting up, developing, testing, and building KeyFixer across 
 | Command | Description |
 | :--- | :--- |
 | `npm run test` | Runs Vitest in interactive watch mode |
-| `npm run test:run` | Executes all 106 automated tests once |
+| `npm run test:run` | Executes all 139 automated tests once |
 | `npm run typecheck` | Validates TypeScript types across web and core engine |
 | `npm run typecheck:extension` | Validates TypeScript types for Chrome Extension |
 | `npm run typecheck:tests` | Validates TypeScript types across the test suite |
@@ -80,5 +80,5 @@ keyfixer/
 │   ├── src/lib.rs            # Rust tray, hotkeys, and sound engine
 │   └── tauri.conf.json       # Base Tauri v2 configuration
 ├── store-assets/             # App Store & Microsoft Store screenshots & icons
-└── tests/                    # 13 Vitest test suites (106 unit & integration tests)
+└── tests/                    # 15 Vitest test suites (139 unit & integration tests)
 ```

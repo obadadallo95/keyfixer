@@ -24,7 +24,7 @@ This script runs TypeScript typechecking, compiles source code via esbuild, and 
 ### 2. Create Submission ZIP Archive
 ```bash
 cd extension/dist
-zip -r ../../keyfixer-extension-v1.3.1.zip .
+zip -r ../../keyfixer-extension-v1.3.5.zip .
 cd ../..
 ```
 

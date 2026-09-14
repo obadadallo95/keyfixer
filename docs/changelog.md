@@ -4,6 +4,28 @@ All notable changes to KeyFixer will be documented in this file. KeyFixer adhere
 
 ---
 
+## [1.3.5] - 2026-08-21
+
+### Windows Inline Fix Reliability
+- Upgraded the Windows inline-fix workflow to use `SendInput` with Alt-key normalization and bounded clipboard synchronization.
+- Synchronized the current application and MSIX package versions to `1.3.5` and `1.3.5.0`.
+
+---
+
+## [1.3.4] - 2026-08-21
+
+### Windows Clipboard Shortcut Reliability
+- Released the Windows desktop package as version `1.3.4` after hardening modifier-key release before synthetic clipboard shortcuts.
+
+---
+
+## [1.3.3] - 2026-08-19
+
+### Microsoft Store Submission
+- Bumped the synchronized application and MSIX package versions to `1.3.3` and `1.3.3.0` for Microsoft Store submission.
+
+---
+
 ## [1.3.2] - 2026-08-18
 
 ### 🍎 Apple Mac App Store Official Launch & Website UI/UX Redesign

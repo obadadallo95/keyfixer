@@ -1,4 +1,4 @@
-# Mac App Store Release Guide (v1.3.2)
+# Mac App Store Release Guide (v1.3.5)
 
 This guide documents the official publication, Sandboxing configuration, StoreKit architecture, and Apple standards for **KeyFixer** on macOS.
 
@@ -35,7 +35,7 @@ Mac App Store builds require strict App Sandbox enforcement:
 ## 🧪 Pre-Flight Validation Commands
 
 ```bash
-# 1. Typecheck and verify test suite (118 tests)
+# 1. Typecheck and verify test suite (139 tests)
 npm run typecheck
 npm run test:run
 

@@ -1,4 +1,4 @@
-# KeyFixer System Architecture (v1.3.1)
+# KeyFixer System Architecture (v1.3.5)
 
 KeyFixer is engineered as a modular, high-performance monorepo application. The core algorithmic engine is completely decoupled from UI renderers and platform-specific native hosts.
 

@@ -1,4 +1,4 @@
-# Troubleshooting Guide (v1.3.1)
+# Troubleshooting Guide (v1.3.5)
 
 Common issues, diagnostics, and solutions across Web, Chrome Extension, Windows, and macOS platforms.
 
